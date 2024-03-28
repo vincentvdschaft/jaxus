@@ -1,3 +1,5 @@
+from typing import Union
+
 import jax.numpy as jnp
 import numpy as np
 from jax import device_put, jit, vmap
@@ -210,27 +212,27 @@ def _get_vectorized_simulate_function(
 
 
 def simulate_rf_data(
-    n_ax,
-    scatterer_positions,
-    scatterer_amplitudes,
-    ax_chunk_size,
-    scatterer_chunk_size,
-    t0_delays,
-    probe_geometry,
-    element_angles,
-    tx_apodization,
-    initial_time,
-    element_width_wl,
-    sampling_frequency,
-    center_frequency,
-    pulse_width,
-    sound_speed,
-    attenuation_coefficient,
-    wavefront_only=False,
-    tx_angle_sensitivity=True,
-    rx_angle_sensitivity=True,
-    waveform_function=None,
-    progress_bar=False,
+    n_ax: int,
+    scatterer_positions: jnp.array,
+    scatterer_amplitudes: jnp.array,
+    ax_chunk_size: int,
+    scatterer_chunk_size: int,
+    t0_delays: jnp.array,
+    probe_geometry: jnp.array,
+    element_angles: jnp.array,
+    tx_apodization: jnp.array,
+    initial_time: float,
+    element_width_wl: float,
+    sampling_frequency: Union[float, int],
+    center_frequency: Union[float, int],
+    pulse_width: Union[float, int],
+    sound_speed: Union[float, int],
+    attenuation_coefficient: Union[float, int],
+    wavefront_only: bool = False,
+    tx_angle_sensitivity: bool = True,
+    rx_angle_sensitivity: bool = True,
+    waveform_function: bool = None,
+    progress_bar: bool = False,
     device=None,
 ):
     """Simulates rf data based on transmit settings and scatterer positions and
@@ -274,18 +276,18 @@ def simulate_rf_data(
         jnp.array: The rf data of shape (n_ax, n_el)
     """
     # Check that the waveform function is None or a function
-    # check_waveform_function(waveform_function)
-    # check_element_width(element_width_wl, unit="wl")
-    # check_frequency(center_frequency)
-    # check_frequency(sampling_frequency)
-    # check_sound_speed(sound_speed)
-    # check_attenuation_coefficient(attenuation_coefficient)
-    # check_pulse_width(pulse_width)
-    # check_pos_array(scatterer_positions, name="scatterer_positions")
-    # check_pos_array(probe_geometry, name="probe_geometry")
-    # check_t0_delays(t0_delays)
-    # check_element_angles(element_angles)
-    # check_tx_apodization(tx_apodization)
+    check_waveform_function(waveform_function)
+    check_element_width(element_width_wl, unit="wl")
+    check_frequency(center_frequency)
+    check_frequency(sampling_frequency)
+    check_sound_speed(sound_speed)
+    check_attenuation_coefficient(attenuation_coefficient)
+    check_pulse_width(pulse_width)
+    check_pos_array(scatterer_positions, name="scatterer_positions")
+    check_pos_array(probe_geometry, name="probe_geometry")
+    check_t0_delays(t0_delays, transmit_dim=False)
+    check_element_angles(element_angles)
+    check_tx_apodization(tx_apodization)
 
     if waveform_function is None:
         tx_waveform = get_pulse(center_frequency, pulse_width)

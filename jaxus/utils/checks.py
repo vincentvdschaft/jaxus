@@ -46,14 +46,16 @@ def check_n_el(n_el):
     return int(n_el)
 
 
-def check_t0_delays(t0_delays, jax_allowed=True, numpy_allowed=True):
+def check_t0_delays(t0_delays, jax_allowed=True, numpy_allowed=True, transmit_dim=True):
     """Checks if the input is a valid array of t0_delays.
 
     ### Args:
         `t0_delays` (`any`): The input array.
-        jax_allowed (bool, optional): If True, jax arrays are allowed. Defaults to True.
-        numpy_allowed (bool, optional): If True, numpy arrays are allowed. Defaults to
-        True.
+        `jax_allowed` (`bool`, optional): If True, jax arrays are allowed. Defaults to True.
+        `numpy_allowed` (`bool`, optional): If True, numpy arrays are allowed. Defaults to
+            True.
+        `transmit_dim` (`bool`, optional): If True, the array should have shape (n_tx,
+            n_el). Defaults to True.
 
     Raises:
         TypeError: If the input is not an ndarray.
@@ -70,7 +72,8 @@ def check_t0_delays(t0_delays, jax_allowed=True, numpy_allowed=True):
     if not numpy_allowed and isinstance(t0_delays, np.ndarray):
         raise TypeError("t0_delays is not a jax array")
 
-    if not t0_delays.ndim == 2:
+    ndim = 2 if transmit_dim else 1
+    if not t0_delays.ndim == ndim:
         raise ValueError("t0_delays.ndim != 2")
 
     if isinstance(t0_delays, jnp.ndarray):

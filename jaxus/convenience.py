@@ -171,6 +171,12 @@ def simulate_to_usbmd(
     beamformed = beamformer.beamform(rf_data)
     beamformed = log_compress(beamformed, normalize=True)
 
+    waveforms = []
+    for tx in transmit:
+        waveform_fn = tx.waveform.get_waveform_function_array()
+        t = np.arange(1024) / 250e6
+        waveforms.append(waveform_fn(t))
+
     # ==================================================================================
     # Generate USBMD dataset
     # ==================================================================================
@@ -195,6 +201,8 @@ def simulate_to_usbmd(
         azimuth_angles=np.zeros(len(transmit)),
         time_to_next_transmit=np.zeros(len(transmit) - 1),
         tgc_gain_curve=np.ones(receive.n_ax),
+        waveform_samples_one_way=waveforms,
+        waveform_samples_two_way=waveforms,
     )
 
     return beamformed

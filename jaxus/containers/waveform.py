@@ -81,7 +81,7 @@ class Pulse(Waveform):
     @property
     def t_peak(self):
         """The time at which the pulse envelope peaks."""
-        return 0.0
+        return self._pulse_width
 
     def __repr__(self) -> str:
         return (
@@ -161,6 +161,7 @@ def get_pulse(carrier_frequency, pulse_width, chirp_rate=0, phase=0):
             np.array: The pulse waveform sampled at t.
         """
         sigma = (0.5 * pulse_width) / jnp.sqrt(-np.log(0.1))
+        t = t - pulse_width
         y = jnp.exp(-((t / sigma) ** 2))
         y *= jnp.sin(2 * jnp.pi * ((carrier_frequency + (chirp_rate * t)) * t) + phase)
         return y

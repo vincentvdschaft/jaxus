@@ -42,7 +42,7 @@ def _get_vectorized_simulate_function(
         `sampling_frequency` (`float`): The sampling frequency in Hz.
         `sound_speed` (`float`): The speed of sound in the medium.
         `attenuation_coefficient` (`float`): The attenuation coefficient in
-        Nepers/(MHz*center_frequency)
+        Nepers/(MHz*carrier_frequency)
         `waveform_function` (`function`): The function that returns the transmit waveform
             amplitude.
         `wavefront_only` (`bool`): Set to True to only compute the wavefront of the
@@ -83,7 +83,7 @@ def _get_vectorized_simulate_function(
             `element_width` (`float`): The width of the elements in wavelengths of the
                 center frequency.
             `sampling_frequency` (`float`): The sampling frequency in Hz.
-            `center_frequency` (`float`): The center frequencu in Hz.
+            `carrier_frequency` (`float`): The center frequencu in Hz.
             `pulse_width` (`float`): The pulse width in seconds.
             `sound_speed` (`float`): The speed of sound in the medium.
             `attenuation_coefficient` (`float`): The attenuation coefficient in Nepers/m
@@ -171,7 +171,7 @@ def _get_vectorized_simulate_function(
         )
 
         # Sum over all transmitting elements
-        summed_response = jnp.mean(response)
+        summed_response = jnp.sum(response)
 
         return summed_response
 
@@ -215,8 +215,6 @@ def simulate_rf_data(
     n_ax: int,
     scatterer_positions: jnp.array,
     scatterer_amplitudes: jnp.array,
-    ax_chunk_size: int,
-    scatterer_chunk_size: int,
     t0_delays: jnp.array,
     probe_geometry: jnp.array,
     element_angles: jnp.array,
@@ -224,16 +222,18 @@ def simulate_rf_data(
     initial_time: float,
     element_width_wl: float,
     sampling_frequency: Union[float, int],
-    center_frequency: Union[float, int],
-    pulse_width: Union[float, int],
-    sound_speed: Union[float, int],
-    attenuation_coefficient: Union[float, int],
+    carrier_frequency: Union[float, int],
+    sound_speed: Union[float, int] = 1540,
+    attenuation_coefficient: Union[float, int] = 0.0,
     wavefront_only: bool = False,
     tx_angle_sensitivity: bool = True,
     rx_angle_sensitivity: bool = True,
     waveform_function: bool = None,
+    ax_chunk_size: int = 1024,
+    scatterer_chunk_size: int = 1024,
     progress_bar: bool = False,
     device=None,
+    verbose: bool = False,
 ):
     """Simulates rf data based on transmit settings and scatterer positions and
     amplitudes.
@@ -248,17 +248,14 @@ def simulate_rf_data(
         `t0_delays` (`jnp.array`): The t0_delays of shape (n_el,). These are shifted such
             that the smallest value in t0_delays is 0.
         `probe_geometry` (`jnp.array`): The probe geometry of shape (2, n_el).
-        `element_angles` (`jnp.array`): The element angles in radians of shape (n_el,). Can
-            be used to simulate curved arrays.
+        `element_angles` (`jnp.array`): The element angles in radians of shape (n_el,).
+            Can be used to simulate curved arrays.
         `tx_apodization` (`jnp.array`): The transmit apodization of shape (n_el,).
         `initial_time` (`float`): The time instant of the first sample in seconds.
         `element_width_wl` (`float`): The width of the elements in wavelengths of the center
             frequency.
         `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `center_frequency` (`float`): The center frequency in Hz. Only used if no waveform
-            function is provided.
-        `pulse_width` (`float`): The pulse width in seconds. Only used if no waveform
-            function is provided.
+        `carrier_frequency` (`float`): The center frequency of the transmit pulse in Hz.
         `sound_speed` (`float`): The speed of sound in the medium.
         `attenuation_coefficient` (`float`): The attenuation coefficient in dB/(MHz*cm)
         `wavefront_only` (`bool`): Set to True to only compute the wavefront of the
@@ -278,11 +275,10 @@ def simulate_rf_data(
     # Check that the waveform function is None or a function
     check_waveform_function(waveform_function)
     check_element_width(element_width_wl, unit="wl")
-    check_frequency(center_frequency)
+    check_frequency(carrier_frequency)
     check_frequency(sampling_frequency)
     check_sound_speed(sound_speed)
     check_attenuation_coefficient(attenuation_coefficient)
-    check_pulse_width(pulse_width)
     check_pos_array(scatterer_positions, name="scatterer_positions")
     check_pos_array(probe_geometry, name="probe_geometry")
     check_t0_delays(t0_delays, transmit_dim=False)
@@ -290,7 +286,7 @@ def simulate_rf_data(
     check_tx_apodization(tx_apodization)
 
     if waveform_function is None:
-        tx_waveform = get_pulse(center_frequency, pulse_width)
+        tx_waveform = get_pulse(carrier_frequency, 400e-9)
     else:
         tx_waveform = waveform_function
 
@@ -322,17 +318,18 @@ def simulate_rf_data(
                 "tx_angle_sensitivity is set to True while in wavefront_only mode. "
                 "Changed to False."
             )
-        # log.warning(
-        #     "wavefront only is True. tx_apodization will be ignored. Elements that are "
-        #     "turned off will be ignored by adding a large t0_delay."
-        # )
+        if verbose:
+            log.warning(
+                "wavefront only is True. tx_apodization will be ignored. Elements that are "
+                "turned off will be ignored by adding a large t0_delay."
+            )
 
     tx_apodization = jnp.array(tx_apodization)
     tx_apodization = device_put(tx_apodization, device=device)
 
     # Convert attenuation coefficient from dB/(MHz*cm) to Nepers/m
     attenuation_coefficient = (
-        attenuation_coefficient * np.log(10) / 20 * center_frequency * 1e-6 * 100
+        attenuation_coefficient * np.log(10) / 20 * carrier_frequency * 1e-6 * 100
     )
 
     # Get a JIT compiled function that generates the rf data for a batch of axial sample

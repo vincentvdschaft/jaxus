@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jaxus.plotting import plot_rf
+from jaxus.plotting import plot_rf, plot_to_darkmode
 from jaxus.rf_simulator import simulate_rf_data
 
 # Set to True to plot the result
@@ -16,17 +16,15 @@ def test_rf_simulator():
     # The number of elements in the probe
     n_el = 128
     # The center frequency in Hz
-    center_frequency = 7e6
+    carrier_frequency = 7e6
     # Sampling frequency in Hz
-    sampling_frequency = 4 * center_frequency
+    sampling_frequency = 4 * carrier_frequency
     # The speed of sound in m/s
     c = 1540
     # The width of the elements in wavelengths of the center frequency
     width_wl = 1.33
     # The time instant of the first sample in seconds
     initial_time = 0.0
-    # The width of the pulse in seconds
-    pulse_width = 5e-7
     # The number of scatterers to process simultaneously. If it does not fit in memory
     # then lower this number.
     scatterer_chunk_size = 512
@@ -85,8 +83,6 @@ def test_rf_simulator():
         n_ax,
         scatterer_positions,
         scatterer_amplitudes,
-        ax_chunk_size,
-        scatterer_chunk_size,
         t0_delays,
         probe_geometry,
         element_angles,
@@ -94,11 +90,12 @@ def test_rf_simulator():
         initial_time,
         width_wl,
         sampling_frequency,
-        center_frequency,
-        pulse_width,
+        carrier_frequency,
         c,
         attenuation_coefficient,
         wavefront_only,
+        ax_chunk_size=ax_chunk_size,
+        scatterer_chunk_size=scatterer_chunk_size,
         progress_bar=True,
     )
 
@@ -109,46 +106,6 @@ def test_rf_simulator():
         return
 
     fig, ax = plt.subplots(1, 1)
-    plot_rf(ax, rf_data, axis_in_mm=True)
-
-    def plot_to_darkmode(fig, axes):
-        """Turns a plot into a dark plot with a black background and white text, ticks,
-        and spines.
-
-        ### Args:
-            `fig` (`plt.fig`): The figure handle.
-            axes (plt.axes, list/tuple of plt.axews): The axes to change.
-        """
-        assert isinstance(fig, plt.Figure), "fig must be a plt.Figure"
-
-        if not isinstance(axes, (list, tuple)):
-            assert isinstance(
-                axes, plt.Axes
-            ), "axes must be a plt.Axes or a list of plt.Axes"
-            axes = [axes]
-        else:
-            assert all(
-                [isinstance(ax, plt.Axes) for ax in axes]
-            ), "axes must be a list of axes"
-            axes = list(axes)
-
-        # Turn the figure background black
-        fig.patch.set_facecolor("black")
-
-        for ax in axes:
-            # Turn the axes background black
-            ax.set_facecolor("black")
-            # Turn the labels white
-            ax.xaxis.label.set_color("white")
-            ax.yaxis.label.set_color("white")
-            # Turn the ticks white
-            ax.tick_params(axis="x", colors="white")
-            ax.tick_params(axis="y", colors="white")
-            # Turn the spines white
-            ax.spines["bottom"].set_color("white")
-            ax.spines["left"].set_color("white")
-            ax.spines["top"].set_color("white")
-            ax.spines["right"].set_color("white")
-
+    plot_rf(ax, rf_data, axis_in_mm=True, cmap="cividis")
     plot_to_darkmode(fig, ax)
     plt.show()

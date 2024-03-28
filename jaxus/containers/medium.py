@@ -7,14 +7,14 @@ class Medium:
     """Container class storing the parameters pertaining to the medium.
 
     ## Contains
-    - scatterer_positions (np.ndarray): The scatterer positions in meters. [2,
+    - `scatterer_positions` (`np.ndarray`): The scatterer positions in meters. [2,
     n_scatterers]
-    - scatterer_amplitudes (np.ndarray): The scatterer amplitudes in meters.
+    - `scatterer_amplitudes` (`np.ndarray`): The scatterer amplitudes in meters.
     [n_scatterers]
-    - sound_speed (float): The speed of sound in the medium in m/s.
-    - n_z (int): The number of grid points in the z direction. Can be optionally set
+    - `sound_speed` (`float`): The speed of sound in the medium in m/s.
+    - `n_z` (`int`): The number of grid points in the z direction. Can be optionally set
         with the set_grid_size method.
-    - n_x (int): The number of grid points in the x direction. Can be optionally set
+    - `n_x` (`int`): The number of grid points in the x direction. Can be optionally set
         with the set_grid_size method.
     """
 

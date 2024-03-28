@@ -10,28 +10,6 @@ from scipy.signal import butter, filtfilt
 import jaxus.utils.log as log
 
 
-def band_limit(signal, cutoff_low, cutoff_high, sampling_frequency):
-    """Band limits a signal by applying a butterworth filter twice.
-
-    ### Args:
-        `signal` (`ndarray`): The signal to be filtered.
-        `cutoff_low` (`float`): The lower cutoff frequency in Hz.
-        `cutoff_high` (`float`): The upper cutoff frequency in Hz.
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
-
-    ### Returns:
-        ndarray: The filtered signal.
-    """
-    cutoff_low = cutoff_low / (0.5 * sampling_frequency)
-    cutoff_high = cutoff_high / (0.5 * sampling_frequency)
-
-    b, a = butter(N=3, Wn=[cutoff_low, cutoff_high], btype="bandpass")
-
-    filtered = filtfilt(b, a, signal)
-
-    return filtered
-
-
 class Waveform:
     """Conatiner class to store the parameters pertaining to the transmit waveform as
     transmitted by a single element."""
@@ -68,22 +46,22 @@ class Waveform:
 class Pulse(Waveform):
     """Container class for classical pulse waveforms."""
 
-    def __init__(self, center_frequency, pulse_width, chirp_rate, phase):
-        self._validate_input(center_frequency, pulse_width, chirp_rate, phase)
-        self._center_frequency = center_frequency
+    def __init__(self, carrier_frequency, pulse_width, chirp_rate, phase):
+        self._validate_input(carrier_frequency, pulse_width, chirp_rate, phase)
+        self._carrier_frequency = carrier_frequency
         self._pulse_width = pulse_width
         self._chirp_rate = chirp_rate
         self._phase = phase
 
     @staticmethod
-    def _validate_input(center_frequency, pulse_width, chirp_rate, phase):
-        test_center_frequency(center_frequency)
+    def _validate_input(carrier_frequency, pulse_width, chirp_rate, phase):
+        test_carrier_frequency(carrier_frequency)
         test_pulse_width(pulse_width)
 
     @property
-    def center_frequency(self):
+    def carrier_frequency(self):
         """The center frequency of the transmit pulse in Hz."""
-        return self._center_frequency
+        return self._carrier_frequency
 
     @property
     def pulse_width(self):
@@ -100,33 +78,38 @@ class Pulse(Waveform):
         """The phase of the transmit pulse in radians."""
         return self._phase
 
+    @property
+    def t_peak(self):
+        """The time at which the pulse envelope peaks."""
+        return 0.0
+
     def __repr__(self) -> str:
         return (
-            f"Pulse(center_frequency={self.center_frequency*1e-6:.1f}MHz, "
+            f"Pulse(carrier_frequency={self.carrier_frequency*1e-6:.1f}MHz, "
             f"pulse_width={self.pulse_width*1e6:.1f}us)"
         )
 
     def get_waveform_function(self):
         return get_pulse(
-            self._center_frequency, self._pulse_width, self._chirp_rate, self._phase
+            self._carrier_frequency, self._pulse_width, self._chirp_rate, self._phase
         )
 
 
-def test_center_frequency(center_frequency):
+def test_carrier_frequency(carrier_frequency):
     """Checks if the center frequency is valid and warns for strange values."""
-    # Test center_frequency
+    # Test carrier_frequency
     # ------------------------------------------------------------------------------
     # Check if the input is a float or int
-    if not isinstance(center_frequency, (float, int)):
+    if not isinstance(carrier_frequency, (float, int)):
         raise TypeError(
-            "center_frequency must be a float. " f"Got {type(center_frequency)}"
+            "carrier_frequency must be a float. " f"Got {type(carrier_frequency)}"
         )
 
     # Warnings
     # ------------------------------------------------------------------------------
     # Warn if the center frequency is very low
-    if center_frequency <= 1000:
-        log.warning(f"Center frequency is very low: {center_frequency} Hz")
+    if carrier_frequency <= 1000:
+        log.warning(f"Center frequency is very low: {carrier_frequency} Hz")
 
 
 def test_pulse_width(pulse_width):
@@ -143,13 +126,13 @@ def test_pulse_width(pulse_width):
         log.warning(f"Pulse width is very large: {pulse_width*1e6} us")
 
 
-def get_pulse(center_frequency, pulse_width, chirp_rate=0, phase=0):
+def get_pulse(carrier_frequency, pulse_width, chirp_rate=0, phase=0):
     """Returns a function that computes a generalized waveform. The waveform can be
     a chirp by setting the chirp_rate to a nonzero value or a traditional pulse by
     setting the chirp_rate to zero.
 
     ### Args:
-        `center_frequency` (`float`): The carrier frequency.
+        `carrier_frequency` (`float`): The carrier frequency.
         `pulse_width` (`float`): The pulse width in seconds.
         `chirp_rate` (`float`): The chirp rate in Hz/s.
         `phase` (`float`): The phase of the waveform in radians.
@@ -158,8 +141,8 @@ def get_pulse(center_frequency, pulse_width, chirp_rate=0, phase=0):
         function: A function that computes a pulse waveform.
     """
 
-    if not isinstance(center_frequency, (float, int)):
-        raise TypeError("center_frequency must be a float or an int")
+    if not isinstance(carrier_frequency, (float, int)):
+        raise TypeError("carrier_frequency must be a float or an int")
 
     if not isinstance(pulse_width, (float, int)):
         raise TypeError("pulse_width must be a float or an int")
@@ -179,7 +162,29 @@ def get_pulse(center_frequency, pulse_width, chirp_rate=0, phase=0):
         """
         sigma = (0.5 * pulse_width) / jnp.sqrt(-np.log(0.1))
         y = jnp.exp(-((t / sigma) ** 2))
-        y *= jnp.sin(2 * jnp.pi * ((center_frequency + (chirp_rate * t)) * t) + phase)
+        y *= jnp.sin(2 * jnp.pi * ((carrier_frequency + (chirp_rate * t)) * t) + phase)
         return y
 
     return chirp
+
+
+def band_limit(signal, cutoff_low, cutoff_high, sampling_frequency):
+    """Band limits a signal by applying a butterworth filter twice.
+
+    ### Args:
+        `signal` (`ndarray`): The signal to be filtered.
+        `cutoff_low` (`float`): The lower cutoff frequency in Hz.
+        `cutoff_high` (`float`): The upper cutoff frequency in Hz.
+        `sampling_frequency` (`float`): The sampling frequency in Hz.
+
+    ### Returns:
+        ndarray: The filtered signal.
+    """
+    cutoff_low = cutoff_low / (0.5 * sampling_frequency)
+    cutoff_high = cutoff_high / (0.5 * sampling_frequency)
+
+    b, a = butter(N=3, Wn=[cutoff_low, cutoff_high], btype="bandpass")
+
+    filtered = filtfilt(b, a, signal)
+
+    return filtered

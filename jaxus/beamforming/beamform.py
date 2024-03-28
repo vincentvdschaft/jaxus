@@ -15,7 +15,7 @@ beamformer = Beamformer(
     t0_delays=t0_delays[,
     initial_times=initial_times,
     sampling_frequency=sampling_frequency,
-    center_frequency=center_frequency,
+    carrier_frequency=carrier_frequency,
     sound_speed=sound_speed,
     t_peak=1.56e-7,
     f_number=3,
@@ -40,7 +40,7 @@ beamformed_images = beamform(
     t0_delays=t0_delays[0],
     initial_times=initial_times[0],
     sampling_frequency=sampling_frequency,
-    center_frequency=center_frequency,
+    carrier_frequency=carrier_frequency,
     sound_speed=sound_speed,
     t_peak=1.56e-7,
     f_number=3,
@@ -166,9 +166,9 @@ class CartesianPixelGrid(PixelGrid):
             `n_z` (`int`): The number of pixels in the beamforming grid in the
                 z-direction.
             `dx_wl` (`float`): The pixel size/spacing in the x-direction in wavelengths.
-                (Wavelengths are defined as sound_speed/center_frequency.)
+                (Wavelengths are defined as sound_speed/carrier_frequency.)
             `dz_wl` (`float`): The pixel size/spacing in the z-direction in wavelengths.
-                (Wavelengths are defined as sound_speed/center_frequency.)
+                (Wavelengths are defined as sound_speed/carrier_frequency.)
             `z0` (`float`): The start-depth of the beamforming plane in meters.
             `wavelength` (`float`): The wavelength to define the grid spacing in meters.
         """
@@ -216,7 +216,7 @@ class Beamformer:
         t0_delays: np.ndarray,
         initial_times: np.ndarray,
         sampling_frequency: Union[float, int],
-        center_frequency: Union[float, int],
+        carrier_frequency: Union[float, int],
         sound_speed: Union[float, int],
         t_peak: Union[np.ndarray, float, int],
         rx_apodization: np.ndarray,
@@ -232,7 +232,7 @@ class Beamformer:
         self._t0_delays = None
         self._initial_times = None
         self._sampling_frequency = None
-        self._center_frequency = None
+        self._carrier_frequency = None
         self._sound_speed = None
         self._t_peak = None
         self._f_number = None
@@ -248,7 +248,7 @@ class Beamformer:
             t0_delays=t0_delays,
             initial_times=initial_times,
             sampling_frequency=sampling_frequency,
-            center_frequency=center_frequency,
+            carrier_frequency=carrier_frequency,
             sound_speed=sound_speed,
             t_peak=t_peak,
             rx_apodization=rx_apodization,
@@ -273,13 +273,13 @@ class Beamformer:
     @property
     def dx_wl(self):
         """The pixel size/spacing in the x-direction in wavelengths. (Wavelengths are
-        defined as sound_speed/center_frequency.)"""
+        defined as sound_speed/carrier_frequency.)"""
         return self._dx_wl
 
     @property
     def dz_wl(self):
         """The pixel size/spacing in the z-direction in wavelengths. (Wavelengths are
-        defined as sound_speed/center_frequency.)"""
+        defined as sound_speed/carrier_frequency.)"""
         return self._dz_wl
 
     @property
@@ -323,9 +323,9 @@ class Beamformer:
         return self._sampling_frequency
 
     @property
-    def center_frequency(self):
+    def carrier_frequency(self):
         """The center frequency of the RF data in Hz."""
-        return self._center_frequency
+        return self._carrier_frequency
 
     @property
     def sound_speed(self):
@@ -400,7 +400,7 @@ class Beamformer:
     @property
     def wave_length(self):
         """The wavelength of the center frequency in meters."""
-        return self._sound_speed / self._center_frequency
+        return self._sound_speed / self._carrier_frequency
 
     # ==================================================================================
     # Functions
@@ -412,7 +412,7 @@ class Beamformer:
         t0_delays: np.ndarray,
         initial_times: np.ndarray,
         sampling_frequency: Union[float, int],
-        center_frequency: Union[float, int],
+        carrier_frequency: Union[float, int],
         sound_speed: Union[float, int],
         t_peak: Union[float, int],
         rx_apodization: np.ndarray,
@@ -422,7 +422,7 @@ class Beamformer:
     ):
 
         sampling_frequency = check_frequency(sampling_frequency)
-        center_frequency = check_frequency(center_frequency)
+        carrier_frequency = check_frequency(carrier_frequency)
         sound_speed = check_posfloat(sound_speed, name="sound_speed")
         f_number = check_posfloat(f_number, name="f_number")
         z0 = check_nonnegfloat(z0, name="z0")
@@ -452,7 +452,7 @@ class Beamformer:
         t0_delays = jnp.array(t0_delays, dtype=jnp.float32)
         initial_times = jnp.array(initial_times, dtype=jnp.float32)
         rx_apodization = jnp.array(rx_apodization, dtype=jnp.float32)
-        center_frequency = float(center_frequency)
+        carrier_frequency = float(carrier_frequency)
         sampling_frequency = float(sampling_frequency)
         sound_speed = float(sound_speed)
         t_peak = jnp.array(t_peak, dtype=jnp.float32)
@@ -466,7 +466,7 @@ class Beamformer:
         self._t0_delays = t0_delays
         self._initial_times = initial_times
         self._sampling_frequency = sampling_frequency
-        self._center_frequency = center_frequency
+        self._carrier_frequency = carrier_frequency
         self._sound_speed = sound_speed
         self._t_peak = t_peak
         self._f_number = f_number
@@ -519,7 +519,7 @@ class Beamformer:
         if self.iq_beamform:
             # Apply phase rotation to beamform the IQ data directly
             phase = jnp.exp(
-                1j * 2 * jnp.pi * self._center_frequency * (tof_tx + tof_rx)
+                1j * 2 * jnp.pi * self._carrier_frequency * (tof_tx + tof_rx)
             )
             rf_interp *= phase
 
@@ -557,22 +557,22 @@ class Beamformer:
             tof_corrected = self._tof_correct_pixel(data, pixel_pos, tx)
 
             # Custom f-number mask
-            f_number_mask = jnp.exp(
-                -(
-                    (
-                        np.sqrt(np.log(2))
-                        * (
-                            jnp.abs(self._probe_geometry[:, 0] - pixel_pos[0])
-                            / (pixel_pos[1] / self._f_number)
-                        )
-                    )
-                    ** 2
-                )
-            )
-            # Traditional f-number mask
-            # f_number_mask = jnp.abs(self._probe_geometry[:, 0] - pixel_pos[0]) < (
-            #     pixel_pos[1] / self._f_number
+            # f_number_mask = jnp.exp(
+            #     -(
+            #         (
+            #             np.sqrt(np.log(2))
+            #             * (
+            #                 jnp.abs(self._probe_geometry[:, 0] - pixel_pos[0])
+            #                 / (pixel_pos[1] / self._f_number)
+            #             )
+            #         )
+            #         ** 2
+            #     )
             # )
+            # Traditional f-number mask
+            f_number_mask = jnp.abs(self._probe_geometry[:, 0] - pixel_pos[0]) < (
+                pixel_pos[1] / self._f_number
+            )
 
             return jnp.sum(tof_corrected * f_number_mask * self._rx_apodization)
 
@@ -629,7 +629,7 @@ class Beamformer:
             # Convert to complex IQ data, demodulating if necessary
             iq_data = to_complex_iq(
                 rf_data=rf_data,
-                center_frequency=self._center_frequency,
+                carrier_frequency=self._carrier_frequency,
                 sampling_frequency=self._sampling_frequency,
             )
             input_data = iq_data
@@ -641,39 +641,39 @@ class Beamformer:
         n_frames = rf_data.shape[0]
 
         # Initialize the beamformed images to zeros
-        beamformed_images = np.zeros(
+        beamformed_images = jnp.zeros(
             (n_frames, self.n_z, self.n_x), dtype=beamformed_dtype
         )
 
         progbar_func = lambda x: tqdm(x, desc="Beamforming") if progress_bar else x
+        for tx in transmits:
+            assert 0 <= tx < self.n_tx, "Transmit index out of bounds"
 
         for frame in progbar_func(range(n_frames)):
+
+            # Beamform every transmit individually and sum the results
             for tx in transmits:
-                assert 0 <= tx < self.n_tx, "Transmit index out of bounds"
+                # Perform beamforming
+                beamformed_transmit = self._beamform_func(
+                    input_data[frame, tx],
+                    self._pixel_positions_flat,
+                    tx,
+                )
 
-                # Beamform every transmit individually and sum the results
-                for tx in transmits:
-                    # Perform beamforming
-                    beamformed_transmit = self._beamform_func(
-                        input_data[frame, tx],
-                        self._pixel_positions_flat,
-                        tx,
-                    )
-
-                    # Reshape and add to the beamformed images
-                    beamformed_images[frame] += jnp.reshape(
-                        beamformed_transmit, (self.n_z, self.n_x)
-                    )
+                # Reshape and add to the beamformed images
+                beamformed_images = beamformed_images.at[frame].add(
+                    jnp.reshape(beamformed_transmit, (self.n_z, self.n_x))
+                )
 
         return beamformed_images
 
 
-def rf2iq(rf_data, center_frequency, sampling_frequency, padding=256):  #
+def rf2iq(rf_data, carrier_frequency, sampling_frequency, padding=2048):  #
     """Converts RF data to complex valued IQ data.
 
     ### Args:
         `rf_data` (`np.ndarray`): The RF data of shape (n_frames, n_tx, n_ax, n_el, n_ch)
-        `center_frequency` (`float`): The center frequency of the RF data in Hz.
+        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
         `sampling_frequency` (`float`): The sampling frequency in Hz.
         `padding` (`int`): The number of samples to pad the RF data with on both sides
             before performing the Hilbert transform. This helps combat edge effects.
@@ -686,7 +686,7 @@ def rf2iq(rf_data, center_frequency, sampling_frequency, padding=256):  #
     # Perform error checking
     # ==================================================================================
     rf_data = check_standard_rf_data(rf_data)
-    center_frequency = check_frequency(center_frequency)
+    carrier_frequency = check_frequency(carrier_frequency)
     sampling_frequency = check_frequency(sampling_frequency)
 
     iq_data = np.zeros(rf_data.shape[:-1], dtype=np.complex64)
@@ -719,11 +719,11 @@ def rf2iq(rf_data, center_frequency, sampling_frequency, padding=256):  #
         # Add dummy dimensions to t to allow broadcasting
         t = t[None, None, :, None]
 
-        iq_data_batch = rf_data_batch * np.exp(-1j * 2 * np.pi * center_frequency * t)
+        iq_data_batch = rf_data_batch * np.exp(-1j * 2 * np.pi * carrier_frequency * t)
 
         # Low-pass filter to only retain the baseband signal
         filter_order = 5
-        Wn = min(0.8 * center_frequency / (0.5 * sampling_frequency), 0.5)
+        Wn = min(0.8 * carrier_frequency / (0.5 * sampling_frequency), 0.5)
         b, a = butter(filter_order, Wn, "low")
 
         # Filter using a forward backward filter to prevent phase shift
@@ -737,7 +737,7 @@ def rf2iq(rf_data, center_frequency, sampling_frequency, padding=256):  #
 
 def to_complex_iq(
     rf_data: Union[np.ndarray, jax.numpy.ndarray],
-    center_frequency: Union[float, int],
+    carrier_frequency: Union[float, int],
     sampling_frequency: Union[float, int],
 ):
     """Converts RF data or 2-channel IQ data to complex valued IQ data.
@@ -745,7 +745,7 @@ def to_complex_iq(
     ### Args:
         `rf_data` (`np.ndarray`, `jnp.ndarray`): The RF or IQ data to convert of shape
             (n_frames, n_tx, n_samples, n_elements, n_ch).
-        `center_frequency` (`float`): The center frequency of the RF data in Hz.
+        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
         `sampling_frequency` (`float`): The sampling frequency in Hz.
 
     ### Returns:
@@ -754,13 +754,13 @@ def to_complex_iq(
     """
     # Input error checking
     rf_data = check_standard_rf_or_iq_data(rf_data)
-    center_frequency = check_frequency(center_frequency)
+    carrier_frequency = check_frequency(carrier_frequency)
     sampling_frequency = check_frequency(sampling_frequency)
 
     # If the data is 5d and has 1 channel we assume it is RF data and convert it to IQ
     # by demodulating it to baseband
     if rf_data.shape[4] == 1:
-        return rf2iq(rf_data, center_frequency, sampling_frequency)
+        return rf2iq(rf_data, carrier_frequency, sampling_frequency)
 
     # If the data is 5d and has 2 channels we assume it is already IQ data and only have
     # to turn it from 2-channel into complex numbers
@@ -783,7 +783,7 @@ def detect_envelope_beamformed(bf_data, dz_wl):
             (n_frames, n_rows, n_cols)
         `dz_wl` (`float`): The pixel size/spacing in the z-direction in wavelengths of
             the beamforming grid. (Wavelengths are defined as
-            sound_speed/center_frequency.)
+            sound_speed/carrier_frequency.)
 
     ### Returns:
         `envelope` (`np.ndarray`): The envelope detected RF data of the same shape as
@@ -805,7 +805,7 @@ def detect_envelope_beamformed(bf_data, dz_wl):
     if np.iscomplexobj(bf_data):
         return np.abs(bf_data)
 
-    iq_data = rf2iq(bf_data[:, None, ..., None], 2, 1 / dz_wl, padding=1024)
+    iq_data = rf2iq(bf_data[:, None, ..., None], 2, 1 / dz_wl, padding=2048)
     return np.abs(iq_data)[:, 0, :, :]
 
 
@@ -816,7 +816,7 @@ def beamform(
     t0_delays: np.ndarray,
     initial_times: np.ndarray,
     sampling_frequency: Union[float, int],
-    center_frequency: Union[float, int],
+    carrier_frequency: Union[float, int],
     sound_speed: Union[float, int],
     t_peak: Union[float, int],
     rx_apodization: np.ndarray = None,
@@ -827,7 +827,8 @@ def beamform(
     transmits: Union[None, int, list] = None,
     progress_bar: bool = False,
 ):
-    """Beamforms all frames of the rf data using the given parameters.
+    """Beamforms all frames of the rf data using the given parameters. Also performs
+    log-compression of the beamformed data.
 
     ### Args:
         `rf_data` (`np.ndarray`): The RF data to beamform of shape
@@ -842,7 +843,7 @@ def beamform(
         `initial_times` (`np.ndarray`): The time between t=0 and the first sample being
             recorded. (t=0 is when the first element fires.)
         `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `center_frequency` (`float`): The center frequency of the RF data in Hz.
+        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
         `sound_speed` (`float`): The speed of sound in m/s.
         `t_peak` (`float`): The time between t=0 and the peak of the waveform to
             beamform to. (t=0 is when the first element fires)
@@ -879,7 +880,7 @@ def beamform(
         t0_delays,
         initial_times,
         sampling_frequency,
-        center_frequency,
+        carrier_frequency,
         sound_speed,
         t_peak,
         rx_apodization,
@@ -894,7 +895,7 @@ def beamform(
     if not iq_beamform:
         # Perform envelope detection
         beamformed_images = detect_envelope_beamformed(
-            beamformed_images, center_frequency, sampling_frequency
+            beamformed_images, 0.5 * carrier_frequency / sampling_frequency
         )
 
     beamformed_images = log_compress(beamformed_images, normalize)

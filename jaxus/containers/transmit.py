@@ -10,7 +10,7 @@ class Transmit:
     ## Contains:
     - t0_delays (np.ndarray): The t0 delays in seconds. [n_el,]
     - tx_apodization (np.ndarray): The transmit apodization. [n_el,]
-    - center_frequency (float): The center frequency of the transmit pulse in Hz.
+    - carrier_frequency (float): The center frequency of the transmit pulse in Hz.
     - pulse_width (float): The pulse width of the transmit pulse in seconds.
     """
 
@@ -22,7 +22,7 @@ class Transmit:
         ### Args:
             `t0_delays` (`np.ndarray`): The t0 delays in seconds. `(n_el,)`
             `tx_apodization` (`np.ndarray`): The transmit apodization. `(n_el,)`
-            `center_frequency` (`float`): The center frequency of the transmit pulse in
+            `carrier_frequency` (`float`): The center frequency of the transmit pulse in
                 Hz.
             `pulse_width` (`float`): The pulse width of the transmit pulse in seconds.
         """
@@ -53,9 +53,9 @@ class Transmit:
         return self._waveform.get_waveform_function()
 
     @property
-    def center_frequency(self):
+    def carrier_frequency(self):
         """The center frequency of the transmit pulse in Hz."""
-        return self._waveform._center_frequency
+        return self._waveform._carrier_frequency
 
     @property
     def pulse_width(self):
@@ -80,7 +80,7 @@ class Transmit:
         ### Args:
             `t0_delays` (`any`): The input t0 delays.
             `tx_apodization` (`any`): The input transmit apodization.
-            `center_frequency` (`any`): The input center frequency.
+            `carrier_frequency` (`any`): The input center frequency.
             `pulse_width` (`any`): The input pulse width.
         """
         # Test t0_delays

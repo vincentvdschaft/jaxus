@@ -18,7 +18,13 @@ class Medium:
         with the set_grid_size method.
     """
 
-    def __init__(self, scatterer_positions, scatterer_amplitudes, sound_speed):
+    def __init__(
+        self,
+        scatterer_positions,
+        scatterer_amplitudes,
+        sound_speed,
+        attenuation_coefficient=0.0,
+    ):
         """Initializes the Medium object.
 
         ### Args:
@@ -28,13 +34,19 @@ class Medium:
                 [n_scatterers]
             `sound_speed` (`float`): The speed of sound in the medium in m/s.
         """
-        self._validate_input(scatterer_positions, scatterer_amplitudes, sound_speed)
+        self._validate_input(
+            scatterer_positions,
+            scatterer_amplitudes,
+            sound_speed,
+            attenuation_coefficient,
+        )
 
         self._scatterer_positions = scatterer_positions.astype(np.float32)
         self._scatterer_amplitudes = scatterer_amplitudes.astype(np.float32)
         self._sound_speed = float(sound_speed)
         self._n_z = None
         self._n_x = None
+        self.attenuation_coefficient = float(attenuation_coefficient)
 
     @property
     def scatterer_positions(self):
@@ -90,13 +102,17 @@ class Medium:
         self._n_x = n_x
 
     @staticmethod
-    def _validate_input(scatterer_positions, scatterer_amplitudes, sound_speed):
+    def _validate_input(
+        scatterer_positions, scatterer_amplitudes, sound_speed, attenuation_coefficient
+    ):
         """Validates the input.
 
         ### Args:
             `scatterer_positions` (`any`): The input scatterer positions.
             `scatterer_amplitudes` (`any`): The input scatterer amplitudes.
             `sound_speed` (`any`): The input sound speed.
+            `attenuation_coefficient` (`any`): The input attenuation coefficient in
+                dB/m/MHz.
         """
         # Check scatterer positions
         # ------------------------------------------------------------------------------
@@ -165,6 +181,20 @@ class Medium:
         # Test if the sound speed is positive
         if sound_speed <= 0:
             raise ValueError("sound_speed must be positive")
+
+        # ==============================================================================
+        # Check attenuation coefficient
+        # ==============================================================================
+        # Check if the input is a float or int
+        if not isinstance(attenuation_coefficient, (float, int)):
+            raise TypeError(
+                "The attenuation coefficient must be a float. "
+                f"Got {type(attenuation_coefficient)}"
+            )
+
+        # Check if the attenuation coefficient is positive
+        if attenuation_coefficient < 0:
+            raise ValueError("The attenuation coefficient must be positive")
 
         # Warnings
         # ------------------------------------------------------------------------------

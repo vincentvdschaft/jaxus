@@ -58,6 +58,17 @@ class Probe:
         """The width of each element in meters."""
         return self._element_width
 
+    @property
+    def bandwidth(self):
+        """The bandwidth of the probe in Hz."""
+        return self._bandwidth
+
+    @property
+    def aperture(self):
+        """The aperture of the probe in meters, computed as the distance between the
+        first and last element."""
+        return np.linalg.norm(self._probe_geometry[:, -1] - self._probe_geometry[:, 0])
+
     def __repr__(self):
         return (
             f"Probe({self.n_el} elements, "

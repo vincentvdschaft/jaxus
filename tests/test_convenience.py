@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -43,8 +45,13 @@ def test_simulate_to_usbmd():
         ),
         scatterer_amplitudes=np.array([1.0]),
     )
+    output_path = Path("tests", "output.h5")
+    # Remove the file if it exists
+    if output_path.exists():
+        output_path.unlink()
+
     result = simulate_to_usbmd(
-        path="output.h5",
+        path=output_path,
         probe=probe,
         transmit=transmit,
         receive=receive,

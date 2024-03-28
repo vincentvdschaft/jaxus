@@ -24,6 +24,7 @@ data/
 *.mp4
 *.png
 *.hdf5
+*.h5
 *.log
 *.dll
 *.gif

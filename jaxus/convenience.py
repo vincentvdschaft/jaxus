@@ -70,6 +70,7 @@ def simulate_rf(
             tx_angle_sensitivity=tx_angle_sensitivity,
             rx_angle_sensitivity=rx_angle_sensitivity,
             wavefront_only=wavefront_only,
+            waveform_function=tx.waveform.get_waveform_function(),
         )
         rf_data_list.append(rf_data)
 

@@ -22,7 +22,7 @@ def test_simulate_to_usbmd():
         tx_apodization=np.ones(probe.n_el),
         waveform=Pulse(
             carrier_frequency=probe.center_frequency,
-            pulse_width=400e-9,
+            pulse_width=500e-9,
             chirp_rate=0.0,
             phase=0.0,
         ),
@@ -32,18 +32,17 @@ def test_simulate_to_usbmd():
         n_ax=1024,
         initial_time=0.0,
     )
+    n_scat = 50
     medium = Medium(
-        sound_speed=1540.0,
-        attenuation_coefficient=0.5,
-        scatterer_positions=np.array(
+        scatterer_positions=np.stack(
             [
-                [
-                    0.0,
-                ],
-                [30e-3],
-            ]
+                np.random.randn(n_scat) * 4e-3,
+                np.abs(35e-3 + np.random.randn(n_scat) * 4e-3),
+            ],
+            axis=0,
         ),
-        scatterer_amplitudes=np.array([1.0]),
+        scatterer_amplitudes=np.ones(n_scat),
+        sound_speed=1540,
     )
     output_path = Path("tests", "output.h5")
     # Remove the file if it exists

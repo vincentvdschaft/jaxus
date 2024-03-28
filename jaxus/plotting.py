@@ -64,11 +64,20 @@ def plot_rf(
     ax.set_xlabel(xlabel)
     ax.set_ylabel(zlabel)
     # Set the yticks to start at the start_sample
-    ax.set_yticks(np.arange(0, rf_data.shape[0], 50) + start_sample)
+    n_ax = rf_data.shape[0]
+    step = int(np.floor((n_ax / 6) / 100) * 100)
+    ax.set_yticks(np.arange(0, n_ax, step) + start_sample)
 
 
 def plot_beamformed(
-    ax, image, extent_m, vmin=-60, vmax=0, cmap="gray", axis_in_mm=True
+    ax,
+    image,
+    extent_m,
+    vmin=-60,
+    vmax=0,
+    cmap="gray",
+    axis_in_mm=True,
+    probe_geometry=None,
 ):
     """Plots a beamformed image to an axis.
 
@@ -81,13 +90,17 @@ def plot_beamformed(
         `cmap` (`str`, optional): The colormap to use. Defaults to "gray".
         `axis_in_mm` (`bool`, optional): Whether to plot the x-axis in mm. Defaults to
             True.
+        `probe_geometry` (`np.ndarray`, optional): The probe geometry in meters of shape
+            (n_el, 2). If provided, the probe geometry is plotted on top of the image.
+            Defaults to None.
     """
+    scaling = 1e3 if axis_in_mm else 1
+    extent = np.array(extent_m) * scaling
+
     if axis_in_mm:
-        extent = np.array(extent_m) * 1e3
         xlabel = "x [mm]"
         zlabel = "z [mm]"
     else:
-        extent = extent_m
         xlabel = "x [m]"
         zlabel = "z [m]"
 
@@ -102,6 +115,15 @@ def plot_beamformed(
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(zlabel)
+
+    if probe_geometry is not None:
+
+        ax.plot(
+            probe_geometry[:, 0] * scaling,
+            probe_geometry[:, 1] * scaling,
+            "rs",
+            markersize=2,
+        )
 
 
 def plot_to_darkmode(fig, axes, grid=False):

@@ -28,14 +28,14 @@ def test_beamform():
         scatterer_positions=np.stack(
             [
                 np.random.randn(n_scat) * 4e-3,
-                np.abs(15e-3 + np.random.randn(n_scat) * 4e-3),
+                np.abs(35e-3 + np.random.randn(n_scat) * 4e-3),
             ],
             axis=0,
         ),
         scatterer_amplitudes=np.ones(n_scat),
         sound_speed=1540,
     )
-    receive = Receive(sampling_frequency=4 * 7.6e6, n_ax=1024 + 512, initial_time=0)
+    receive = Receive(sampling_frequency=4 * 7.6e6, n_ax=1024 * 2, initial_time=0)
     waveform = Pulse(
         carrier_frequency=probe.center_frequency,
         pulse_width=300e-9,
@@ -79,7 +79,7 @@ def test_beamform():
     rf_data = np.stack(rf, axis=0)
 
     pixel_grid = CartesianPixelGrid(
-        n_x=512, n_z=512, dx_wl=0.25, dz_wl=0.25, z0=0, wavelength=wavelength
+        n_x=512, n_z=512, dx_wl=0.5, dz_wl=0.5, z0=0, wavelength=wavelength
     )
 
     bf_data, x_vals, z_vals = beamform(
@@ -103,7 +103,8 @@ def test_beamform():
         axes[0],
         bf_data[0],
         [x_vals[0], x_vals[-1], z_vals[-1], z_vals[0]],
+        probe_geometry=probe.probe_geometry.T,
     )
     plot_rf(axes[1], rf_data[0], cmap="cividis", axis_in_mm=True)
-    # plot_to_darkmode(fig, axes)
+    plot_to_darkmode(fig, axes)
     plt.show()

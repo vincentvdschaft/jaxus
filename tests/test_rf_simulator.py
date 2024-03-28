@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 
+from jaxus.plotting import plot_rf
 from jaxus.rf_simulator import simulate_rf_data
 
 # Set to True to plot the result
@@ -108,21 +109,7 @@ def test_rf_simulator():
         return
 
     fig, ax = plt.subplots(1, 1)
-    vmin = -np.std(rf_data) * 4
-    ax.imshow(
-        rf_data,
-        # extent=[
-        #     probe_geometry[0, 0],
-        #     probe_geometry[0, -1],
-        #     n_ax / sampling_frequency * c,
-        #     0,
-        # ],
-        vmin=vmin,
-        vmax=-vmin,
-        # aspect="auto",
-    )
-    ax.set_xlabel("x [m]")
-    ax.set_ylabel("z [m]")
+    plot_rf(ax, rf_data, axis_in_mm=True)
 
     def plot_to_darkmode(fig, axes):
         """Turns a plot into a dark plot with a black background and white text, ticks,

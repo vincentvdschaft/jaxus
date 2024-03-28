@@ -30,6 +30,10 @@ def plot_rf(
         xlabel = "element [-]"
         zlabel = "sample [-]"
 
+    if vmin is None and vmax is None:
+        vmin = np.percentile(rf_data, 0.5)
+        vmax = np.percentile(rf_data, 99.5)
+
     # Plot the RF data to the axis
     ax.imshow(
         rf_data,

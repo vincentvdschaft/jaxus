@@ -2,8 +2,7 @@ from typing import Union
 
 import numpy as np
 
-import src.utils.log as log
-from src.utils.utils import hash_list, hash_ndarray
+import jaxus.utils.log as log
 
 
 class Probe:
@@ -13,6 +12,7 @@ class Probe:
     - probe_geometry (`np.ndarray`): The probe geometry in meters. [2, n_el]
     - center_frequency (`float`): The center frequency of the probe in Hz.
     - element_width (`float`): The width of each element in meters.
+    - bandwidth (`
     """
 
     def __init__(
@@ -20,7 +20,8 @@ class Probe:
         probe_geometry: np.ndarray,
         center_frequency: Union[float, int],
         element_width: Union[float, int],
-        bandwidth: Union[float, int],
+        # Tuple of floats or ints
+        bandwidth: tuple[Union[float, int], Union[float, int]],
     ):
         """Initializes the Probe object.
 
@@ -35,7 +36,7 @@ class Probe:
         self._probe_geometry = probe_geometry.astype(np.float32)
         self._center_frequency = float(center_frequency)
         self._element_width = float(element_width)
-        self._bandwidth = float(bandwidth)
+        self._bandwidth = (float(bandwidth[0]), float(bandwidth[1]))
 
     @property
     def n_el(self):
@@ -71,6 +72,7 @@ class Probe:
         center_frequency: Union[float, int],
         element_width: Union[float, int],
         bandwidth: Union[float, int],
+        verbose: bool = False,
     ):
         """Checks if the input is valid.
 
@@ -129,18 +131,27 @@ class Probe:
         # ==============================================================================
         # Check bandwidth
         # ==============================================================================
-        if not isinstance(bandwidth, (float, int)):
-            raise TypeError("bandwidth must be a float or int")
+        try:
+            bandwidth = tuple(bandwidth)
+            if not all(isinstance(b, (float, int)) for b in bandwidth):
+                raise TypeError("bandwidth must be tuple of floats or ints")
+        except TypeError as e:
+            raise TypeError("bandwidth must be tuple of floats or ints") from e
 
-        if bandwidth < 0:
-            raise ValueError("bandwidth must be positive")
+        if len(bandwidth) != 2 or bandwidth[0] > bandwidth[1] or bandwidth[0] < 0:
+            raise ValueError(
+                "bandwidth must be a tuple of 2 increasing positive floats"
+            )
 
-        if bandwidth > center_frequency:
-            raise ValueError("bandwidth must be less than center_frequency")
+        if bandwidth[1] - bandwidth[0] > center_frequency * 2:
+            raise ValueError("bandwidth must be less than twice center_frequency")
 
         # ==============================================================================
         # Warnings
         # ==============================================================================
+        if not verbose:
+            return
+
         # Warn if the probe geometry is very large
         if np.any(probe_geometry > 0.1):
             log.warning(f"Probe geometry is very large: {probe_geometry.max()} m")
@@ -152,12 +163,3 @@ class Probe:
         # Warn if the element width is very large
         if element_width > 5e-3:
             log.warning(f"Element width is very large: {element_width*1e3} mm")
-
-    def __hash__(self) -> int:
-        """Hashes the Probe object."""
-        list_of_hashes = [
-            hash_ndarray(self._probe_geometry),
-            self._center_frequency,
-            self._element_width,
-        ]
-        return int(hash_list(list_of_hashes), base=16)

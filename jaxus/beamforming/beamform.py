@@ -68,7 +68,7 @@ from scipy.signal import butter, filtfilt, hilbert
 from scipy.signal.windows import hamming
 from tqdm import tqdm
 
-from src.utils.checks import (
+from jaxus.utils.checks import (
     check_frequency,
     check_initial_times,
     check_nonnegfloat,

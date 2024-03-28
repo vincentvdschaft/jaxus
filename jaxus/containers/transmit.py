@@ -1,8 +1,7 @@
 import numpy as np
 
-import src.utils.log as log
-from src.containers.waveform import Waveform
-from src.utils.utils import hash_list, hash_ndarray
+import jaxus.utils.log as log
+from jaxus.containers.waveform import Waveform
 
 
 class Transmit:
@@ -137,12 +136,3 @@ class Transmit:
 
         if np.min(t0_delays) != 0:
             raise ValueError("The smallest t0_delay must be 0")
-
-    def __hash__(self) -> int:
-        """Hashes the Transmit object."""
-        list_of_hashes = [
-            hash_ndarray(self.t0_delays),
-            hash_ndarray(self.tx_apodization),
-            hash(self._waveform),
-        ]
-        return int(hash_list(list_of_hashes), base=16)

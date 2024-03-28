@@ -3,9 +3,9 @@ import numpy as np
 from jax import device_put, jit, vmap
 from tqdm import tqdm
 
-import src.utils.log as log
-from src.tx_waveforms import get_pulse
-from src.utils.checks import *
+import jaxus.utils.log as log
+from jaxus.containers.waveform import get_pulse
+from jaxus.utils.checks import *
 
 
 def _get_vectorized_simulate_function(
@@ -63,22 +63,23 @@ def _get_vectorized_simulate_function(
         scatterer_position,
         scatterer_amplitude,
     ):
-        """Computes the amplitude of a single rf sample in response to a single scatterer.
+        """Computes the amplitude of a single rf sample in response to a single
+        scatterer.
 
         ### Args:
             `ax_index` (`int`): The sample index.
             `element_index` (`int`): The receiving element index.
             `scatterer_position` (`jnp.array`): The scatterer position of shape (2,).
             `scatterer_amplitude` (`jnp.array`): The scatterer amplitude of shape ().
-            `t0_delays` (`jnp.array`): The t0_delays of shape (n_el,). These are shifted such
-                that the smallest value in t0_delays is 0.
+            `t0_delays` (`jnp.array`): The t0_delays of shape (n_el,). These are shifted
+                such that the smallest value in t0_delays is 0.
             `probe_geometry` (`jnp.array`): The probe geometry of shape (2, n_el).
-            `element_angles` (`jnp.array`): The element angles in radians of shape (n_el,). Can be used to
-                simulate curved arrays.
+            `element_angles` (`jnp.array`): The element angles in radians of shape
+                (n_el,). Can be used to simulate curved arrays.
             `tx_apodization` (`jnp.array`): The transmit apodization of shape (n_el,).
             `initial_time` (`float`): The time instant of the first sample in seconds.
-            `element_width` (`float`): The width of the elements in wavelengths of the center
-                frequency.
+            `element_width` (`float`): The width of the elements in wavelengths of the
+                center frequency.
             `sampling_frequency` (`float`): The sampling frequency in Hz.
             `center_frequency` (`float`): The center frequencu in Hz.
             `pulse_width` (`float`): The pulse width in seconds.
@@ -105,8 +106,8 @@ def _get_vectorized_simulate_function(
         )
 
         # Compute the delay relative to the time instant of the sample
-        # If all delays sum to be equal to t_sample then the signal will be received at the
-        # sample with no delay
+        # If all delays sum to be equal to t_sample then the signal will be received at
+        # the sample with no delay
         delay = t_rx + t_tx
 
         # If wavefront only is True we only add a single wavefront with delay equal to
@@ -129,7 +130,9 @@ def _get_vectorized_simulate_function(
             # Subtract element angles to get the angle relative to the element
             thetatx -= element_angles
 
-            angular_response_tx = jnp.sinc(element_width_wl * jnp.sin(thetatx))
+            angular_response_tx = jnp.sinc(
+                element_width_wl * jnp.sin(thetatx)
+            ) * jnp.cos(thetatx)
         else:
             angular_response_tx = 1
 
@@ -144,8 +147,8 @@ def _get_vectorized_simulate_function(
             # Subtract element angles to get the angle relative to the element
             theta -= element_angles[element_index]
 
-            angular_response_rx = jnp.sinc(element_width_wl * jnp.sin(theta)) * cos(
-                tgeta
+            angular_response_rx = jnp.sinc(element_width_wl * jnp.sin(theta)) * jnp.cos(
+                theta
             )
         else:
             angular_response_rx = 1

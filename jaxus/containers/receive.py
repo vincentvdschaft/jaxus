@@ -1,7 +1,6 @@
 import numpy as np
 
-import src.utils.log as log
-from src.utils.utils import hash_list
+import jaxus.utils.log as log
 
 
 class Receive:
@@ -101,12 +100,3 @@ class Receive:
                 "The sampling frequency is very low. "
                 "This may cause aliasing in the received signal."
             )
-
-    def __hash__(self) -> int:
-        """Hashes the Receive object."""
-        list_of_hashes = [
-            self.sampling_frequency,
-            self.n_ax,
-            self.initial_time,
-        ]
-        return int(hash_list(list_of_hashes), base=16)

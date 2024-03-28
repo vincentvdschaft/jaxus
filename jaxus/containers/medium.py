@@ -1,7 +1,6 @@
 import numpy as np
 
-import src.utils.log as log
-from src.utils.utils import hash_list, hash_ndarray
+import jaxus.utils.log as log
 
 
 class Medium:
@@ -172,12 +171,3 @@ class Medium:
         # Warn if the sound speed is very low
         if sound_speed <= 1000:
             log.warning(f"Sound speed is very low: {sound_speed} m/s")
-
-    def __hash__(self) -> int:
-        """Hashes the Medium object."""
-        list_of_hashes = [
-            hash_ndarray(self.scatterer_positions),
-            hash_ndarray(self.scatterer_amplitudes),
-            self.sound_speed,
-        ]
-        return int(hash_list(list_of_hashes), base=16)

@@ -9,8 +9,8 @@ import jax
 import jax.numpy as jnp
 from jax import jit, vmap
 from typing import Union
-from src.utils.beamform import *
-from src.utils.beamform import PixelGrid
+from .beamform import *
+from .beamform import PixelGrid
 
 
 class MinimumVarianceBeamformer(Beamformer):

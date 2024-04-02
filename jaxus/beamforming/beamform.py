@@ -1,58 +1,11 @@
 """This module contains Delay-And-Sum (DAS) beamforming functionality.
 
-The Beamformer class stores all relevant parameters together with a jit-compiled
-beamforming function. This allows for efficient beamforming of many frames.
+The core function of this module is the `beamform` function that performs Delay-And-Sum
+beamforming on RF or IQ data.
 
-There are two ways to perform beamforming
-## 1. Initializing a Beamformer object
-```python
-beamformer = Beamformer(
-    n_x=512,
-    n_z=256,
-    dx_wl=0.5,
-    dz_wl=0.5,
-    probe_geometry=probe_geometry,
-    t0_delays=t0_delays[,
-    initial_times=initial_times,
-    sampling_frequency=sampling_frequency,
-    carrier_frequency=carrier_frequency,
-    sound_speed=sound_speed,
-    t_peak=1.56e-7,
-    f_number=3,
-)
-
-beamformed_image0 = beamformer.beamform_frame(rf_data[0])
-beamformed_image4 = beamformer.beamform_frame(rf_data[4])
-```
-
-## 2. Calling the beamform function
-This function does the same under the hood, but is more convenient to use if only
-beamforming a single frame.
-
-```python
-beamformed_images = beamform(
-    rf_data=rf_data,
-    n_x=512,
-    n_z=256,
-    dx_wl=0.5,
-    dz_wl=0.5,
-    probe_geometry=probe_geometry,
-    t0_delays=t0_delays[0],
-    initial_times=initial_times[0],
-    sampling_frequency=sampling_frequency,
-    carrier_frequency=carrier_frequency,
-    sound_speed=sound_speed,
-    t_peak=1.56e-7,
-    f_number=3,
-)
-
-beamformed_image0 = beamformed_images[0]
-beamformed_image4 = beamformed_images[4]
-```
-
-## Reconfiguring the beamformer
-The beamformer can be reconfigured by calling the configure method. It is not possible
-to update the parameters directly or to change only one.
+As a convenience, the `Beamformer` class is provided to store the beamforming parameters
+and make it easy to beamform many frames without having to pass all the parameters to
+the beamforming function every time.
 """
 
 from functools import partial

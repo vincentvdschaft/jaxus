@@ -151,7 +151,7 @@ def check_sound_speed(sound_speed):
     return float(sound_speed)
 
 
-def check_frequency(frequency):
+def check_frequency(frequency, verbose=False):
     """Checks if the input is a valid frequency."""
 
     if isinstance(frequency, (np.ndarray, jnp.ndarray)):
@@ -164,15 +164,16 @@ def check_frequency(frequency):
     if frequency <= 0:
         raise ValueError("frequency <= 0")
 
-    if frequency < 1e6:
-        log.warning(
-            f"frequency = {frequency} Hz is very low. Are you sure this is correct?"
-        )
+    if verbose:
+        if frequency < 1e6:
+            log.warning(
+                f"frequency = {frequency} Hz is very low. Are you sure this is correct?"
+            )
 
-    if frequency > 190e6:
-        log.warning(
-            f"frequency = {frequency} Hz is very high. Are you sure this is correct?"
-        )
+        if frequency > 190e6:
+            log.warning(
+                f"frequency = {frequency} Hz is very high. Are you sure this is correct?"
+            )
 
     return float(frequency)
 

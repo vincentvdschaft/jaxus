@@ -275,7 +275,7 @@ def check_element_angles(element_angles):
 
 
 def check_pos_array(
-    positions, jax_allowed=True, numpy_allowed=True, ax_dim=0, name="positions_array"
+    positions, jax_allowed=True, numpy_allowed=True, ax_dim=1, name="positions_array"
 ):
     """Checks if the input is a valid scatterer positions array.
 
@@ -296,9 +296,9 @@ def check_pos_array(
     if not isinstance(positions, (jnp.ndarray, np.ndarray)):
         raise TypeError(f"{name} is not an ndarray")
     if positions.ndim != 2:
-        raise TypeError(f"{name}.ndim != 2")
+        raise ValueError(f"{name}.ndim != 2")
     if positions.shape[ax_dim] != 2:
-        raise TypeError(f"{name}.shape[{ax_dim}] != 2")
+        raise ValueError(f"{name}.shape[{ax_dim}] != 2")
     if not positions.dtype in [jnp.float32, jnp.float64]:
         raise TypeError(f"{name}.dtype is not float32 or float64")
 

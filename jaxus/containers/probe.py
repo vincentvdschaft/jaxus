@@ -3,6 +3,7 @@ from typing import Union
 import numpy as np
 
 import jaxus.utils.log as log
+from jaxus.utils.checks import check_pos_array
 
 
 class Probe:
@@ -22,6 +23,7 @@ class Probe:
         element_width: Union[float, int],
         # Tuple of floats or ints
         bandwidth: tuple[Union[float, int], Union[float, int]],
+        lens_correction: float = 0.0,
     ):
         """Initializes the Probe object.
 
@@ -31,17 +33,20 @@ class Probe:
             `element_width` (`float`, `int`): The width of each element in meters.
             `bandwidth` (`float`, `int`): The bandwidth of the probe in Hz.
         """
-        self._validate_input(probe_geometry, center_frequency, element_width, bandwidth)
+        self._validate_input(
+            probe_geometry, center_frequency, element_width, bandwidth, lens_correction
+        )
 
         self._probe_geometry = probe_geometry.astype(np.float32)
         self._center_frequency = float(center_frequency)
         self._element_width = float(element_width)
         self._bandwidth = (float(bandwidth[0]), float(bandwidth[1]))
+        self._lens_correction = float(lens_correction)
 
     @property
     def n_el(self):
         """The number of elements in the probe."""
-        return self._probe_geometry.shape[1]
+        return self._probe_geometry.shape[0]
 
     @property
     def center_frequency(self):
@@ -50,7 +55,7 @@ class Probe:
 
     @property
     def probe_geometry(self):
-        """The probe geometry in meters. [2, n_el]"""
+        """The probe geometry in meters. (n_el, 2)"""
         return self._probe_geometry
 
     @property
@@ -83,20 +88,21 @@ class Probe:
         center_frequency: Union[float, int],
         element_width: Union[float, int],
         bandwidth: Union[float, int],
+        lens_correction: Union[float, int],
         verbose: bool = False,
     ):
         """Checks if the input is valid.
 
         ### Args:
             `probe_geometry` (`np.ndarray`): The input probe geometry of shape
-                `(2, n_el)`.
+                `(n_el, 2)`.
             `center_frequency` (`float`, `int`): The input center frequency.
             `element_width` (`float`, `int`): The input element width.
             `bandwidth` (`float`, `int`): The input bandwidth.
 
         Raises:
             TypeError: If the probe geometry is not a numpy array.
-            ValueError: If the probe geometry does not have shape `(2, n_el)`.
+            ValueError: If the probe geometry does not have shape `(n_el, 2)`.
             TypeError: If the probe geometry is not `float32` or `float64`.
             TypeError: If the center frequency is not a float.
         """
@@ -104,16 +110,7 @@ class Probe:
         # ==============================================================================
         # Check probe geometry
         # ==============================================================================
-        if not isinstance(probe_geometry, np.ndarray):
-            raise TypeError(
-                "probe_geometry must be a numpy array. " f"Got {type(probe_geometry)}"
-            )
-
-        if probe_geometry.shape[0] != 2:
-            raise ValueError(
-                "probe_geometry must have shape (2, n_el). "
-                f"Got {probe_geometry.shape}"
-            )
+        check_pos_array(probe_geometry, "probe_geometry")
 
         if not probe_geometry.dtype in [np.float32, np.float64]:
             raise TypeError(
@@ -156,6 +153,12 @@ class Probe:
 
         if bandwidth[1] - bandwidth[0] > center_frequency * 2:
             raise ValueError("bandwidth must be less than twice center_frequency")
+
+        # ==============================================================================
+        # Check lens correction
+        # ==============================================================================
+        if not isinstance(lens_correction, (float, int)):
+            raise TypeError("lens_correction must be a float or int")
 
         # ==============================================================================
         # Warnings

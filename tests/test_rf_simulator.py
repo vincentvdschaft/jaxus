@@ -44,7 +44,7 @@ def test_rf_simulator():
 
     # Generate probe geometry
     probe_geometry = jnp.stack(
-        [jnp.linspace(-19e-3, 19e-3, n_el), jnp.zeros(n_el)], axis=0
+        [jnp.linspace(-19e-3, 19e-3, n_el), jnp.zeros(n_el)], axis=1
     )
 
     element_angles = 0 * jnp.ones(n_el) * jnp.pi / 2
@@ -64,14 +64,14 @@ def test_rf_simulator():
                 [0e-3, 0, 0],
                 [10e-3, 20e-3, 30e-3],
             ],
-        )
+        ).T
     else:
         n_scat = 10000
         x_pos = np.random.uniform(-1e-3, 5e-3, n_scat)
         z_pos = np.random.uniform(2e-3, 8e-3, n_scat)
-        scatterer_positions = np.stack([x_pos, z_pos], axis=1).T
+        scatterer_positions = np.stack([x_pos, z_pos], axis=1)
 
-    scatterer_amplitudes = np.ones((scatterer_positions.shape[1]))
+    scatterer_amplitudes = np.ones((scatterer_positions.shape[0]))
 
     scatterer_positions = jnp.array(scatterer_positions)
     scatterer_amplitudes = jnp.array(scatterer_amplitudes)

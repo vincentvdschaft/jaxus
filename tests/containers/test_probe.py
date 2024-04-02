@@ -12,7 +12,7 @@ def test_correct_initialization():
     # Define the probe geometry
     x_pos = np.linspace(-0.02, 0.02, n_el)
     z_pos = np.zeros_like(x_pos)
-    probe_geometry = np.stack((x_pos, z_pos), axis=0)
+    probe_geometry = np.stack((x_pos, z_pos), axis=1)
 
     center_frequency = 4e6
 
@@ -48,7 +48,7 @@ def test_wrong_shape():
     """Tests if the class raises an error if the probe geometry has the wrong shape."""
 
     # Define the probe geometry
-    probe_geometry = np.ones((3, 128), dtype=np.float32)
+    probe_geometry = np.ones((128, 3), dtype=np.float32)
     center_frequency = 4e6
     element_width = 1e-3
     bandwidth = (2e6, 6e6)
@@ -61,7 +61,7 @@ def test_negative_frequency():
     """Tests if the class raises an error if the center frequency is negative."""
 
     # Define the probe geometry
-    probe_geometry = np.ones((2, 128), dtype=np.float32)
+    probe_geometry = np.ones((128, 2), dtype=np.float32)
     center_frequency = -1e6
     element_width = 1e-3
     bandwidth = (2e6, 6e6)
@@ -74,7 +74,7 @@ def test_negative_element_width():
     """Tests if the class raises an error if the element width is negative."""
 
     # Define the probe geometry
-    probe_geometry = np.ones((2, 128), dtype=np.float32)
+    probe_geometry = np.ones((128, 2), dtype=np.float32)
     center_frequency = 4e6
     element_width = -1e-3
     bandwidth = (2e6, 6e6)

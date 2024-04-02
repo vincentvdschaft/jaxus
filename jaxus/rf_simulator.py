@@ -75,7 +75,7 @@ def _get_vectorized_simulate_function(
             `scatterer_amplitude` (`jnp.array`): The scatterer amplitude of shape ().
             `t0_delays` (`jnp.array`): The t0_delays of shape (n_el,). These are shifted
                 such that the smallest value in t0_delays is 0.
-            `probe_geometry` (`jnp.array`): The probe geometry of shape (2, n_el).
+            `probe_geometry` (`jnp.array`): The probe geometry of shape (n_el, 2).
             `element_angles` (`jnp.array`): The element angles in radians of shape
                 (n_el,). Can be used to simulate curved arrays.
             `tx_apodization` (`jnp.array`): The transmit apodization of shape (n_el,).
@@ -94,7 +94,7 @@ def _get_vectorized_simulate_function(
         sampling_period = 1 / sampling_frequency
 
         # Get the position of the receiving element
-        rx_element_pos = probe_geometry[:, element_index]
+        rx_element_pos = probe_geometry[element_index]
 
         # Compute the total time of flight required to end up in the sample at ax_index
         t_sample = ax_index * sampling_period
@@ -102,7 +102,7 @@ def _get_vectorized_simulate_function(
         t_rx = jnp.linalg.norm(scatterer_position - rx_element_pos) / sound_speed
         # Compute the time of flight from each transmitting element to the pixel
         t_tx = (
-            jnp.linalg.norm(probe_geometry - scatterer_position[:, None], axis=0)
+            jnp.linalg.norm(probe_geometry - scatterer_position[None, :], axis=1)
             / sound_speed
             + t0_delays
         )
@@ -125,8 +125,8 @@ def _get_vectorized_simulate_function(
         # attenuation to the response.
         if tx_angle_sensitivity:
             thetatx = jnp.arctan2(
-                (scatterer_position[0, None] - probe_geometry[0, :]),
-                (scatterer_position[1, None] - probe_geometry[1, :]),
+                (scatterer_position[None, 0] - probe_geometry[:, 0]),
+                (scatterer_position[None, 1] - probe_geometry[:, 1]),
             )
 
             # Subtract element angles to get the angle relative to the element
@@ -181,7 +181,7 @@ def _get_vectorized_simulate_function(
         in_axes=(
             None,
             None,
-            1,
+            0,
             0,
         ),
     )
@@ -241,13 +241,13 @@ def simulate_rf_data(
 
     ### Args:
         `n_ax` (`int`): The number of axial samples.
-        `scatterer_positions` (`jnp.array`): The scatterer positions of shape (2, n_scat).
+        `scatterer_positions` (`jnp.array`): The scatterer positions of shape (n_scat, 2).
         `scatterer_amplitudes` (`jnp.array`): The scatterer amplitudes of shape (n_scat,).
         `ax_chunk_size` (`int`): The number of axial samples to compute simultaneously.
         `scatterer_chunk_size` (`int`): The number of scatterers to compute simultaneously.
         `t0_delays` (`jnp.array`): The t0_delays of shape (n_el,). These are shifted such
             that the smallest value in t0_delays is 0.
-        `probe_geometry` (`jnp.array`): The probe geometry of shape (2, n_el).
+        `probe_geometry` (`jnp.array`): The probe geometry of shape (n_el, 2).
         `element_angles` (`jnp.array`): The element angles in radians of shape (n_el,).
             Can be used to simulate curved arrays.
         `tx_apodization` (`jnp.array`): The transmit apodization of shape (n_el,).
@@ -294,7 +294,7 @@ def simulate_rf_data(
         tx_waveform = vmap(tx_waveform)
 
     # Convert to jnp arrays in case numpy arrays are passeds
-    scatterer_positions = scatterer_positions[:, scatterer_amplitudes > 0]
+    scatterer_positions = scatterer_positions[scatterer_amplitudes > 0]
     scatterer_amplitudes = scatterer_amplitudes[scatterer_amplitudes > 0]
     scatterer_positions = jnp.array(scatterer_positions)
     scatterer_amplitudes = device_put(scatterer_amplitudes, device=device)
@@ -351,9 +351,12 @@ def simulate_rf_data(
         waveform_function=tx_waveform,
     )
 
+    n_el = probe_geometry.shape[0]
+    n_scat = scatterer_positions.shape[0]
+
     # Generate indices for the elements. (We will always compute all elements
     # simultaneously)
-    el_indices = jnp.arange(probe_geometry.shape[1])
+    el_indices = jnp.arange(n_el)
     el_indices = device_put(el_indices, device=device)
 
     # Get either a progresbar function or a dummy function
@@ -368,16 +371,16 @@ def simulate_rf_data(
         ax_indices_chunk = jnp.arange(ax0, ax1)
         ax_indices_chunk = device_put(ax_indices_chunk, device=device)
 
-        rf_data_chunk = jnp.zeros((ax1 - ax0, probe_geometry.shape[1]))
+        rf_data_chunk = jnp.zeros((ax1 - ax0, n_el))
         rf_data_chunk = device_put(rf_data_chunk, device=device)
 
         for scat0 in progbar_func(
-            range(0, scatterer_positions.shape[1], scatterer_chunk_size),
+            range(0, n_scat, scatterer_chunk_size),
             desc="Scatterer chunks",
             leave=False,
         ):
-            scat1 = min(scat0 + scatterer_chunk_size, scatterer_positions.shape[1])
-            scatterer_positions_chunk = scatterer_positions[:, scat0:scat1]
+            scat1 = min(scat0 + scatterer_chunk_size, n_scat)
+            scatterer_positions_chunk = scatterer_positions[scat0:scat1]
             scatterer_amplitudes_chunk = scatterer_amplitudes[scat0:scat1]
 
             # Compute the rf data for the current chunk of scatterers and add it to the

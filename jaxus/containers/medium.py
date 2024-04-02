@@ -7,10 +7,10 @@ class Medium:
     """Container class storing the parameters pertaining to the medium.
 
     ## Contains
-    - `scatterer_positions` (`np.ndarray`): The scatterer positions in meters. [2,
-    n_scatterers]
+    - `scatterer_positions` (`np.ndarray`): The scatterer positions in meters.
+        (n_scatterers, 2)
     - `scatterer_amplitudes` (`np.ndarray`): The scatterer amplitudes in meters.
-    [n_scatterers]
+        (n_scatterers,)
     - `sound_speed` (`float`): The speed of sound in the medium in m/s.
     - `n_z` (`int`): The number of grid points in the z direction. Can be optionally set
         with the set_grid_size method.
@@ -135,14 +135,15 @@ class Medium:
                 f"Got {scatterer_positions.dtype}"
             )
 
-        if not scatterer_positions.shape[0] == 2:
+        if not scatterer_positions.shape[1] == 2:
             raise ValueError(
                 "scatterer_positions must have shape (2, n_scatterers). "
                 f"Got {scatterer_positions.shape}"
             )
 
+        # ==============================================================================
         # Check scatterer amplitudes
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         # Check if the input is a numpy array
         if not isinstance(scatterer_amplitudes, np.ndarray):
             raise TypeError(
@@ -162,16 +163,18 @@ class Medium:
                 f"Got {scatterer_amplitudes.dtype}"
             )
 
+        # ==============================================================================
         # Check sound speed
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         # Check if the input is a float or int
         if not isinstance(sound_speed, (float, int)):
             raise TypeError("sound_speed must be a float. " f"Got {type(sound_speed)}")
 
+        # ==============================================================================
         # Further checks
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         # Test if inputs are compatible
-        if scatterer_positions.shape[1] != scatterer_amplitudes.shape[0]:
+        if scatterer_positions.shape[0] != scatterer_amplitudes.shape[0]:
             raise ValueError(
                 "scatterer_positions and scatterer_amplitudes must have "
                 "compatible shapes. "

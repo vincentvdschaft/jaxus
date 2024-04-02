@@ -158,7 +158,7 @@ def simulate_to_usbmd(
     beamformed = beamform(
         rf_data,
         pixel_positions=pixel_grid.pixel_positions_flat,
-        probe_geometry=probe.probe_geometry.T,
+        probe_geometry=probe.probe_geometry,
         t0_delays=t0_delays,
         initial_times=initial_times,
         sampling_frequency=receive.sampling_frequency,

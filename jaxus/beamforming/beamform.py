@@ -72,10 +72,8 @@ from tqdm import tqdm
 from jaxus.utils.checks import (
     check_frequency,
     check_initial_times,
-    check_nonnegfloat,
     check_pos_array,
     check_posfloat,
-    check_posint,
     check_shapes_consistent,
     check_standard_rf_data,
     check_standard_rf_or_iq_data,

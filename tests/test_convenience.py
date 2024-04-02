@@ -11,7 +11,7 @@ from jaxus.plotting import plot_beamformed, plot_rf, plot_to_darkmode
 def test_simulate_to_usbmd():
     probe = Probe(
         probe_geometry=np.stack(
-            [np.linspace(-19e-3, 19e-3, 128), np.zeros(128)], axis=0
+            [np.linspace(-19e-3, 19e-3, 128), np.zeros(128)], axis=1
         ),
         center_frequency=5e6,
         element_width=0.5e-3,
@@ -39,7 +39,7 @@ def test_simulate_to_usbmd():
                 np.random.randn(n_scat) * 4e-3,
                 np.abs(35e-3 + np.random.randn(n_scat) * 4e-3),
             ],
-            axis=0,
+            axis=1,
         ),
         scatterer_amplitudes=np.ones(n_scat),
         sound_speed=1540,

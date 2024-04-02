@@ -8,7 +8,7 @@ def test_correct_initialization():
     """Tests that the medium is correctly initialized without errors."""
 
     # Define the scatterer positions
-    scatterer_positions = np.ones((2, 128), dtype=np.float32)
+    scatterer_positions = np.ones((128, 2), dtype=np.float32)
     # Define the scatterer amplitudes
     scatterer_amplitudes = np.ones((128,), dtype=np.float32)
     sound_speed = 1480
@@ -29,7 +29,7 @@ def test_correct_initialization():
     "scatterer_positions, scatterer_amplitudes, sound_speed",
     [
         (np.ones((2, 6), dtype=np.int32), np.ones((6,), dtype=np.int32), 1480),
-        (np.ones((2, 128)), np.ones((128,)), "string"),
+        (np.ones((128, 2)), np.ones((128,)), "string"),
         (None, np.ones((128,)), 1480),
     ],
 )
@@ -43,9 +43,9 @@ def test_wrong_datatypes(scatterer_positions, scatterer_amplitudes, sound_speed)
 @pytest.mark.parametrize(
     "scatterer_positions, scatterer_amplitudes, sound_speed",
     [
-        [np.ones((2, 128, 2)), np.ones((128,)), 1480],
-        [np.ones((2, 128)), np.ones((128, 2)), 1480],
-        [np.ones((2, 128, 2)), np.ones((128, 2)), 1480],
+        [np.ones((128, 2, 2)), np.ones((128,)), 1480],
+        [np.ones((128, 2)), np.ones((128, 2)), 1480],
+        [np.ones((128, 2, 2)), np.ones((128, 2)), 1480],
         [np.ones(()), np.ones((128,)), 1480],
     ],
 )

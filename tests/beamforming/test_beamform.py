@@ -18,7 +18,7 @@ def test_beamform():
     n_el = 128 * 2
     probe = Probe(
         probe_geometry=np.stack(
-            [np.linspace(-0.02, 0.02, n_el), np.zeros(n_el)], axis=0
+            [np.linspace(-0.02, 0.02, n_el), np.zeros(n_el)], axis=1
         ),
         center_frequency=7.6e6,
         element_width=3e-4,
@@ -31,7 +31,7 @@ def test_beamform():
                 np.random.randn(n_scat) * 4e-3,
                 np.abs(35e-3 + np.random.randn(n_scat) * 4e-3),
             ],
-            axis=0,
+            axis=1,
         ),
         scatterer_amplitudes=np.ones(n_scat),
         sound_speed=1540,
@@ -96,7 +96,7 @@ def test_beamform():
     bf_data = beamform(
         rf_data[None, :, :, :, None],
         pixel_grid.pixel_positions_flat,
-        probe_geometry=probe.probe_geometry.T,
+        probe_geometry=probe.probe_geometry,
         t0_delays=np.array(transmit.t0_delays),
         initial_times=np.ones(n_tx) * receive.initial_time,
         sampling_frequency=receive.sampling_frequency,
@@ -118,7 +118,7 @@ def test_beamform():
         axes[0],
         bf_data,
         pixel_grid.extent,
-        probe_geometry=probe.probe_geometry.T,
+        probe_geometry=probe.probe_geometry,
     )
     plot_rf(axes[1], rf_data[0], cmap="cividis", axis_in_mm=True)
     plot_to_darkmode(fig, axes)

@@ -28,6 +28,7 @@ from jaxus.utils.checks import (
     check_pos_array,
     check_posfloat,
     check_shapes_consistent,
+    check_sound_speed,
     check_standard_rf_data,
     check_standard_rf_or_iq_data,
     check_t0_delays,
@@ -466,16 +467,35 @@ def beamform_pixel(
     rx_apodization,
     iq_beamform=False,
 ):
-    """Beamforms a single pixel of a single frame and single transmit.
+    """Beamforms a single pixel of a single frame and single transmit. Further
+    processing such as log-compression and envelope detection are not performed.
 
     ### Args:
-        `data` (`jnp.ndarray`): The IQ data to beamform of shape
+        `rf_data` (`jnp.ndarray`): The RF or IQ data to beamform of shape
             `(n_samples, n_elements)`.
-        `pixel_pos` (`jnp.ndarray`): The position of the pixel to beamform to in
-            meters of shape `(2,)`.
-        `tx` (`int`): The transmit to beamform.
-        `iq_beamform` (`bool`): Whether to beamform the IQ data directly.
-            Default is False.
+        `pixel_pos` (`jnp.ndarray`): The position of the pixel to beamform to in meters
+            of shape `(2,)`.
+        `t0_delays` (`jnp.ndarray`): The transmit delays of shape (n_tx, n_el). These
+            are the times between t=0 and every element firing in seconds. (t=0 is
+            when the first element fires.)
+        `initial_time` (`jnp.ndarray`): The time between t=0 and the first sample being
+            recorded. (t=0 is when the first element fires.)
+        `sound_speed` (`float`): The speed of sound in m/s.
+        `t_peak` (`float`): The time between t=0 and the peak of the waveform to
+            beamform to.
+        `probe_geometry` (`jnp.ndarray`): The probe geometry in meters of shape
+            (n_el, 2).
+        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
+        `sampling_frequency` (`float`): The sampling frequency in Hz.
+        `f_number` (`float`): The f-number to use for the beamforming. The f-number is
+            the ratio of the focal length to the aperture size. Elements that are more
+            to the side of the current pixel than the f-number are not used in the
+            beamforming.
+        `rx_apodization` (`jnp.ndarray`): The apodization of the receive elements.
+        `iq_beamform` (`bool`): Set to True to do demodulation first and then beamform
+            the IQ data. Set to False to beamform the RF data directly. In this case
+            envelope detection is done after beamforming. Default is False.
+
 
     ### Returns:
         `bf_value` (`float`): The beamformed value for the pixel.
@@ -506,7 +526,7 @@ def das_beamform_transmit(
     pixel_positions,
     probe_geometry,
     t0_delays,
-    initial_times,
+    initial_time,
     sampling_frequency,
     carrier_frequency,
     sound_speed,
@@ -531,7 +551,7 @@ def das_beamform_transmit(
         `t0_delays` (`jnp.ndarray`): The transmit delays of shape (n_tx, n_el). These are
             the times between t=0 and every element firing in seconds. (t=0 is when the
             first element fires.)
-        `initial_times` (`jnp.ndarray`): The time between t=0 and the first sample being
+        `initial_time` (`jnp.ndarray`): The time between t=0 and the first sample being
             recorded. (t=0 is when the first element fires.)
         `sampling_frequency` (`float`): The sampling frequency in Hz.
         `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
@@ -555,7 +575,7 @@ def das_beamform_transmit(
         rf_data,
         pixel_positions,
         t0_delays,
-        initial_times,
+        initial_time,
         sound_speed,
         t_peak,
         probe_geometry,
@@ -584,8 +604,9 @@ def beamform(
     pixel_chunk_size: int = 1048576,
     progress_bar: bool = False,
     beamform_transmit_fn: Callable = das_beamform_transmit,
+    beamform_fn_kwargs: dict = None,
 ):
-    """Beamforms a single transmit using the given parameters. The input data can be
+    """Beamforms RF data using the given parameters. The input data can be
     either RF or IQ data. The beamforming can be performed on all transmits or a
     subset of transmits. The beamforming is performed using the Delay-And-Sum (DAS)
     algorithm. The beamforming can be performed before or after the data is
@@ -620,8 +641,6 @@ def beamform(
         `pixel_chunk_size` (`int`): The number of pixels to beamform at once. Default is
             1048576.
         `progress_bar` (`bool`): Whether to display a progress bar. Default is False
-        `beamform_transmit_fn` (`Callable`): The function to use for beamforming a
-            single transmit. Default is `das_beamform_transmit`.
 
     ### Returns:
         `bf` (`jnp.ndarray`): The beamformed image of shape
@@ -629,6 +648,11 @@ def beamform(
     """
     # Perform input error checking
     rf_data = check_standard_rf_or_iq_data(rf_data)
+    check_frequency(carrier_frequency)
+    check_frequency(sampling_frequency)
+    check_sound_speed(sound_speed)
+    check_pos_array(probe_geometry, name="probe_geometry")
+    check_t0_delays(t0_delays, transmit_dim=True)
     n_tx = rf_data.shape[1]
     n_pixels = pixel_positions.shape[0]
 
@@ -688,7 +712,7 @@ def beamform(
             for pixel_chunk in pixel_chunks:
                 # Perform beamforming
                 beamformed_chunks.append(
-                    beamform_transmit_fn(
+                    das_beamform_transmit(
                         input_data[frame, tx],
                         pixel_chunk,
                         probe_geometry,
@@ -699,8 +723,8 @@ def beamform(
                         sound_speed,
                         t_peak[tx],
                         rx_apodization,
-                        f_number,
-                        iq_beamform,
+                        f_number=f_number,
+                        iq_beamform=iq_beamform,
                     )
                 )
 

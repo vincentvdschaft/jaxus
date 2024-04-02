@@ -361,7 +361,7 @@ def detect_envelope_beamformed(bf_data, dz_wl):
     if np.iscomplexobj(bf_data):
         return np.abs(bf_data)
 
-    iq_data = rf2iq(bf_data[:, None, ..., None], 2, 1 / dz_wl, padding=2048)
+    iq_data = rf2iq(bf_data[:, None, ..., None], 1, 1 / dz_wl, padding=2048)
     return np.abs(iq_data)[:, 0, :, :]
 
 

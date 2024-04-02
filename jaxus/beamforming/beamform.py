@@ -1011,9 +1011,6 @@ class Beamformer:
         elif not isinstance(t_peak, np.ndarray):
             raise TypeError("t_peak must be an int, float, or a numpy array.")
 
-        pixel_positions_flat = np.reshape(pixel_grid.pixel_positions, (2, -1))
-        pixel_positions_flat = np.transpose(pixel_positions_flat)
-
         # ==============================================================================
         # Convert numpy arrays to jax arrays
         # ==============================================================================
@@ -1025,7 +1022,9 @@ class Beamformer:
         sampling_frequency = float(sampling_frequency)
         sound_speed = float(sound_speed)
         t_peak = jnp.array(t_peak, dtype=jnp.float32)
-        pixel_positions_flat = jnp.array(pixel_positions_flat, dtype=jnp.float32)
+        pixel_positions_flat = jnp.array(
+            pixel_grid.pixel_positions_flat, dtype=jnp.float32
+        )
 
         # ==============================================================================
         # Assign the parameters to the class
@@ -1052,13 +1051,13 @@ class Beamformer:
 
         ### Returns:
             `beamformed_images` (`jnp.ndarray`): The beamformed images of shape
-                (n_frames, n_tx, n_z, n_x).
+                (n_frames, n_z, n_x).
         """
 
         beamformed = beamform(
             rf_data=rf_data,
             pixel_positions=self._pixel_positions_flat,
-            probe_geometry=self._probe_geometry.T,
+            probe_geometry=self._probe_geometry,
             t0_delays=self._t0_delays,
             initial_times=self._initial_times,
             sampling_frequency=self._sampling_frequency,
@@ -1068,6 +1067,11 @@ class Beamformer:
             rx_apodization=self._rx_apodization,
             f_number=self._f_number,
             iq_beamform=self._iq_beamform,
+        )
+
+        beamformed = jnp.reshape(
+            beamformed,
+            (beamformed.shape[0], self._pixel_grid.rows, self._pixel_grid.cols),
         )
 
         return beamformed

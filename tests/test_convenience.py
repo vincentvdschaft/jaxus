@@ -57,6 +57,6 @@ def test_simulate_to_usbmd():
         medium=medium,
     )
     fig, ax = plt.subplots()
-    plot_beamformed(ax, result[0], extent_m=[-19e-3, 19e-3, 0, 30e-3])
+    plot_beamformed(ax, result[0], extent_m=[-19e-3, 19e-3, 30e-3, 0])
     plot_to_darkmode(fig, ax)
     plt.show()

@@ -587,7 +587,7 @@ def das_beamform_transmit(
     )
 
 
-def beamform(
+def beamform_das(
     rf_data,
     pixel_positions: jnp.ndarray,
     probe_geometry: jnp.ndarray,
@@ -1031,7 +1031,7 @@ class Beamformer:
                 (n_frames, n_z, n_x).
         """
 
-        beamformed = beamform(
+        beamformed = beamform_das(
             rf_data=rf_data,
             pixel_positions=self._pixel_positions_flat,
             probe_geometry=self._probe_geometry,

@@ -6,7 +6,7 @@ from typing import Union
 import numpy as np
 
 import jaxus.utils.log as log
-from jaxus.beamforming import CartesianPixelGrid, beamform, log_compress
+from jaxus.beamforming import CartesianPixelGrid, beamform_das, log_compress
 from jaxus.containers import Medium, Probe, Pulse, Receive, Transmit
 from jaxus.data import generate_usbmd_dataset
 
@@ -155,7 +155,7 @@ def simulate_to_usbmd(
     t_peak = np.stack([tx.waveform.t_peak for tx in transmit], axis=0)
     tx_apodization = np.stack([tx.tx_apodization for tx in transmit], axis=0)
 
-    beamformed = beamform(
+    beamformed = beamform_das(
         rf_data,
         pixel_positions=pixel_grid.pixel_positions_flat,
         probe_geometry=probe.probe_geometry,

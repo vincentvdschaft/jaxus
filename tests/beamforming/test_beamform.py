@@ -7,7 +7,7 @@ from scipy.signal.windows import hamming
 from jaxus.beamforming.beamform import (
     Beamformer,
     CartesianPixelGrid,
-    beamform,
+    beamform_das,
     detect_envelope_beamformed,
     log_compress,
 )
@@ -62,7 +62,7 @@ def test_beamform(iq_beamform):
     # ==================================================================================
     # Beamform the RF data
     # ==================================================================================
-    bf_data = beamform(
+    bf_data = beamform_das(
         rf_data[None, :, :, :, None],
         pixel_grid.pixel_positions_flat,
         probe_geometry=probe.probe_geometry,
@@ -178,4 +178,5 @@ def test_beamformer_class():
         pixel_grid.extent,
         probe_geometry=probe.probe_geometry,
     )
+    plot_to_darkmode(fig, ax)
     plt.show()

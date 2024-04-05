@@ -294,7 +294,7 @@ def beamform_usbmd(
         sound_speed=sound_speed,
         t_peak=np.zeros(n_tx),
         rx_apodization=np.ones(probe_geometry.shape[0]),
-        f_number=1.5,
+        f_number=3.5,
         iq_beamform=True,
     )
 

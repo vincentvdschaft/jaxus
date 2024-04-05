@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.ticker import FuncFormatter
 
 
 def plot_rf(
@@ -34,14 +35,14 @@ def plot_rf(
 
     if extent_m is not None:
         if axis_in_mm:
-            extent = np.array(extent_m) * 1e3
             xlabel = "x [mm]"
             zlabel = "z [mm]"
+            formatter = FuncFormatter(lambda x, _: f"{round(1000*x)}")
         else:
-            extent = extent_m
             xlabel = "x [m]"
             zlabel = "z [m]"
-        kwargs = {"extent": extent}
+            formatter = FuncFormatter(lambda x, _: f"{x:.3f}")
+        kwargs = {"extent": extent_m}
 
     else:
         kwargs = {"aspect": aspect}
@@ -60,6 +61,10 @@ def plot_rf(
         vmax=vmax,
         **kwargs,
     )
+
+    # Set the formatter for the major ticker on both axes
+    ax.xaxis.set_major_formatter(formatter)
+    ax.yaxis.set_major_formatter(formatter)
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(zlabel)
@@ -94,24 +99,31 @@ def plot_beamformed(
             (n_el, 2). If provided, the probe geometry is plotted on top of the image.
             Defaults to None.
     """
-    scaling = 1e3 if axis_in_mm else 1
-    extent = np.array(extent_m) * scaling
+    # scaling = 1e3 if axis_in_mm else 1
+    # extent = np.array(extent_m) * scaling
 
     if axis_in_mm:
         xlabel = "x [mm]"
         zlabel = "z [mm]"
+        formatter = FuncFormatter(lambda x, _: f"{round(1000*x)}")
     else:
         xlabel = "x [m]"
         zlabel = "z [m]"
+        formatter = FuncFormatter(lambda x, _: f"{x:.3f}")
 
     ax.imshow(
         image,
-        extent=extent,
+        extent=extent_m,
         vmin=vmin,
         vmax=vmax,
         cmap=cmap,
         aspect="equal",
+        interpolation="none",
     )
+
+    # Set the formatter for the major ticker on both axes
+    ax.xaxis.set_major_formatter(formatter)
+    ax.yaxis.set_major_formatter(formatter)
 
     ax.set_xlabel(xlabel)
     ax.set_ylabel(zlabel)
@@ -119,8 +131,8 @@ def plot_beamformed(
     if probe_geometry is not None:
 
         ax.plot(
-            probe_geometry[:, 0] * scaling,
-            probe_geometry[:, 1] * scaling,
+            probe_geometry[:, 0],
+            probe_geometry[:, 1],
             "rs",
             markersize=2,
         )

@@ -15,7 +15,9 @@ config/custom
 
 # Folders
 temp/
-data/
+data
+# Do not ignore jaxus/jaxus/data
+!jaxus/data
 
 # Filetypes that should never be committed
 *.npz

@@ -10,8 +10,7 @@ import jaxus.utils.log as log
 from jaxus.beamforming import CartesianPixelGrid, beamform_das, log_compress
 from jaxus.containers import Medium, Probe, Pulse, Receive, Transmit
 from jaxus.data import generate_usbmd_dataset
-
-from .rf_simulator import simulate_rf_data
+from jaxus.rf_simulator import simulate_rf_data
 
 
 def simulate_rf(

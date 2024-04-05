@@ -7,7 +7,7 @@ import h5py
 import numpy as np
 
 import jaxus.utils.log as log
-from jaxus.beamforming import CartesianPixelGrid, beamform_das, log_compress
+from jaxus.beamforming import CartesianPixelGrid, PixelGrid, beamform_das, log_compress
 from jaxus.containers import Medium, Probe, Pulse, Receive, Transmit
 from jaxus.data import generate_usbmd_dataset
 from jaxus.rf_simulator import simulate_rf_data
@@ -220,7 +220,12 @@ def simulate_to_usbmd(
     return beamformed
 
 
-def beamform_usbmd(path, frames=None, transmits=None):
+def beamform_usbmd(
+    path,
+    frames: Union[np.ndarray, None] = None,
+    transmits: Union[np.ndarray, None] = None,
+    pixel_grid: PixelGrid = None,
+):
     """Beamforms RF data from a USBMD dataset.
 
     ### Parameters
@@ -233,9 +238,12 @@ def beamform_usbmd(path, frames=None, transmits=None):
     with h5py.File(path, "r") as dataset:
 
         if frames is None:
-            frames = slice(None)
+            frames = np.arange(dataset["data"]["raw_data"].shape[0])
+        frames = np.array(frames).astype(int)
+
         if transmits is None:
-            transmits = slice(None)
+            transmits = np.arange(dataset["scan"]["t0_delays"].shape[0])
+        transmits = np.array(transmits).astype(int)
 
         # Extract the relevant data
         raw_data = dataset["data"]["raw_data"][frames]
@@ -264,14 +272,15 @@ def beamform_usbmd(path, frames=None, transmits=None):
 
     aperture = np.max(probe_geometry[:, 0]) - np.min(probe_geometry[:, 0])
 
-    pixel_grid = CartesianPixelGrid(
-        n_x=aperture / (wavelength * dx_wl),
-        n_z=depth_m / (wavelength * dz_wl),
-        dx_wl=dx_wl,
-        dz_wl=dz_wl,
-        wavelength=wavelength,
-        z0=1e-3,
-    )
+    if pixel_grid is None:
+        pixel_grid = CartesianPixelGrid(
+            n_x=aperture / (wavelength * dx_wl),
+            n_z=depth_m / (wavelength * dz_wl),
+            dx_wl=dx_wl,
+            dz_wl=dz_wl,
+            wavelength=wavelength,
+            z0=1e-3,
+        )
 
     # Beamform the RF data
     beamformed = beamform_das(

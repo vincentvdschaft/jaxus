@@ -293,4 +293,4 @@ def beamform_usbmd(path, frames=None, transmits=None):
     # Reshape the beamformed data
     beamformed = np.reshape(beamformed, (n_frames, pixel_grid.rows, pixel_grid.cols))
 
-    return beamformed
+    return beamformed, pixel_grid

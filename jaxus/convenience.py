@@ -232,7 +232,8 @@ def beamform_usbmd(
         `path` (`str`): The path to the USBMD dataset.
 
     ### Returns
-        `np.ndarray`: The beamformed images of shape (n_frames, n_z, n_x)
+        `np.ndarray`, `PixelGrid`: The beamformed images of shape (n_frames, n_z, n_x)
+            and the pixel grid.
     """
     # Load the dataset
     with h5py.File(path, "r") as dataset:

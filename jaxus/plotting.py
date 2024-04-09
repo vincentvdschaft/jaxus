@@ -13,6 +13,7 @@ def plot_rf(
     vmax=None,
     aspect="auto",
     axis_in_mm=True,
+    title=None,
 ):
     """Plots RF data to an axis.
 
@@ -73,6 +74,9 @@ def plot_rf(
     step = int(np.floor((n_ax / 6) / 100) * 100)
     ax.set_yticks(np.arange(0, n_ax, step) + start_sample)
 
+    if title is not None:
+        ax.set_title(title)
+
 
 def plot_beamformed(
     ax,
@@ -83,6 +87,7 @@ def plot_beamformed(
     cmap="gray",
     axis_in_mm=True,
     probe_geometry=None,
+    title=None,
 ):
     """Plots a beamformed image to an axis.
 
@@ -98,6 +103,7 @@ def plot_beamformed(
         `probe_geometry` (`np.ndarray`, optional): The probe geometry in meters of shape
             (n_el, 2). If provided, the probe geometry is plotted on top of the image.
             Defaults to None.
+        `title` (`str`, optional): The title of the plot. Defaults to None.
     """
     # scaling = 1e3 if axis_in_mm else 1
     # extent = np.array(extent_m) * scaling
@@ -136,6 +142,9 @@ def plot_beamformed(
             "rs",
             markersize=2,
         )
+
+    if title is not None:
+        ax.set_title(title)
 
 
 def plot_to_darkmode(fig, axes, grid=False):

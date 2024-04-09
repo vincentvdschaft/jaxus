@@ -11,6 +11,9 @@ ng_*.ipynb
 no_git/
 ng_*
 
+# Ignore the top __init__.py file
+/__init__.py
+
 # Ignore custom config files
 config/custom
 

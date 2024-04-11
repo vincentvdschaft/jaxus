@@ -5,7 +5,7 @@ import h5py
 import numpy as np
 
 
-def first_not_none_item(arr):
+def _first_not_none_item(arr):
     """
     Finds and returns the first non-None item in the given array.
 
@@ -128,7 +128,7 @@ def generate_usbmd_dataset(
             return x.astype(astype) if x is not None else None
 
         def first_not_none_shape(arr, axis):
-            data = first_not_none_item(arr)
+            data = _first_not_none_item(arr)
             return data.shape[axis] if data is not None else None
 
         def add_dataset(group, name, data, description, unit):
@@ -140,7 +140,7 @@ def generate_usbmd_dataset(
             dataset.attrs["description"] = description
             dataset.attrs["unit"] = unit
 
-        n_frames = first_not_none_item(
+        n_frames = _first_not_none_item(
             [raw_data, aligned_data, envelope_data, beamformed_data, image_sc, image]
         ).shape[0]
         n_tx = first_not_none_shape([raw_data, aligned_data], axis=1)

@@ -33,16 +33,14 @@ def plot_rf(
         `axis_in_mm` (`bool`, optional): Whether to plot the x-axis in mm. Defaults to
             True.
     """
-
+    formatter = FuncFormatter(lambda x, _: f"{int(x)}")
     if extent_m is not None:
         if axis_in_mm:
             xlabel = "x [mm]"
             zlabel = "z [mm]"
-            formatter = FuncFormatter(lambda x, _: f"{round(1000*x)}")
         else:
             xlabel = "x [m]"
             zlabel = "z [m]"
-            formatter = FuncFormatter(lambda x, _: f"{x:.3f}")
         kwargs = {"extent": extent_m}
 
     else:
@@ -71,8 +69,15 @@ def plot_rf(
     ax.set_ylabel(zlabel)
     # Set the yticks to start at the start_sample
     n_ax = rf_data.shape[0]
-    step = int(np.floor((n_ax / 6) / 100) * 100)
+    if n_ax >= 500:
+        # Divide the axis into 4 parts and round to multiples of 100
+        step = int(np.floor((n_ax / 4) / 100) * 100)
+    else:
+        # Divide the axis into 4 parts and round to multiples of 50
+        step = int(np.floor((n_ax / 4) / 50) * 50)
+    step = max(step, 10)
     ax.set_yticks(np.arange(0, n_ax, step) + start_sample)
+    ax.set_xticks(np.linspace(0, rf_data.shape[1], 4))
 
     if title is not None:
         ax.set_title(title)

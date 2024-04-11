@@ -10,9 +10,7 @@ from jaxus.plotting import plot_beamformed, plot_rf, plot_to_darkmode
 
 def test_simulate_to_usbmd():
     probe = Probe(
-        probe_geometry=np.stack(
-            [np.linspace(-19e-3, 19e-3, 128), np.zeros(128)], axis=1
-        ),
+        probe_geometry=np.stack([np.linspace(-9e-3, 9e-3, 128), np.zeros(128)], axis=1),
         center_frequency=5e6,
         element_width=0.5e-3,
         bandwidth=(0.5e6, 10e6),

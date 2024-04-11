@@ -171,7 +171,7 @@ def simulate_to_usbmd(
     )
 
     beamformed = np.reshape(
-        beamformed, (beamformed.shape[0], pixel_grid.rows, pixel_grid.cols)
+        beamformed, (beamformed.shape[0], pixel_grid.n_rows, pixel_grid.n_cols)
     )
 
     beamformed = log_compress(beamformed, normalize=True)
@@ -181,6 +181,8 @@ def simulate_to_usbmd(
         waveform_fn = tx.waveform.get_waveform_function_array()
         t = np.arange(1024) / 250e6
         waveforms.append(waveform_fn(t))
+
+    tx_waveform_indices = np.arange(len(transmit))
 
     # ==================================================================================
     # Generate USBMD dataset
@@ -215,6 +217,8 @@ def simulate_to_usbmd(
         tgc_gain_curve=np.ones(receive.n_ax),
         waveform_samples_one_way=waveforms,
         waveform_samples_two_way=waveforms,
+        waveform_indices=tx_waveform_indices,
+        bandwidth=probe.bandwidth,
     )
 
     return beamformed
@@ -300,6 +304,8 @@ def beamform_usbmd(
     )
 
     # Reshape the beamformed data
-    beamformed = np.reshape(beamformed, (n_frames, pixel_grid.rows, pixel_grid.cols))
+    beamformed = np.reshape(
+        beamformed, (n_frames, pixel_grid.n_rows, pixel_grid.n_cols)
+    )
 
     return beamformed, pixel_grid

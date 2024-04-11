@@ -4,12 +4,12 @@ import numpy as np
 import pytest
 from scipy.signal.windows import hamming
 
-from jaxus.beamforming.beamform import (
+from jaxus.beamforming import (
     CartesianPixelGrid,
+    beamform_mv,
     detect_envelope_beamformed,
     log_compress,
 )
-from jaxus.beamforming.minimum_variance import beamform
 from jaxus.plotting import plot_beamformed, plot_rf, plot_to_darkmode
 from jaxus.rf_simulator import simulate_rf_data
 from jaxus.utils.testing import get_test_containers
@@ -56,7 +56,7 @@ def test_beamform(iq_beamform):
     # ==================================================================================
     # Beamform the RF data
     # ==================================================================================
-    bf_data = beamform(
+    bf_data = beamform_mv(
         rf_data[None, :, :, :, None],
         pixel_grid.pixel_positions_flat,
         probe_geometry=probe.probe_geometry,

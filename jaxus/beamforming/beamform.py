@@ -77,12 +77,12 @@ class PixelGrid:
         return self.pixel_positions.shape[0] * self.pixel_positions.shape[1]
 
     @property
-    def cols(self):
+    def n_cols(self):
         """The number of columns in the pixel grid."""
         return self.pixel_positions.shape[1]
 
     @property
-    def rows(self):
+    def n_rows(self):
         """The number of rows in the pixel grid."""
         return self.pixel_positions.shape[0]
 
@@ -372,7 +372,7 @@ def hilbert_get_analytical_signal(x: jnp.ndarray, axis=-1) -> jnp.ndarray:
     return x_analytical[..., :size]
 
 
-def find_t_peak(signal, sampling_frequency):
+def find_t_peak(signal, sampling_frequency=250e6):
     """Finds the peak of the signal and returns the time between t=0 and the peak.
 
     ### Args:
@@ -441,7 +441,7 @@ def _tof_correct_pixel(
 
     # When doing IQ beamforming, just indexing the samples is not enough to
     # achieve a proper delay. We need to correct the phase by doing phase
-    # rotation
+    # rotation.
     if iq_beamform:
         # Apply phase rotation to beamform the IQ data directly
         phase = jnp.exp(1j * 2 * jnp.pi * carrier_frequency * (tof_tx + tof_rx))
@@ -603,8 +603,6 @@ def beamform_das(
     transmits: jnp.ndarray = None,
     pixel_chunk_size: int = 1048576,
     progress_bar: bool = False,
-    beamform_transmit_fn: Callable = das_beamform_transmit,
-    beamform_fn_kwargs: dict = None,
 ):
     """Beamforms RF data using the given parameters. The input data can be
     either RF or IQ data. The beamforming can be performed on all transmits or a
@@ -698,18 +696,17 @@ def beamform_das(
     # ==================================================================================
     # Define pixel chunks
     # ==================================================================================
-    if n_pixels < pixel_chunk_size:
-        pixel_chunks = [pixel_positions]
-    else:
-        indices = jnp.arange(jnp.ceil(n_pixels / pixel_chunk_size).astype(int))
-        pixel_chunks = jnp.array_split(pixel_positions, indices, axis=0)
+    start_indices = (
+        jnp.arange(jnp.ceil(n_pixels / pixel_chunk_size).astype(int)) * pixel_chunk_size
+    )
 
     for frame in progbar_func(range(n_frames)):
 
         # Beamform every transmit individually and sum the results
         for tx in transmits:
             beamformed_chunks = []
-            for pixel_chunk in pixel_chunks:
+            for ind0 in start_indices:
+                pixel_chunk = pixel_positions[ind0 : ind0 + pixel_chunk_size]
                 # Perform beamforming
                 beamformed_chunks.append(
                     das_beamform_transmit(
@@ -815,12 +812,12 @@ class Beamformer:
     @property
     def n_x(self):
         """The number of pixels in the beamforming grid in the x-direction."""
-        return self._pixel_grid.cols
+        return self._pixel_grid.n_cols
 
     @property
     def n_z(self):
         """The number of pixels in the beamforming grid in the z-direction."""
-        return self._pixel_grid.rows
+        return self._pixel_grid.n_rows
 
     @property
     def dx_wl(self):
@@ -1048,7 +1045,7 @@ class Beamformer:
 
         beamformed = jnp.reshape(
             beamformed,
-            (beamformed.shape[0], self._pixel_grid.rows, self._pixel_grid.cols),
+            (beamformed.shape[0], self._pixel_grid.n_rows, self._pixel_grid.n_cols),
         )
 
         return beamformed

@@ -30,73 +30,6 @@ from .beamform import (
 )
 
 
-class MinimumVarianceBeamformer(Beamformer):
-    def __init__(
-        self,
-        pixel_grid: PixelGrid,
-        probe_geometry: np.ndarray,
-        t0_delays: np.ndarray,
-        initial_times: np.ndarray,
-        sampling_frequency: Union[float, int],
-        center_frequency: Union[float, int],
-        sound_speed: Union[float, int],
-        t_peak: Union[float, int],
-        rx_apodization: np.ndarray,
-        f_number: Union[float, int] = 3,
-        z0: Union[float, int] = 0,
-        iq_beamform: bool = False,
-        l: Union[int, None] = None,
-        epsilon: Union[float, int] = 1e-2,
-    ):
-        super().__init__(
-            pixel_grid,
-            probe_geometry,
-            t0_delays,
-            initial_times,
-            sampling_frequency,
-            center_frequency,
-            sound_speed,
-            t_peak,
-            rx_apodization,
-            f_number,
-            z0,
-            iq_beamform,
-        )
-        self.configure(l, epsilon)
-
-    def configure(
-        self,
-        l: int | None = None,
-        epsilon: float | int = 1e-5,
-    ):
-        if l is None:
-            l = self._probe_geometry.shape[0] // 3
-        self._l = l
-
-        if not isinstance(epsilon, (float, int)):
-            raise TypeError("epsilon must be a float or int")
-        self._epsilon = float(epsilon)
-
-    def _get_beamform_func(
-        self,
-    ):
-        """Returns a jit-compiled function that can be used to beamform a transmit.
-
-        ### Returns:
-            `beamform_pixel` (`function`): A function that can be used to beamform a
-                transmit
-        """
-
-        # ==============================================================================
-        # Define the beamform_pixel function to be vmapped over all pixels
-        # ==============================================================================
-
-
-@property
-def l(self):
-    return self._l
-
-
 def mv_beamform_pixel(
     rf_data,
     pixel_pos,
@@ -208,12 +141,12 @@ def mv_beamform_pixel(
     z = vmap(lambda x: jnp.dot(weights.conj().T, x))(subvectors)
     z = jnp.sum(z)
     # Divide by the number of subvectors
-    z = z / (N - l + 1) / 1000
+    z = z / (N - l + 1)
 
     return z
 
 
-def beamform(
+def beamform_mv(
     rf_data,
     pixel_positions: jnp.ndarray,
     probe_geometry: jnp.ndarray,
@@ -226,16 +159,32 @@ def beamform(
     rx_apodization: jnp.ndarray,
     f_number: float,
     subaperture_size: int,
-    iq_beamform: bool,
+    diagonal_loading: float = 1.0,
+    iq_beamform: bool = True,
     transmits: jnp.ndarray = None,
     pixel_chunk_size: int = 1048576,
     progress_bar: bool = False,
 ):
-    """Beamforms a single transmit using the given parameters. The input data can be
-    either RF or IQ data. The beamforming can be performed on all transmits or a
-    subset of transmits. The beamforming is performed using the Delay-And-Sum (DAS)
-    algorithm. The beamforming can be performed before or after the data is
-    converted to complex IQ data.
+    """Beamforms a single transmit using the given parameters using minimum variance
+    beamforming with spatial smoothing. The input data can be either RF or IQ data. The
+    beamforming can be performed on all transmits or a subset of transmits. The
+    The beamforming can be performed before or after the data is converted to complex
+    IQ data.
+
+    The algorithm is based on the paper "Adaptive Beamforming Applied to Medical
+    Ultrasound Imaging" by Johan-Fredrik Synnevag.
+
+    Like in traditional minimum variance beamforming, the algorithm computes the
+    covariance matrix of the data and then computes the weights that minimize the
+    variance of the beamformed image. However, in this implementation, the covariance
+    matrix is computed over a set of subapertures and then averaged. This is known as
+    spatial smoothing and improves the robustness of the beamforming.
+
+    To further improve the robustness, diagonal loading is used. This is a technique
+    where an identity matrix is added to the covariance matrix multiplied by a
+    constant. This constant is the diagonal loading parameter. As suggested in the paper
+    by Synnevag, the diagonal loading is set to 1/subaperture_size and can be adjusted
+    using the scaling parameter `diagonal_loading`.
 
     ### Args:
         `rf_data` (`jnp.ndarray`): The RF or IQ data to beamform of shape
@@ -259,6 +208,11 @@ def beamform(
             the ratio of the focal length to the aperture size. Elements that are more
             to the side of the current pixel than the f-number are not used in the
             beamforming. Default is 3.
+        `subaperture_size` (`int`): The size of the subaperture to use for the spatial
+            smoothing. Default is 16.
+        `diagonal_loading` (`float`): The amount of diagonal loading to use. To increase
+            robustness, an identity matrix is added to the covariance matrix multiplied
+            by diagonal_loading/subaperture_size. Default is 1.0.
         `iq_beamform` (`bool`): Whether to beamform the IQ data directly. Default is
             False.
         `transmits` (`jnp.ndarray`): The transmits to beamform. Default is None, which
@@ -323,18 +277,17 @@ def beamform(
     # ==================================================================================
     # Define pixel chunks
     # ==================================================================================
-    if n_pixels < pixel_chunk_size:
-        pixel_chunks = [pixel_positions]
-    else:
-        indices = jnp.arange(jnp.ceil(n_pixels / pixel_chunk_size).astype(int))
-        pixel_chunks = jnp.array_split(pixel_positions, indices, axis=0)
+    start_indices = (
+        jnp.arange(jnp.ceil(n_pixels / pixel_chunk_size).astype(int)) * pixel_chunk_size
+    )
 
     for frame in progbar_func(range(n_frames)):
 
         # Beamform every transmit individually and sum the results
         for tx in transmits:
             beamformed_chunks = []
-            for pixel_chunk in pixel_chunks:
+            for ind0 in start_indices:
+                pixel_chunk = pixel_positions[ind0 : ind0 + pixel_chunk_size]
                 # Perform beamforming
                 beamformed_chunks.append(
                     mv_beamform_transmit(
@@ -351,7 +304,7 @@ def beamform(
                         rx_apodization=rx_apodization,
                         iq_beamform=iq_beamform,
                         subaperture_size=subaperture_size,
-                        epsilon=1 / subaperture_size,
+                        epsilon=diagonal_loading,
                     )
                 )
 
@@ -455,3 +408,69 @@ def mv_beamform_transmit(
         epsilon,
         iq_beamform,
     )
+
+
+class MinimumVarianceBeamformer(Beamformer):
+    def __init__(
+        self,
+        pixel_grid: PixelGrid,
+        probe_geometry: np.ndarray,
+        t0_delays: np.ndarray,
+        initial_times: np.ndarray,
+        sampling_frequency: Union[float, int],
+        center_frequency: Union[float, int],
+        sound_speed: Union[float, int],
+        t_peak: Union[float, int],
+        rx_apodization: np.ndarray,
+        f_number: Union[float, int] = 3,
+        z0: Union[float, int] = 0,
+        iq_beamform: bool = False,
+        l: Union[int, None] = None,
+        epsilon: Union[float, int] = 1e-2,
+    ):
+        super().__init__(
+            pixel_grid,
+            probe_geometry,
+            t0_delays,
+            initial_times,
+            sampling_frequency,
+            center_frequency,
+            sound_speed,
+            t_peak,
+            rx_apodization,
+            f_number,
+            z0,
+            iq_beamform,
+        )
+        self.configure(l, epsilon)
+
+    def configure(
+        self,
+        l: int | None = None,
+        epsilon: float | int = 1e-5,
+    ):
+        if l is None:
+            l = self._probe_geometry.shape[0] // 3
+        self._l = l
+
+        if not isinstance(epsilon, (float, int)):
+            raise TypeError("epsilon must be a float or int")
+        self._epsilon = float(epsilon)
+
+    def _get_beamform_func(
+        self,
+    ):
+        """Returns a jit-compiled function that can be used to beamform a transmit.
+
+        ### Returns:
+            `beamform_pixel` (`function`): A function that can be used to beamform a
+                transmit
+        """
+
+        # ==============================================================================
+        # Define the beamform_pixel function to be vmapped over all pixels
+        # ==============================================================================
+
+    @property
+    def l(self):
+        return self._l

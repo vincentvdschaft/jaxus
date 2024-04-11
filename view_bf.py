@@ -22,12 +22,21 @@ path = Path(
 )
 # path = Path(r"tests/output.h5")
 
+SELECTED_TX = [
+    # 138 - 8,
+    138 - 4,
+    138,
+    138 + 4,
+    # 138 + 8,
+]
+n_tx = len(SELECTED_TX)
+
 data_dict = load_usbmd(
     path,
     frames=[
         0,
     ],
-    transmits=[137, 138, 139],
+    transmits=SELECTED_TX,
     reduce_probe_to_2d=True,
 )
 
@@ -46,7 +55,7 @@ images_das = beamform_das(
     carrier_frequency=data_dict["center_frequency"],
     f_number=1.5,
     pixel_positions=pixel_grid.pixel_positions_flat,
-    t_peak=find_t_peak(data_dict["waveform_samples_two_way"], 250e6) * np.ones(3),
+    t_peak=find_t_peak(data_dict["waveform_samples_two_way"], 250e6) * np.ones(n_tx),
     initial_times=data_dict["initial_times"],
     rx_apodization=np.ones(data_dict["probe_geometry"].shape[0]),
     iq_beamform=True,
@@ -68,13 +77,13 @@ images_mv = beamform_mv(
     carrier_frequency=data_dict["center_frequency"],
     f_number=1.5,
     pixel_positions=pixel_grid.pixel_positions_flat,
-    t_peak=find_t_peak(data_dict["waveform_samples_two_way"], 250e6) * np.ones(3),
+    t_peak=find_t_peak(data_dict["waveform_samples_two_way"], 250e6) * np.ones(n_tx),
     initial_times=data_dict["initial_times"],
     rx_apodization=np.ones(data_dict["probe_geometry"].shape[0]),
     iq_beamform=True,
-    subaperture_size=64,
-    diagonal_loading=0.1,
-    pixel_chunk_size=32,
+    subaperture_size=80,
+    diagonal_loading=0.2,
+    pixel_chunk_size=512,
     progress_bar=True,
 )
 
@@ -93,11 +102,11 @@ images_dmas = beamform_dmas(
     carrier_frequency=data_dict["center_frequency"],
     f_number=2.5,
     pixel_positions=pixel_grid.pixel_positions_flat,
-    t_peak=find_t_peak(data_dict["waveform_samples_two_way"], 250e6) * np.ones(3),
+    t_peak=find_t_peak(data_dict["waveform_samples_two_way"], 250e6) * np.ones(n_tx),
     initial_times=data_dict["initial_times"],
     rx_apodization=np.ones(data_dict["probe_geometry"].shape[0]),
     iq_beamform=True,
-    pixel_chunk_size=1024,
+    # pixel_chunk_size=1024,
     progress_bar=True,
 )
 
@@ -132,5 +141,7 @@ plot_beamformed(
     vmin=-100,
 )
 plot_to_darkmode(fig, axes)
+
+plt.savefig("various_beamformers.png", bbox_inches="tight", dpi=300)
 
 plt.show()

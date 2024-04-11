@@ -270,7 +270,21 @@ def beamform_mv(
     # Initialize the beamformed images to zeros
     beamformed_images = jnp.zeros((n_frames, n_pixels), dtype=beamformed_dtype)
 
-    progbar_func = lambda x: tqdm(x, desc="Beamforming") if progress_bar else x
+    progbar_func_frames = lambda x: (
+        tqdm(x, desc="Beamforming frame", colour="yellow", leave=False)
+        if progress_bar and n_frames > 1
+        else x
+    )
+    progbar_func_transmits = lambda x: (
+        tqdm(x, desc="Transmit", colour="yellow", leave=False)
+        if progress_bar and len(transmits) > 1
+        else x
+    )
+    progbar_func_pixels = lambda x: (
+        tqdm(x, desc="Pixel chunks", colour="yellow", leave=False)
+        if progress_bar and len(start_indices) > 1
+        else x
+    )
     for tx in transmits:
         assert 0 <= tx < n_tx, "Transmit index out of bounds"
 
@@ -281,12 +295,12 @@ def beamform_mv(
         jnp.arange(jnp.ceil(n_pixels / pixel_chunk_size).astype(int)) * pixel_chunk_size
     )
 
-    for frame in progbar_func(range(n_frames)):
+    for frame in progbar_func_frames(range(n_frames)):
 
         # Beamform every transmit individually and sum the results
-        for tx in transmits:
+        for tx in progbar_func_transmits(transmits):
             beamformed_chunks = []
-            for ind0 in start_indices:
+            for ind0 in progbar_func_pixels(start_indices):
                 pixel_chunk = pixel_positions[ind0 : ind0 + pixel_chunk_size]
                 # Perform beamforming
                 beamformed_chunks.append(

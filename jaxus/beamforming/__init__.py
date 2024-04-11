@@ -7,4 +7,5 @@ from .beamform import (
     find_t_peak,
     log_compress,
 )
+from .delay_multiply_and_sum import beamform_dmas
 from .minimum_variance import beamform_mv

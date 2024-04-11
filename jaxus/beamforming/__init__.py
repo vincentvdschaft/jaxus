@@ -1,7 +1,6 @@
 from .beamform import (
-    CartesianPixelGrid,
+    Beamformer,
     PixelGrid,
-    PolarPixelGrid,
     beamform_das,
     detect_envelope_beamformed,
     find_t_peak,
@@ -9,3 +8,4 @@ from .beamform import (
 )
 from .delay_multiply_and_sum import beamform_dmas
 from .minimum_variance import beamform_mv
+from .pixelgrid import CartesianPixelGrid, PixelGrid, PolarPixelGrid

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.signal.windows import hamming
 
-from jaxus.beamforming.beamform import (
+from jaxus.beamforming import (
     Beamformer,
     CartesianPixelGrid,
     beamform_das,
@@ -54,9 +54,9 @@ def test_beamform(iq_beamform):
     # ==================================================================================
     # Define beamforming grid
     # ==================================================================================
-    n_z, n_x = 512, 512
+    n_z, n_x = 1024, 512
     pixel_grid = CartesianPixelGrid(
-        n_x=n_x, n_z=n_z, dx_wl=0.5, dz_wl=0.5, z0=0, wavelength=wavelength
+        n_x=n_x, n_z=n_z, dx_wl=0.25, dz_wl=0.125, z0=21e-3, wavelength=wavelength
     )
 
     # ==================================================================================
@@ -81,8 +81,9 @@ def test_beamform(iq_beamform):
     if not iq_beamform:
         # Perform envelope detection
         bf_data = detect_envelope_beamformed(
-            bf_data.reshape((n_z, n_x))[None], dz_wl=0.5
+            bf_data.reshape((n_z, n_x))[None], dz_wl=pixel_grid.dz / wavelength
         )[0]
+        # bf_data = bf_data.reshape((n_z, n_x))
 
     bf_data = log_compress(bf_data.reshape((n_z, n_x)), normalize=True)
 

@@ -213,7 +213,7 @@ def simulate_to_usbmd(
         lens_correction=0.0,
         description="Custom simulated dataset",
         azimuth_angles=np.zeros(len(transmit)),
-        time_to_next_transmit=np.zeros(len(transmit) - 1),
+        time_to_next_transmit=np.zeros((1, len(transmit))),
         tgc_gain_curve=np.ones(receive.n_ax),
         waveform_samples_one_way=waveforms,
         waveform_samples_two_way=waveforms,

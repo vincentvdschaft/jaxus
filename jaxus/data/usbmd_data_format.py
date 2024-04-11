@@ -107,6 +107,93 @@ def generate_usbmd_dataset(
     assert isinstance(probe_name, str), "The probe name must be a string."
     assert isinstance(description, str), "The description must be a string."
 
+    # ==================================================================================
+    # Perform checks
+    # ==================================================================================
+    n_frames, n_tx, n_ax, n_el, n_ch = raw_data.shape
+    assert (probe_geometry.ndim == 2) and probe_geometry.shape == (
+        n_el,
+        3,
+    ), "The probe_geometry must be of shape (n_el, 3)."
+    assert t0_delays.shape == (
+        n_tx,
+        n_el,
+    ), "The t0_delays must be of shape (n_tx, n_el)."
+    assert isinstance(sampling_frequency, (int, float)) and (
+        sampling_frequency > 0
+    ), "The sampling_frequency must be a positive number."
+    assert isinstance(center_frequency, (int, float)) and (
+        center_frequency > 0
+    ), "The center_frequency must be a positive number."
+    assert isinstance(sound_speed, (int, float)) and (
+        sound_speed > 0
+    ), "The sound_speed must be a positive number."
+    assert isinstance(initial_times, np.ndarray) and initial_times.shape == (
+        n_tx,
+    ), "The initial_times must be of shape (n_tx,)."
+    assert isinstance(focus_distances, np.ndarray) and focus_distances.shape == (
+        n_tx,
+    ), "The focus_distances must be of shape (n_tx,)."
+    assert isinstance(polar_angles, np.ndarray) and polar_angles.shape == (
+        n_tx,
+    ), "The polar_angles must be of shape (n_tx,)."
+    assert isinstance(azimuth_angles, np.ndarray) and azimuth_angles.shape == (
+        n_tx,
+    ), "The azimuth_angles must be of shape (n_tx,)."
+    assert isinstance(tx_apodizations, np.ndarray) and tx_apodizations.shape == (
+        n_tx,
+        n_el,
+    ), "The tx_apodizations must be of shape (n_tx, n_el)."
+    assert isinstance(bandwidth_percent, (int, float)) and (
+        0 <= bandwidth_percent <= 200
+    ), "The bandwidth_percent must be between 0 and 200."
+    if not time_to_next_transmit is None:
+        assert isinstance(
+            time_to_next_transmit, np.ndarray
+        ) and time_to_next_transmit.shape == (
+            n_frames,
+            n_tx,
+        ), "The time_to_next_transmit must be of shape (n_frames, n_tx)."
+    if not waveform_indices is None:
+        assert isinstance(waveform_indices, np.ndarray) and waveform_indices.shape == (
+            n_tx,
+        ), "The waveform_indices must be of shape (n_tx,)."
+    if not waveform_samples_one_way is None:
+        assert isinstance(
+            waveform_samples_one_way, list
+        ), "The waveform_samples_one_way must be a list."
+        waveform_samples_one_way = [
+            np.array(waveform) for waveform in waveform_samples_one_way
+        ]
+        for waveform in waveform_samples_one_way:
+            assert (
+                isinstance(waveform, np.ndarray) and waveform.ndim == 1
+            ), "The waveform_samples_one_way must be a list of 1D numpy arrays."
+    if not waveform_samples_two_way is None:
+        assert isinstance(
+            waveform_samples_two_way, list
+        ), "The waveform_samples_two_way must be a list."
+        waveform_samples_two_way = [
+            np.array(waveform) for waveform in waveform_samples_two_way
+        ]
+        for waveform in waveform_samples_two_way:
+            assert (
+                isinstance(waveform, np.ndarray) and waveform.ndim == 1
+            ), "The waveform_samples_two_way must be a list of 1D numpy arrays."
+    if not lens_correction is None:
+        assert isinstance(
+            lens_correction, (int, float)
+        ), "The lens_correction must be a number."
+    if not element_width is None:
+        assert isinstance(
+            element_width, (int, float)
+        ), "The element_width must be a number."
+    if not bandwidth is None:
+        assert isinstance(
+            bandwidth, tuple
+        ), "The bandwidth must be a tuple of two numbers."
+        assert len(bandwidth) == 2, "The bandwidth must be a tuple of two numbers."
+
     # Convert path to Path object
     path = Path(path)
 
@@ -461,6 +548,7 @@ def validate_dataset(path):
     with h5py.File(path, "r") as dataset:
 
         def check_key(dataset, key):
+            """Checks that the key is present in the dataset."""
             assert key in dataset.keys(), f"The dataset does not contain the key {key}."
 
         # Validate the root group

@@ -27,8 +27,8 @@ def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 256):
     _, bins = np.histogram(np.concatenate((region1, region2)), bins=bins)
 
     # Compute the histograms for the two regions individually with the shared bins
-    f, _ = np.histogram(x, bins=bins, density=True)
-    g, _ = np.histogram(y, bins=bins, density=True)
+    f, _ = np.histogram(region1, bins=bins, density=True)
+    g, _ = np.histogram(region2, bins=bins, density=True)
 
     # Normalize the histograms to unit area
     f /= f.sum()

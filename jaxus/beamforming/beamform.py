@@ -335,7 +335,7 @@ def _tof_correct_pixel(
 # Jit and mark iq_beamform as static_argnum, because a different value should trigger
 # recompilation of the function
 @partial(jit, static_argnums=(11,))
-def beamform_pixel(
+def _beamform_pixel(
     rf_data,
     pixel_pos,
     t0_delays,
@@ -451,7 +451,7 @@ def das_beamform_transmit(
         `bf_value` (`float`): The beamformed value for the pixel.
     """
     return vmap(
-        beamform_pixel,
+        _beamform_pixel,
         in_axes=(None, 0, None, None, None, None, None, None, None, None, None, None),
     )(
         rf_data,

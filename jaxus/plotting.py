@@ -142,10 +142,12 @@ def plot_beamformed(
     if probe_geometry is not None:
 
         ax.plot(
-            probe_geometry[:, 0],
-            probe_geometry[:, 1],
-            "rs",
-            markersize=2,
+            [probe_geometry[0, 0], probe_geometry[-1, 0]],
+            [probe_geometry[0, 1], probe_geometry[-1, 1]],
+            "-|",
+            markersize=6,
+            color="#AA0000",
+            linewidth=1,
         )
 
     if title is not None:

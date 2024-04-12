@@ -40,7 +40,7 @@ from .beamform import _tof_correct_pixel, rf2iq, to_complex_iq
 # Jit and mark iq_beamform as static_argnum, because a different value should trigger
 # recompilation of the function
 @partial(jit, static_argnums=(11,))
-def beamform_pixel(
+def _beamform_pixel(
     rf_data,
     pixel_pos,
     t0_delays,
@@ -103,21 +103,28 @@ def beamform_pixel(
     # Traditional f-number mask
     f_number_mask = get_custom_f_number_mask(pixel_pos, probe_geometry, f_number)
 
-    tof_corrected = tof_corrected * f_number_mask * rx_apodization
+    tof_corrected_sqrt_inv = 1 / jnp.sqrt(jnp.abs(tof_corrected))
+    tof_corrected_sqrt_inv = jnp.nan_to_num(
+        tof_corrected_sqrt_inv, nan=1.0, posinf=1.0, neginf=1.0
+    )
+    tof_corrected_sqrt = tof_corrected * tof_corrected_sqrt_inv
+
+    # Apply the f-number mask and the receive apodization
+    tof_corrected = tof_corrected_sqrt * f_number_mask * rx_apodization
 
     # Compute the correlation matrix
     corr = tof_corrected[:, None] * tof_corrected[None, :]
 
     # Take the square root of the correlation matrix
-    corr_sqrt = jnp.sqrt(jnp.abs(corr))
+    # corr_sqrt = jnp.sqrt(jnp.abs(corr))
 
     # Replace NaNs and Infs with ones
-    corr_sqrt_inv = jnp.nan_to_num(1 / corr_sqrt, nan=1.0, posinf=1.0, neginf=1.0)
+    # corr_sqrt_inv = jnp.nan_to_num(1 / corr_sqrt, nan=1.0, posinf=1.0, neginf=1.0)
 
     # Remove the diagonal
     corr = corr - jnp.eye(corr.shape[0]) * corr
 
-    z = jnp.sum(corr / corr_sqrt_inv) / 2
+    z = jnp.sum(corr) / 2
     return z
 
 
@@ -170,7 +177,7 @@ def dmas_beamform_transmit(
         `bf_value` (`float`): The beamformed value for the pixel.
     """
     return vmap(
-        beamform_pixel,
+        _beamform_pixel,
         in_axes=(None, 0, None, None, None, None, None, None, None, None, None, None),
     )(
         rf_data,

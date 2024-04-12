@@ -17,18 +17,25 @@ from jaxus.beamforming import (
 )
 from jaxus.data import load_usbmd
 
-path = Path(
-    r"C:\Users\vince\Documents\3_resources\data\verasonics\usbmd\2024-04-09\L11-5v_carotid_cross_0000.hdf5"
-)
-# path = Path(r"tests/output.h5")
+USE_POINTSCATTERERS = False
 
-SELECTED_TX = [
-    # 138 - 8,
-    138 - 4,
-    138,
-    138 + 4,
-    # 138 + 8,
-]
+if not USE_POINTSCATTERERS:
+    path = Path(
+        r"C:\Users\vince\Documents\3_resources\data\verasonics\usbmd\2024-04-09\L11-5v_carotid_cross_0003.hdf5"
+    )
+    SELECTED_TX = [
+        # 138 - 8,
+        138 - 4,
+        138,
+        138 + 4,
+        # 138 + 8,
+    ]
+    # SELECTED_TX = [n + 128 for n in range(21)]
+else:
+    path = Path(r"tests/output.h5")
+    SELECTED_TX = [0]
+
+
 n_tx = len(SELECTED_TX)
 
 data_dict = load_usbmd(
@@ -42,8 +49,14 @@ data_dict = load_usbmd(
 
 wavelength = data_dict["sound_speed"] / data_dict["center_frequency"]
 
+scaling = 1
 pixel_grid = CartesianPixelGrid(
-    n_x=256, n_z=256, dx_wl=0.5, dz_wl=0.5, z0=1e-3, wavelength=wavelength
+    n_x=256 * scaling,
+    n_z=256 * scaling,
+    dx_wl=0.5 / scaling,
+    dz_wl=0.5 / scaling,
+    z0=1e-3,
+    wavelength=wavelength,
 )
 
 images_das = beamform_das(
@@ -75,15 +88,15 @@ images_mv = beamform_mv(
     sampling_frequency=data_dict["sampling_frequency"],
     sound_speed=data_dict["sound_speed"],
     carrier_frequency=data_dict["center_frequency"],
-    f_number=1.5,
+    f_number=0.5,
     pixel_positions=pixel_grid.pixel_positions_flat,
     t_peak=find_t_peak(data_dict["waveform_samples_two_way"], 250e6) * np.ones(n_tx),
     initial_times=data_dict["initial_times"],
     rx_apodization=np.ones(data_dict["probe_geometry"].shape[0]),
     iq_beamform=True,
-    subaperture_size=80,
-    diagonal_loading=0.2,
-    pixel_chunk_size=512,
+    subaperture_size=64,
+    diagonal_loading=80 if USE_POINTSCATTERERS else 0.1,
+    pixel_chunk_size=4096,
     progress_bar=True,
 )
 
@@ -100,7 +113,7 @@ images_dmas = beamform_dmas(
     sampling_frequency=data_dict["sampling_frequency"],
     sound_speed=data_dict["sound_speed"],
     carrier_frequency=data_dict["center_frequency"],
-    f_number=2.5,
+    f_number=2,
     pixel_positions=pixel_grid.pixel_positions_flat,
     t_peak=find_t_peak(data_dict["waveform_samples_two_way"], 250e6) * np.ones(n_tx),
     initial_times=data_dict["initial_times"],
@@ -138,7 +151,7 @@ plot_beamformed(
     pixel_grid.extent,
     title="DMAS",
     probe_geometry=data_dict["probe_geometry"],
-    vmin=-100,
+    vmin=-80,
 )
 plot_to_darkmode(fig, axes)
 

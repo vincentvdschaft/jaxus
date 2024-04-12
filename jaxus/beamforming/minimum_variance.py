@@ -25,6 +25,7 @@ from .beamform import (
     PixelGrid,
     _tof_correct_pixel,
     check_standard_rf_or_iq_data,
+    get_custom_f_number_mask,
     rf2iq,
     to_complex_iq,
 )
@@ -138,10 +139,18 @@ def mv_beamform_pixel(
     # Compute the beamformed value
     # ==========================================================================
 
+    # Compute the f-number mask
+    subaperture_midpoint_indices = jnp.arange(N - l + 1) + l // 2
+    subaperture_midpoints = probe_geometry[subaperture_midpoint_indices]
+    f_number_mask = get_custom_f_number_mask(pixel_pos, subaperture_midpoints, f_number)
+
     z = vmap(lambda x: jnp.dot(weights.conj().T, x))(subvectors)
+
+    z = z * f_number_mask
     z = jnp.sum(z)
     # Divide by the number of subvectors
     z = z / (N - l + 1)
+    z = z / (jnp.sum(f_number_mask) + 1)
 
     return z
 
@@ -477,12 +486,12 @@ class MinimumVarianceBeamformer(Beamformer):
         """Returns a jit-compiled function that can be used to beamform a transmit.
 
         ### Returns:
-            `beamform_pixel` (`function`): A function that can be used to beamform a
+            `_beamform_pixel` (`function`): A function that can be used to beamform a
                 transmit
         """
 
         # ==============================================================================
-        # Define the beamform_pixel function to be vmapped over all pixels
+        # Define the _beamform_pixel function to be vmapped over all pixels
         # ==============================================================================
 
     @property

@@ -35,7 +35,7 @@ def find_raw_data_dir(selected_directory):
                 "Assuming selected directory is the root of the Verasonics data."
             )
             return selected_directory
-    return Path(selected_directory) / "raw"
+    return Path(current_directory) / "raw"
 
 
 # Check if a directory was selected
@@ -49,6 +49,7 @@ if selected_directory:
 
     # Convert the selected directory to a Path object
     raw_data_dir = find_raw_data_dir(Path(selected_directory))
+    print(f"raw_data_dir: {raw_data_dir}")
     output_dir = raw_data_dir.parent / "usbmd_format"
 
     # Create the output directory if it does not exist
@@ -85,7 +86,7 @@ if selected_directory:
             except Exception as e:
                 # Print error message without raising it
                 print(e)
-                print(f"Failed to convert {mat_file}")
+                log.error(f"Failed to convert {mat_file}")
                 continue
 else:
     log.info("No directory selected. Aborting...")

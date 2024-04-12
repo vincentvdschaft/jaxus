@@ -24,6 +24,8 @@ from pathlib import Path
 import h5py
 import numpy as np
 
+import jaxus.utils.log as log
+
 from .usbmd_data_format import generate_usbmd_dataset
 
 
@@ -692,4 +694,4 @@ def usbmd_from_matlab_raw(input_path, output_path):
             element_width=element_width,
             tgc_gain_curve=tgc_gain_curve,
         )
-        print(f"Converted {input_path} to {output_path}")
+        log.info(f"Converted {log.yellow(input_path)} to {log.yellow(output_path)}")

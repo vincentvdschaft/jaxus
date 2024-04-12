@@ -37,9 +37,7 @@ from jaxus.utils.checks import (
 from .beamform import _tof_correct_pixel, rf2iq, to_complex_iq
 
 
-# Jit and mark iq_beamform as static_argnum, because a different value should trigger
-# recompilation of the function
-@partial(jit, static_argnums=(11,))
+@jit
 def _beamform_pixel(
     rf_data,
     pixel_pos,
@@ -52,13 +50,12 @@ def _beamform_pixel(
     sampling_frequency,
     f_number,
     rx_apodization,
-    iq_beamform=False,
 ):
     """Beamforms a single pixel of a single frame and single transmit. Further
     processing such as log-compression and envelope detection are not performed.
 
     ### Args:
-        `rf_data` (`jnp.ndarray`): The RF or IQ data to beamform of shape
+        `rf_data` (`jnp.ndarray`): The IQ data to beamform of shape
             `(n_samples, n_elements)`.
         `pixel_pos` (`jnp.ndarray`): The position of the pixel to beamform to in meters
             of shape `(2,)`.
@@ -79,9 +76,6 @@ def _beamform_pixel(
             to the side of the current pixel than the f-number are not used in the
             beamforming.
         `rx_apodization` (`jnp.ndarray`): The apodization of the receive elements.
-        `iq_beamform` (`bool`): Set to True to do demodulation first and then beamform
-            the IQ data. Set to False to beamform the RF data directly. In this case
-            envelope detection is done after beamforming. Default is False.
 
 
     ### Returns:
@@ -98,15 +92,20 @@ def _beamform_pixel(
         probe_geometry,
         carrier_frequency,
         sampling_frequency,
-        iq_beamform,
+        iq_beamform=True,
     )
     # Traditional f-number mask
     f_number_mask = get_custom_f_number_mask(pixel_pos, probe_geometry, f_number)
 
+    # Compute the inverse of the square root of the magnitude of the TOF corrected data
     tof_corrected_sqrt_inv = 1 / jnp.sqrt(jnp.abs(tof_corrected))
+
+    # Replace NaNs with 1.0. This is needed for values that are 0.
     tof_corrected_sqrt_inv = jnp.nan_to_num(
         tof_corrected_sqrt_inv, nan=1.0, posinf=1.0, neginf=1.0
     )
+
+    # Apply the inverse square root. This changes the unit from [V] to [sqrt(V)]
     tof_corrected_sqrt = tof_corrected * tof_corrected_sqrt_inv
 
     # Apply the f-number mask and the receive apodization
@@ -115,12 +114,6 @@ def _beamform_pixel(
     # Compute the correlation matrix
     corr = tof_corrected[:, None] * tof_corrected[None, :]
 
-    # Take the square root of the correlation matrix
-    # corr_sqrt = jnp.sqrt(jnp.abs(corr))
-
-    # Replace NaNs and Infs with ones
-    # corr_sqrt_inv = jnp.nan_to_num(1 / corr_sqrt, nan=1.0, posinf=1.0, neginf=1.0)
-
     # Remove the diagonal
     corr = corr - jnp.eye(corr.shape[0]) * corr
 
@@ -128,7 +121,7 @@ def _beamform_pixel(
     return z
 
 
-@partial(jit, static_argnums=(11,))
+@jit
 def dmas_beamform_transmit(
     rf_data,
     pixel_positions,
@@ -141,16 +134,14 @@ def dmas_beamform_transmit(
     t_peak,
     rx_apodization,
     f_number,
-    iq_beamform,
 ):
-    """Beamforms a single transmit using the given parameters. The input data can be
-    either RF or IQ data. The beamforming can be performed on all transmits or
+    """Beamforms a single transmit using the given parameters. The input data must be IQ data. The beamforming can be performed on all transmits or
     a subset of transmits. The beamforming is performed using the Delay-And-Sum (DAS)
     algorithm. The beamforming can be performed before or after the data is converted
     to complex IQ data.
 
     ### Parameters:
-        `rf_data` (`jnp.ndarray`): The RF or IQ data to beamform of shape
+        `rf_data` (`jnp.ndarray`): The IQ data to beamform of shape
             `(n_samples, n_elements)`.
         `pixel_positions` (`jnp.ndarray`): The position of the pixel to beamform to in
             meters of shape `(n_pixels, 2)`.
@@ -171,14 +162,13 @@ def dmas_beamform_transmit(
             ratio of the focal length to the aperture size. Elements that are more to the
             side of the current pixel than the f-number are not used in the beamforming.
             Default is 3.
-        `iq_beamform` (`bool`): Whether to beamform the IQ data directly. Default is False.
 
     ### Returns:
         `bf_value` (`float`): The beamformed value for the pixel.
     """
     return vmap(
         _beamform_pixel,
-        in_axes=(None, 0, None, None, None, None, None, None, None, None, None, None),
+        in_axes=(None, 0, None, None, None, None, None, None, None, None, None),
     )(
         rf_data,
         pixel_positions,
@@ -191,7 +181,6 @@ def dmas_beamform_transmit(
         sampling_frequency,
         f_number,
         rx_apodization,
-        iq_beamform,
     )
 
 
@@ -254,6 +243,9 @@ def beamform_dmas(
     """
     # Perform input error checking
     rf_data = check_standard_rf_or_iq_data(rf_data)
+    if rf_data.shape[4] != 1:
+        raise ValueError("Only IQ data with one channel is supported")
+
     check_frequency(carrier_frequency)
     check_frequency(sampling_frequency)
     check_sound_speed(sound_speed)
@@ -261,14 +253,6 @@ def beamform_dmas(
     check_t0_delays(t0_delays, transmit_dim=True)
     n_tx = rf_data.shape[1]
     n_pixels = pixel_positions.shape[0]
-
-    # Check if iq_beamform and rf_data are compatible
-    if not iq_beamform and rf_data.shape[-1] != 1:
-        raise ValueError(
-            "iq_beamform is False and rf_data has more than one channel. "
-            "This is not allowed. Set iq_beamform to True or supply RF data with "
-            "only one channel."
-        )
 
     # ==================================================================================
     # Interpret the transmits argument
@@ -344,7 +328,6 @@ def beamform_dmas(
                         t_peak[tx],
                         rx_apodization,
                         f_number=f_number,
-                        iq_beamform=iq_beamform,
                     )
                 )
 

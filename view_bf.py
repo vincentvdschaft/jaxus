@@ -25,9 +25,9 @@ if not USE_POINTSCATTERERS:
     )
     SELECTED_TX = [
         # 138 - 8,
-        138 - 4,
+        # 138 - 4,
         138,
-        138 + 4,
+        # 138 + 4,
         # 138 + 8,
     ]
     # SELECTED_TX = [n + 128 for n in range(21)]
@@ -51,7 +51,7 @@ wavelength = data_dict["sound_speed"] / data_dict["center_frequency"]
 
 scaling = 1
 pixel_grid = CartesianPixelGrid(
-    n_x=256 * scaling,
+    n_x=(256 + 128) * scaling,
     n_z=256 * scaling,
     dx_wl=0.5 / scaling,
     dz_wl=0.5 / scaling,
@@ -88,14 +88,14 @@ images_mv = beamform_mv(
     sampling_frequency=data_dict["sampling_frequency"],
     sound_speed=data_dict["sound_speed"],
     carrier_frequency=data_dict["center_frequency"],
-    f_number=0.5,
+    f_number=2.5,
     pixel_positions=pixel_grid.pixel_positions_flat,
     t_peak=find_t_peak(data_dict["waveform_samples_two_way"], 250e6) * np.ones(n_tx),
     initial_times=data_dict["initial_times"],
     rx_apodization=np.ones(data_dict["probe_geometry"].shape[0]),
     iq_beamform=True,
-    subaperture_size=64,
-    diagonal_loading=80 if USE_POINTSCATTERERS else 0.1,
+    subaperture_size=80,
+    diagonal_loading=80 if USE_POINTSCATTERERS else 0.2,
     pixel_chunk_size=4096,
     progress_bar=True,
 )

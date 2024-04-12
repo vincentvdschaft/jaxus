@@ -92,6 +92,10 @@ def mv_beamform_pixel(
         iq_beamform,
     )
 
+    f_number_mask = get_custom_f_number_mask(pixel_pos, probe_geometry, f_number)
+
+    tof_corrected = tof_corrected * rx_apodization * f_number_mask
+
     # ==========================================================================
     # Compute R_l
     # ==========================================================================
@@ -138,19 +142,10 @@ def mv_beamform_pixel(
     # ==========================================================================
     # Compute the beamformed value
     # ==========================================================================
-
-    # Compute the f-number mask
-    subaperture_midpoint_indices = jnp.arange(N - l + 1) + l // 2
-    subaperture_midpoints = probe_geometry[subaperture_midpoint_indices]
-    f_number_mask = get_custom_f_number_mask(pixel_pos, subaperture_midpoints, f_number)
-
     z = vmap(lambda x: jnp.dot(weights.conj().T, x))(subvectors)
-
-    z = z * f_number_mask
     z = jnp.sum(z)
     # Divide by the number of subvectors
     z = z / (N - l + 1)
-    z = z / (jnp.sum(f_number_mask) + 1)
 
     return z
 

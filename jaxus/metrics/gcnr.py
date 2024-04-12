@@ -90,54 +90,54 @@ def gcnr_compute_disk(
 
 def gcnr_plot_disk_annulus(
     ax: plt.Axes,
-    xlims_m: tuple,
-    zlims_m: tuple,
-    disk_pos_m: tuple,
+    pos_m: tuple,
     inner_radius_m: float,
     outer_radius_start_m: float,
     outer_radius_end_m: float,
+    opacity: float = 0.5,
 ):
     """Plots the disk and annulus on top of the image.
 
     ### Parameters
         `ax` (`plt.Axes`): The axis to plot the disk and annulus on.
-        `xlims_m` (`tuple`): The limits of the image in the x-direction in meters.
-        `zlims_m` (`tuple`): The limits of the image in the z-direction in meters.
         `disk_pos_m` (`tuple`): The position of the disk in meters.
         `inner_radius_m` (`float`): The inner radius of the disk in meters.
         `outer_radius_start_m` (`float`): The start radius of the annulus in meters.
         `outer_radius_end_m` (`float`): The end radius of the annulus in meters.
+        `opacity` (`float`): The opacity of the disk and annulus. Should be between 0
+            and 1. Defaults to 0.5.
+
     """
     # Plot the inner circle
     circle = plt.Circle(
-        circle_pos_m,
+        pos_m,
         inner_radius_m,
         color="r",
         fill=False,
         linestyle="--",
         linewidth=1,
-        alpha=CIRCLE_ALPHA,
+        alpha=opacity,
     )
     ax.add_artist(circle)
 
     # Draw the annulus
     circle = plt.Circle(
-        circle_pos_m,
+        pos_m,
         outer_radius_start_m,
         color="r",
         fill=False,
         linestyle="--",
         linewidth=1,
-        alpha=CIRCLE_ALPHA,
+        alpha=opacity,
     )
     ax.add_artist(circle)
     circle = plt.Circle(
-        circle_pos_m,
+        pos_m,
         outer_radius_end_m,
         color="r",
         fill=False,
         linestyle="--",
         linewidth=1,
-        alpha=CIRCLE_ALPHA,
+        alpha=opacity,
     )
     ax.add_artist(circle)

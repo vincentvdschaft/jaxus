@@ -9,11 +9,12 @@ from jaxus.utils.checks import check_pos_array
 class Probe:
     """Containter class storing the parameters pertaining to the probe.
 
-    ## Contains:
+    Contains:
+    ----------
     - probe_geometry (`np.ndarray`): The probe geometry in meters. [2, n_el]
     - center_frequency (`float`): The center frequency of the probe in Hz.
     - element_width (`float`): The width of each element in meters.
-    - bandwidth (`
+    - bandwidth (`float`): The bandwidth of the probe in Hz.
     """
 
     def __init__(
@@ -21,17 +22,23 @@ class Probe:
         probe_geometry: np.ndarray,
         center_frequency: Union[float, int],
         element_width: Union[float, int],
-        # Tuple of floats or ints
         bandwidth: tuple[Union[float, int], Union[float, int]],
         lens_correction: float = 0.0,
     ):
         """Initializes the Probe object.
 
-        ### Args:
-            `probe_geometry` (`np.ndarray`): The probe geometry in meters. [2, n_el]
-            `center_frequency` (`float`, `int`): The center frequency of the probe in Hz.
-            `element_width` (`float`, `int`): The width of each element in meters.
-            `bandwidth` (`float`, `int`): The bandwidth of the probe in Hz.
+        Parameters
+        ----------
+        probe_geometry : np.ndarray
+            The probe geometry in meters of shape (2, n_el).
+        center_frequency : float or int
+            The center frequency of the probe in Hz.
+        element_width : float or int
+            The width of each element in meters.
+        bandwidth : tuple of float or int
+            The start and end of the bandwidth in Hz.
+        lens_correction : float, optional
+            The extra path-length introduced by the lens in m, by default 0.0
         """
         self._validate_input(
             probe_geometry, center_frequency, element_width, bandwidth, lens_correction
@@ -91,20 +98,22 @@ class Probe:
         lens_correction: Union[float, int],
         verbose: bool = False,
     ):
-        """Checks if the input is valid.
+        """Validates the input parameters.
 
-        ### Args:
-            `probe_geometry` (`np.ndarray`): The input probe geometry of shape
-                `(n_el, 2)`.
-            `center_frequency` (`float`, `int`): The input center frequency.
-            `element_width` (`float`, `int`): The input element width.
-            `bandwidth` (`float`, `int`): The input bandwidth.
-
-        Raises:
-            TypeError: If the probe geometry is not a numpy array.
-            ValueError: If the probe geometry does not have shape `(n_el, 2)`.
-            TypeError: If the probe geometry is not `float32` or `float64`.
-            TypeError: If the center frequency is not a float.
+        Parameters
+        ----------
+        probe_geometry : np.ndarray
+            The probe geometry in meters of shape (2, n_el).
+        center_frequency : Union[float, int]
+            The center frequency of the probe in Hz.
+        element_width : Union[float, int]
+            The width of each element in meters.
+        bandwidth : Union[float, int]
+            The start and end of the bandwidth in Hz.
+        lens_correction : Union[float, int]
+            The extra path-length introduced by the lens in m.
+        verbose : bool, optional
+            Set to True to receive warning about uncommon values, by default False
         """
 
         # ==============================================================================

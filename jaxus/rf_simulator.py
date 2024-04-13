@@ -29,32 +29,43 @@ def _get_vectorized_simulate_function(
     an array of sample indices, an array of scatterer positions and an array of
     scatterer amplitudes and returns the rf data of shape (n_ax, n_el, n_scat)
 
-    ### Args:
-        `t0_delays` (`jnp.array`): The t0_delays of shape (n_el,). These are shifted such
-            that the smallest value in t0_delays is 0.
-        `probe_geometry` (`jnp.array`): The probe geometry of shape (2, n_el).
-        `element_angles` (`jnp.array`): The element angles in radians of shape (n_el,). Can
-            be used to simulate curved arrays.
-        `tx_apodization` (`jnp.array`): The transmit apodization of shape (n_el,).
-        `initial_time` (`float`): The time instant of the first sample in seconds.
-        `element_width_wl` (`float`): The width of the elements in wavelengths of the center
-            frequency.
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `sound_speed` (`float`): The speed of sound in the medium.
-        `attenuation_coefficient` (`float`): The attenuation coefficient in
-        Nepers/(MHz*carrier_frequency)
-        `waveform_function` (`function`): The function that returns the transmit waveform
-            amplitude.
-        `wavefront_only` (`bool`): Set to True to only compute the wavefront of the
-            rf data. Otherwise the rf data is computed as the sum of the wavefronts from
-            indivudual transmit elements.
-        `tx_angle_sensitivity` (`bool`): Set to True to include the angle dependent
-            strength of the transducer elements in the response.
-        `rx_angle_sensitivity` (`bool`): Set to True to include the angle dependent
-            strength of the transducer elements in the response.
+    Parameters
+    ----------
+    t0_delays : jnp.array
+        The t0_delays of shape `(n_el,)`. These are shifted such that the smallest value
+        in t0_delays is 0.
+    probe_geometry : jnp.array
+        The probe geometry of shape `(2, n_el)`.
+    element_angles : jnp.array
+        The element angles in radians of shape `(n_el,)`. Can be used to simulate curved
+        arrays.
+    tx_apodization : jnp.array
+        The transmit apodization of shape `(n_el,)`.
+    initial_time : float
+        The time instant of the first sample in seconds.
+    element_width_wl : float
+        The width of the elements in wavelengths of the center frequency.
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    sound_speed : float
+        The speed of sound in the medium.
+    attenuation_coefficient : float
+        The attenuation coefficient in Nepers/(MHz*carrier_frequency)
+    waveform_function : function
+        The function that returns the transmit waveform amplitude.
+    wavefront_only : bool
+        Set to True to only compute the wavefront of the rf data. Otherwise the rf data
+        is computed as the sum of the wavefronts from indivudual transmit elements.
+    tx_angle_sensitivity : bool
+        Set to True to include the angle dependent strength of the transducer elements
+        in the response.
+    rx_angle_sensitivity : bool
+        Set to True to include the angle dependent strength of the transducer elements
+        in the response.
 
-    ### Returns:
-        function: The vectorized function.
+    Returns
+    -------
+    function: The vectorized function.
     """
 
     # Define initial function that takes a single scatterer and returns the rf data
@@ -68,27 +79,43 @@ def _get_vectorized_simulate_function(
         """Computes the amplitude of a single rf sample in response to a single
         scatterer.
 
-        ### Args:
-            `ax_index` (`int`): The sample index.
-            `element_index` (`int`): The receiving element index.
-            `scatterer_position` (`jnp.array`): The scatterer position of shape (2,).
-            `scatterer_amplitude` (`jnp.array`): The scatterer amplitude of shape ().
-            `t0_delays` (`jnp.array`): The t0_delays of shape (n_el,). These are shifted
-                such that the smallest value in t0_delays is 0.
-            `probe_geometry` (`jnp.array`): The probe geometry of shape (n_el, 2).
-            `element_angles` (`jnp.array`): The element angles in radians of shape
-                (n_el,). Can be used to simulate curved arrays.
-            `tx_apodization` (`jnp.array`): The transmit apodization of shape (n_el,).
-            `initial_time` (`float`): The time instant of the first sample in seconds.
-            `element_width` (`float`): The width of the elements in wavelengths of the
-                center frequency.
-            `sampling_frequency` (`float`): The sampling frequency in Hz.
-            `carrier_frequency` (`float`): The center frequencu in Hz.
-            `pulse_width` (`float`): The pulse width in seconds.
-            `sound_speed` (`float`): The speed of sound in the medium.
-            `attenuation_coefficient` (`float`): The attenuation coefficient in Nepers/m
+        Parameters
+        ----------
+        ax_index : int
+            The sample index.
+        element_index : int
+            The receiving element index.
+        scatterer_position : jnp.array
+            The scatterer position of shape `(2,)`.
+        scatterer_amplitude : jnp.array
+            The scatterer amplitude of shape ().
+        t0_delays : jnp.array
+            The t0_delays of shape `(n_el,)`. These are shifted such that the smallest
+            value in t0_delays is 0.
+        probe_geometry : jnp.array
+            The probe geometry of shape `(n_el, 2)`.
+        element_angles : jnp.array
+            The element angles in radians of shape `(n_el,)`. Can be used to simulate
+            curved arrays.
+        tx_apodization : jnp.array
+            The transmit apodization of shape `(n_el,)`.
+        initial_time : float
+            The time instant of the first sample in seconds.
+        element_width : float
+            The width of the elements in wavelengths of the center frequency.
+        sampling_frequency : float
+            The sampling frequency in Hz.
+        carrier_frequency : float
+            The center frequencu in Hz.
+        pulse_width : float
+            The pulse width in seconds.
+        sound_speed : float
+            The speed of sound in the medium.
+        attenuation_coefficient : float
+            The attenuation coefficient in Nepers/m
 
-        ### Returns:
+        Returns
+        -------
             jnp.array: Amplitude of the sample.
         """
         sampling_period = 1 / sampling_frequency
@@ -239,38 +266,58 @@ def simulate_rf_data(
     amplitudes.
 
 
-    ### Args:
-        `n_ax` (`int`): The number of axial samples.
-        `scatterer_positions` (`jnp.array`): The scatterer positions of shape (n_scat, 2).
-        `scatterer_amplitudes` (`jnp.array`): The scatterer amplitudes of shape (n_scat,).
-        `ax_chunk_size` (`int`): The number of axial samples to compute simultaneously.
-        `scatterer_chunk_size` (`int`): The number of scatterers to compute simultaneously.
-        `t0_delays` (`jnp.array`): The t0_delays of shape (n_el,). These are shifted such
-            that the smallest value in t0_delays is 0.
-        `probe_geometry` (`jnp.array`): The probe geometry of shape (n_el, 2).
-        `element_angles` (`jnp.array`): The element angles in radians of shape (n_el,).
-            Can be used to simulate curved arrays.
-        `tx_apodization` (`jnp.array`): The transmit apodization of shape (n_el,).
-        `initial_time` (`float`): The time instant of the first sample in seconds.
-        `element_width_wl` (`float`): The width of the elements in wavelengths of the center
-            frequency.
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `carrier_frequency` (`float`): The center frequency of the transmit pulse in Hz.
-        `sound_speed` (`float`): The speed of sound in the medium.
-        `attenuation_coefficient` (`float`): The attenuation coefficient in dB/(MHz*cm)
-        `wavefront_only` (`bool`): Set to True to only compute the wavefront of the
-            rf data. Otherwise the rf data is computed as the sum of the wavefronts from
-            indivudual transmit elements.
-        `tx_angle_sensitivity` (`bool`): Set to True to include the angle dependent
-            strength of the transducer elements in the response.
-        `rx_angle_sensitivity` (`bool`): Set to True to include the angle dependent
-            strength of the transducer elements in the response.
-        `progress_bar` (`bool`): Set to True to display a progress bar.
-        `device` (`jax.Device`): The device to run the simulation on. If None then the
-            simulation is run on the default device.
+    Parameters
+    ----------
+    n_ax : int
+        The number of axial samples.
+    scatterer_positions : jnp.array
+        The scatterer positions of shape `(n_scat, 2)`.
+    scatterer_amplitudes : jnp.array
+        The scatterer amplitudes of shape `(n_scat,)`.
+    ax_chunk_size : int
+        The number of axial samples to compute simultaneously.
+    scatterer_chunk_size : int
+        The number of scatterers to compute simultaneously.
+    t0_delays : jnp.array
+        The t0_delays of shape `(n_el,)`. These are shifted such that the smallest value
+        in t0_delays is 0.
+    probe_geometry : jnp.array
+        The probe geometry of shape `(n_el, 2)`.
+    element_angles : jnp.array
+        The element angles in radians of shape `(n_el,)`. Can be used to simulate curved
+        arrays.
+    tx_apodization : jnp.array
+        The transmit apodization of shape `(n_el,)`.
+    initial_time : float
+        The time instant of the first sample in seconds.
+    element_width_wl : float
+        The width of the elements in wavelengths of the center frequency.
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    carrier_frequency : float
+        The center frequency of the transmit pulse in Hz.
+    sound_speed : float
+        The speed of sound in the medium.
+    attenuation_coefficient : float
+        The attenuation coefficient in dB/(MHz*cm)
+    wavefront_only : bool
+        Set to True to only compute the wavefront of the rf data. Otherwise the rf data
+        is computed as the sum of the wavefronts from indivudual transmit elements.
+    tx_angle_sensitivity : bool
+        Set to True to include the angle dependent strength of the transducer elements
+        in the response.
+    rx_angle_sensitivity : bool
+        Set to True to include the angle dependent
+        strength of the transducer elements in the response.
+    progress_bar : bool
+        Set to True to display a progress bar.
+    device : jax.Device
+        The device to run the simulation on. If None then the simulation is run on the
+        default device.
 
-    ### Returns:
-        jnp.array: The rf data of shape (n_ax, n_el)
+    Returns
+    -------
+        jnp.array: The rf data of shape `(n_ax, n_el)`
     """
     # Check that the waveform function is None or a function
     check_waveform_function(waveform_function)

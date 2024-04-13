@@ -6,16 +6,21 @@ import jaxus.utils.log as log
 class Medium:
     """Container class storing the parameters pertaining to the medium.
 
-    ## Contains
-    - `scatterer_positions` (`np.ndarray`): The scatterer positions in meters.
-        (n_scatterers, 2)
-    - `scatterer_amplitudes` (`np.ndarray`): The scatterer amplitudes in meters.
+    Contains
+    --------
+    - scatterer_positions : np.ndarray
+        The scatterer positions in meters. (n_scatterers, 2)
+    - scatterer_amplitudes : np.ndarray
+        The scatterer amplitudes in meters.
         (n_scatterers,)
-    - `sound_speed` (`float`): The speed of sound in the medium in m/s.
-    - `n_z` (`int`): The number of grid points in the z direction. Can be optionally set
-        with the set_grid_size method.
-    - `n_x` (`int`): The number of grid points in the x direction. Can be optionally set
-        with the set_grid_size method.
+    - sound_speed : float
+        The speed of sound in the medium in m/s.
+    - n_z : int
+        The number of grid points in the z direction. Can be optionally set with the
+        set_grid_size method.
+    - n_x : int
+        The number of grid points in the x direction. Can be optionally set with the
+        set_grid_size method.
     """
 
     def __init__(
@@ -27,12 +32,14 @@ class Medium:
     ):
         """Initializes the Medium object.
 
-        ### Args:
-            `scatterer_positions` (`np.ndarray`): The scatterer positions in meters.
-                [2, n_scatterers]
-            `scatterer_amplitudes` (`np.ndarray`): The scatterer amplitudes in meters.
-                [n_scatterers]
-            `sound_speed` (`float`): The speed of sound in the medium in m/s.
+        Parameters
+        ----------
+        scatterer_positions : np.ndarray
+            The scatterer positions in meters. (2, n_scatterers)
+        scatterer_amplitudes : np.ndarray
+            The scatterer amplitudes in meters. (n_scatterers)
+        sound_speed : float
+            The speed of sound in the medium in m/s.
         """
         self._validate_input(
             scatterer_positions,
@@ -82,9 +89,12 @@ class Medium:
     def set_grid_size(self, n_z, n_x):
         """Sets the grid size.
 
-        ### Args:
-            `n_z` (`int`): The number of grid points in the z direction.
-            `n_x` (`int`): The number of grid points in the x direction.
+        Parameters
+        ----------
+        n_z : int
+            The number of grid points in the z direction.
+        n_x : int
+            The number of grid points in the x direction.
         """
         if not isinstance(n_z, int) or not isinstance(n_x, int):
             raise TypeError("n_z and n_x must be integers")
@@ -107,15 +117,21 @@ class Medium:
     ):
         """Validates the input.
 
-        ### Args:
-            `scatterer_positions` (`any`): The input scatterer positions.
-            `scatterer_amplitudes` (`any`): The input scatterer amplitudes.
-            `sound_speed` (`any`): The input sound speed.
-            `attenuation_coefficient` (`any`): The input attenuation coefficient in
-                dB/m/MHz.
+        Parameters
+        ----------
+            scatterer_positions : np.ndarray
+                The input scatterer positions.
+            scatterer_amplitudes : np.ndarray
+                The input scatterer amplitudes.
+            sound_speed : float or int
+                The input sound speed.
+            attenuation_coefficient : float or int
+                The input attenuation coefficient in dB/m/MHz.
         """
+
+        # ==============================================================================
         # Check scatterer positions
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         # Check if the input is a numpy array
         if not isinstance(scatterer_positions, np.ndarray):
             raise TypeError(
@@ -199,8 +215,9 @@ class Medium:
         if attenuation_coefficient < 0:
             raise ValueError("The attenuation coefficient must be positive")
 
+        # ==============================================================================
         # Warnings
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         # Warn if the sound speed is very low
         if sound_speed <= 1000:
             log.warning(f"Sound speed is very low: {sound_speed} m/s")

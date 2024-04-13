@@ -11,7 +11,7 @@ class Probe:
 
     Contains:
     ----------
-    - probe_geometry (`np.ndarray`): The probe geometry in meters. [2, n_el]
+    - probe_geometry (`np.ndarray`): The probe geometry in meters. (2, n_el)
     - center_frequency (`float`): The center frequency of the probe in Hz.
     - element_width (`float`): The width of each element in meters.
     - bandwidth (`float`): The bandwidth of the probe in Hz.

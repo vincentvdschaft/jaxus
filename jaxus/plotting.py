@@ -17,21 +17,29 @@ def plot_rf(
 ):
     """Plots RF data to an axis.
 
-    ### Parameters
-        `ax` (`plt.Axes`): The axis to plot to.
-        `rf_data` (`np.ndarray`): The RF data to plot.
-        `start_sample` (`int`, optional): The sample number to start plotting from.
-            Defaults to 0.
-        `extent_m` (`list`, optional): The extent of the plot in meters. If None, the
-            extent is set to the number of elements and samples. Defaults to None.
-        `cmap` (`str`, optional): The colormap to use. Defaults to "viridis".
-        `vmin` (`float`, optional): The minimum value of the colormap. If None, the
-            minimum value is set to the 0.5 percentile of the data. Defaults to None.
-        `vmax` (`float`, optional): The maximum value of the colormap. If None, the
-            maximum value is set to the 99.5 percentile of the data. Defaults to None.
-        `aspect` (`str`, optional): The aspect ratio of the plot. Defaults to "auto".
-        `axis_in_mm` (`bool`, optional): Whether to plot the x-axis in mm. Defaults to
-            True.
+    Parameters
+    ----------
+    ax : plt.Axes
+        The axis to plot to.
+    rf_data : np.ndarray
+        The RF data to plot.
+    start_sample : int, optional
+        The sample number to start plotting from. Defaults to 0.
+    extent_m : list, optional
+        The extent of the plot in meters. If None, the extent is set to the number of
+        elements and samples. Defaults to None.
+    cmap : str, optional
+        The colormap to use. Defaults to "viridis".
+    vmin : float, optional
+        The minimum value of the colormap. If None, the minimum value is set to the 0.5
+        percentile of the data. Defaults to None.
+    vmax : float, optional
+        The maximum value of the colormap. If None, the maximum value is set to the 99.5
+        percentile of the data. Defaults to None.
+    aspect : str, optional
+        The aspect ratio of the plot. Defaults to "auto".
+    axis_in_mm : bool, optional
+        Whether to plot the x-axis in mm. Defaults to True.
     """
     formatter = FuncFormatter(lambda x, _: f"{int(x)}")
     if extent_m is not None:
@@ -96,22 +104,28 @@ def plot_beamformed(
 ):
     """Plots a beamformed image to an axis.
 
-    ### Parameters
-        `ax` (`plt.Axes`): The axis to plot to.
-        `image` (`np.ndarray`): The image to plot.
-        `extent_m` (`list`): The extent of the plot in meters.
-        `vmin` (`float`, optional): The minimum value of the colormap. Defaults to -60.
-        `vmax` (`float`, optional): The maximum value of the colormap. Defaults to 0.
-        `cmap` (`str`, optional): The colormap to use. Defaults to "gray".
-        `axis_in_mm` (`bool`, optional): Whether to plot the x-axis in mm. Defaults to
-            True.
-        `probe_geometry` (`np.ndarray`, optional): The probe geometry in meters of shape
-            (n_el, 2). If provided, the probe geometry is plotted on top of the image.
-            Defaults to None.
-        `title` (`str`, optional): The title of the plot. Defaults to None.
+    Parameters
+    ----------
+    ax : plt.Axes
+        The axis to plot to.
+    image : np.ndarray
+        The image to plot.
+    extent_m : list
+        The extent of the plot in meters.
+    vmin : float, optional
+        The minimum value of the colormap. Defaults to -60.
+    vmax : float, optional
+        The maximum value of the colormap. Defaults to 0.
+    cmap : str, optional
+        The colormap to use. Defaults to "gray".
+    axis_in_mm : bool, optional
+        Whether to plot the x-axis in mm. Defaults to True.
+    probe_geometry : np.ndarray, optional
+        The probe geometry in meters of shape `(n_el, 2)`. If provided, the probe
+        geometry is plotted on top of the image. Defaults to None.
+    title : str, optional
+        The title of the plot. Defaults to None.
     """
-    # scaling = 1e3 if axis_in_mm else 1
-    # extent = np.array(extent_m) * scaling
 
     if axis_in_mm:
         xlabel = "x [mm]"
@@ -158,10 +172,14 @@ def plot_to_darkmode(fig, axes, grid=False):
     """Turns a plot into a dark plot with a black background and white text, ticks, and
     spines
 
-    ### Args:
-        `fig` (`plt.fig`): The figure handle.
-        axes (plt.axes, list/tuple of plt.axews): The axes to change.
-        grid (bool, optional): Whether to add a grid. Defaults to False.
+    Parameters
+    ----------
+    fig : plt.fig
+        The figure handle.
+    axes : plt.axes or list/tuple of plt.axes
+        The axes to change.
+    grid : bool, default=False
+        Whether to add a grid. Defaults to False.
     """
     assert isinstance(fig, plt.Figure), "fig must be a plt.Figure"
 
@@ -209,8 +227,10 @@ def iterate_axes(axes):
     """Iterates over axes as returned by plt.subplots() works with single ax, 1d array
     of axes, and 2d array of axes.
 
-    ### Args:
-        axes (plt.Axes, np.ndarray): The axes to iterate over.
+    Parameters
+    ----------
+    axes : plt.Axes, np.ndarray
+        The axes to iterate over.
     """
     if isinstance(axes, plt.Axes):
         yield axes

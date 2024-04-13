@@ -7,11 +7,16 @@ from jaxus.containers.waveform import Waveform
 class Transmit:
     """Container class storing the parameters pertaining to the transmit.
 
-    ## Contains:
-    - t0_delays (np.ndarray): The t0 delays in seconds. [n_el,]
-    - tx_apodization (np.ndarray): The transmit apodization. [n_el,]
-    - carrier_frequency (float): The center frequency of the transmit pulse in Hz.
-    - pulse_width (float): The pulse width of the transmit pulse in seconds.
+    Contains
+    --------
+    - t0_delays : np.ndarray
+        The t0 delays in seconds. [n_el,]
+    - tx_apodization : np.ndarray
+        The transmit apodization. [n_el,]
+    - carrier_frequency : float
+        The center frequency of the transmit pulse in Hz.
+    - pulse_width : float
+        The pulse width of the transmit pulse in seconds.
     """
 
     def __init__(
@@ -19,12 +24,16 @@ class Transmit:
     ):
         """Initializes the Transmit object.
 
-        ### Args:
-            `t0_delays` (`np.ndarray`): The t0 delays in seconds. `(n_el,)`
-            `tx_apodization` (`np.ndarray`): The transmit apodization. `(n_el,)`
-            `carrier_frequency` (`float`): The center frequency of the transmit pulse in
-                Hz.
-            `pulse_width` (`float`): The pulse width of the transmit pulse in seconds.
+        Parameters
+        ----------
+            t0_delays : np.ndarray
+                The t0 delays in seconds. `(n_el,)`
+            tx_apodization : np.ndarray
+                The transmit apodization. `(n_el,)`
+            carrier_frequency : float
+                The center frequency of the transmit pulse in Hz.
+            pulse_width : float
+                The pulse width of the transmit pulse in seconds.
         """
         self._validate_input(t0_delays, tx_apodization, waveform)
 
@@ -77,12 +86,18 @@ class Transmit:
     def _validate_input(t0_delays, tx_apodization, waveform):
         """Checks if the input is valid.
 
-        ### Args:
-            `t0_delays` (`any`): The input t0 delays.
-            `tx_apodization` (`any`): The input transmit apodization.
-            `carrier_frequency` (`any`): The input center frequency.
-            `pulse_width` (`any`): The input pulse width.
+        Parameters
+        ----------
+            t0_delays : array_like
+                The input t0 delays.
+            tx_apodization : array_like
+                The input transmit apodization.
+            carrier_frequency : float or int
+                The input center frequency.
+            pulse_width : float or int
+                The input pulse width.
         """
+        # ------------------------------------------------------------------------------
         # Test t0_delays
         # ------------------------------------------------------------------------------
         # Check if the input is a numpy array
@@ -101,6 +116,7 @@ class Transmit:
                 "t0_delays must be float32 or float64. " f"Got {t0_delays.dtype}"
             )
 
+        # ------------------------------------------------------------------------------
         # Test tx_apodization
         # ------------------------------------------------------------------------------
         # Check if the input is a numpy array
@@ -120,6 +136,7 @@ class Transmit:
                 f"Got {tx_apodization.dtype}"
             )
 
+        # ------------------------------------------------------------------------------
         # Further checks
         # ------------------------------------------------------------------------------
         # Test if inputs are compatible

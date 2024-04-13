@@ -131,13 +131,19 @@ def get_pulse(carrier_frequency, pulse_width, chirp_rate=0, phase=0):
     a chirp by setting the chirp_rate to a nonzero value or a traditional pulse by
     setting the chirp_rate to zero.
 
-    ### Args:
-        `carrier_frequency` (`float`): The carrier frequency.
-        `pulse_width` (`float`): The pulse width in seconds.
-        `chirp_rate` (`float`): The chirp rate in Hz/s.
-        `phase` (`float`): The phase of the waveform in radians.
+    Parameters
+    ----------
+        carrier_frequency : float
+            The carrier frequency.
+        pulse_width : float
+            The pulse width in seconds.
+        chirp_rate : float
+            The chirp rate in Hz/s.
+        phase : float
+            The phase of the waveform in radians.
 
-    ### Returns:
+    Returns
+    -------
         function: A function that computes a pulse waveform.
     """
 

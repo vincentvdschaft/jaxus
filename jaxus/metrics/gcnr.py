@@ -98,14 +98,21 @@ def gcnr_plot_disk_annulus(
 ):
     """Plots the disk and annulus on top of the image.
 
-    ### Parameters
-        `ax` (`plt.Axes`): The axis to plot the disk and annulus on.
-        `disk_pos_m` (`tuple`): The position of the disk in meters.
-        `inner_radius_m` (`float`): The inner radius of the disk in meters.
-        `outer_radius_start_m` (`float`): The start radius of the annulus in meters.
-        `outer_radius_end_m` (`float`): The end radius of the annulus in meters.
-        `opacity` (`float`): The opacity of the disk and annulus. Should be between 0
-            and 1. Defaults to 0.5.
+    Parameters
+    ----------
+        ax : plt.Axes
+            The axis to plot the disk and annulus on.
+        disk_pos_m : tuple
+            The position of the disk in meters.
+        inner_radius_m : float
+            The inner radius of the disk in meters.
+        outer_radius_start_m : float
+            The start radius of the annulus in meters.
+        outer_radius_end_m : float
+            The end radius of the annulus in meters.
+        opacity : float
+            The opacity of the disk and annulus. Should be between 0 and 1. Defaults to
+            0.5.
 
     """
     # Plot the inner circle

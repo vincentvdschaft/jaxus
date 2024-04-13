@@ -24,20 +24,26 @@ def simulate_rf(
 ):
     """Simulates RF data for a given probe, transmit, receive, and medium.
 
-    ### Parameters
-        `probe` (`Probe`): The probe object.
-        `transmit` (`Transmit` or `list`): The transmit object.
-        `receive` (`Receive`): The receive object.
-        `medium` (`Medium`): The medium object.
-        `tx_angle_sensitivity` (`bool`, optional): Whether to include the transmit angle
-            sensitivity. Defaults to True.
-        `rx_angle_sensitivity` (`bool`, optional): Whether to include the receive angle
-            sensitivity. Defaults to True.
-        `wavefront_only` (`bool`, optional): Whether to simulate the wavefront only.
-            Defaults to False.
+    Parameters
+    ----------
+        probe : Probe
+            The probe object.
+        transmit : Transmit` or list
+            The transmit object.
+        receive : Receive
+            The receive object.
+        medium : Medium
+            The medium object.
+        tx_angle_sensitivity : bool, optional
+            Whether to include the transmit angle sensitivity. Defaults to True.
+        rx_angle_sensitivity : bool, optional
+            Whether to include the receive angle sensitivity. Defaults to True.
+        wavefront_only : bool, optional
+            Whether to simulate the wavefront only. Defaults to False.
 
-    ### Returns
-        `np.ndarray`: The RF data of shape (n_tx, n_ax, n_el).
+    Returns
+    -------
+        np.ndarray : The RF data of shape `(n_tx, n_ax, n_el)`.
     """
 
     if isinstance(transmit, Transmit):
@@ -92,20 +98,26 @@ def simulate_to_usbmd(
 ):
     """Simulates RF data and beamforms it to the ultrasound image domain.
 
-    ### Parameters
-        `probe` (`Probe`): The probe object.
-        `transmit` (`Transmit`): The transmit object.
-        `receive` (`Receive`): The receive object.
-        `medium` (`Medium`): The medium object.
-        `tx_angle_sensitivity` (`bool`, optional): Whether to include the transmit angle
-            sensitivity. Defaults to True.
-        `rx_angle_sensitivity` (`bool`, optional): Whether to include the receive angle
-            sensitivity. Defaults to True.
-        `wavefront_only` (`bool`, optional): Whether to simulate the wavefront only.
-            Defaults to False.
+    Parameters
+    ----------
+    probe : Probe
+        The probe object.
+    transmit : Transmit
+        The transmit object.
+    receive : Receive
+        The receive object.
+    medium : Medium
+        The medium object.
+    tx_angle_sensitivity : bool, optional
+        Whether to include the transmit angle sensitivity. Defaults to True.
+    rx_angle_sensitivity : bool, optional
+        Whether to include the receive angle sensitivity. Defaults to True.
+    wavefront_only : bool, optional
+        Whether to simulate the wavefront only. Defaults to False.
 
-    ### Returns
-        `np.ndarray`: The beamformed image of shape (n_tx, n_ax, n_az).
+    Returns
+    -------
+    np.ndarray : The beamformed image of shape `(n_tx, n_ax, n_az)`.
     """
     if isinstance(transmit, Transmit):
         transmit = [transmit]
@@ -232,12 +244,15 @@ def beamform_usbmd(
 ):
     """Beamforms RF data from a USBMD dataset.
 
-    ### Parameters
-        `path` (`str`): The path to the USBMD dataset.
+    Parameters
+    ----------
+    path : str
+        The path to the USBMD dataset.
 
-    ### Returns
-        `np.ndarray`, `PixelGrid`: The beamformed images of shape (n_frames, n_z, n_x)
-            and the pixel grid.
+    Returns
+    -------
+    np.ndarray or PixelGrid
+        The beamformed images of shape `(n_frames, n_z, n_x)` and the pixel grid.
     """
     # Load the dataset
     with h5py.File(path, "r") as dataset:

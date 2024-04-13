@@ -6,19 +6,25 @@ import jaxus.utils.log as log
 class Receive:
     """Container class storing the parameters pertaining to the receive.
 
-    ## Contains:
-    - sampling_frequency (`float`): The sampling frequency of the receive pulse in Hz.
-    - n_ax (`int`): The number of axial samples in an rf line.
+    Contains
+    --------
+    float : sampling_frequency
+        The sampling frequency of the receive pulse in Hz.
+    int : n_ax
+        The number of axial samples in an rf line.
     """
 
     def __init__(self, sampling_frequency, n_ax, initial_time):
         """Initializes the Receive object.
 
-        ### Args:
-            `sampling_frequency` (`float`): The sampling frequency of the receive pulse in Hz.
-            `n_ax` (`int`): The number of axial samples in an rf line.
-            `initial_time` (`float`): The time of recording the first sample in each rf
-                line.
+        Parameters
+        ----------
+        sampling_frequency : float
+            The sampling frequency of the receive pulse in Hz.
+        n_ax : int
+            The number of axial samples in an rf line.
+        initial_time : float
+            The time of recording the first sample in each rf line.
         """
         self._validate_input(sampling_frequency, n_ax, initial_time)
 
@@ -52,11 +58,15 @@ class Receive:
     def _validate_input(sampling_frequency, n_ax, initial_time):
         """Checks if the input is valid.
 
-        ### Args:
-            `sampling_frequency` (`any`): The input sampling frequency.
-            `n_ax` (`any`): The input number of axial samples.
+        Parameters
+        ----------
+        sampling_frequency : float
+            The input sampling frequency.
+        n_ax : int
+            The input number of axial samples.
 
-        Raises:
+        Raises
+        ------
             TypeError: If the sampling frequency is not a float.
             TypeError: If the n_ax is not an int.
         """
@@ -73,6 +83,7 @@ class Receive:
                 f"The sampling frequency must be positive. It was {sampling_frequency}."
             )
 
+        # ------------------------------------------------------------------------------
         # Check n_ax
         # ------------------------------------------------------------------------------
         if not isinstance(n_ax, int):
@@ -81,6 +92,7 @@ class Receive:
         if n_ax <= 0:
             raise ValueError(f"The n_ax must be positive. It was {n_ax}.")
 
+        # ------------------------------------------------------------------------------
         # Check initial_time
         # ------------------------------------------------------------------------------
         if not isinstance(initial_time, (float, int)):
@@ -93,6 +105,7 @@ class Receive:
                 f"The initial time must be positive. It was {initial_time}."
             )
 
+        # ------------------------------------------------------------------------------
         # Warnings
         # ------------------------------------------------------------------------------
         if sampling_frequency < 1000:

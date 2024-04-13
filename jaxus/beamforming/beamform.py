@@ -492,39 +492,50 @@ def beamform_das(
     algorithm. The beamforming can be performed before or after the data is
     converted to complex IQ data.
 
-    ### Args:
-        `rf_data` (`jnp.ndarray`): The RF or IQ data to beamform of shape
-            `(n_frames, n_tx, n_samples, n_elements, n_ch)`.
-        `pixel_positions` (`jnp.ndarray`): The position of the pixel to beamform to in
-            meters of shape `(n_pixels, 2)`.
-        `probe_geometry` (`jnp.ndarray`): The probe geometry in meters of shape
-            (n_elements, 2).
-        `t0_delays` (`jnp.ndarray`): The transmit delays of shape (n_tx, n_el). These
-            are the times between t=0 and every element firing in seconds. (t=0 is when
-            the first element fires.)
-        `initial_times` (`jnp.ndarray`): The time between t=0 and the first sample being
-            recorded. (t=0 is when the first element fires.)
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
-        `sound_speed` (`float`): The speed of sound in m/s.
-        `t_peak` (`jnp.ndarray`): The time between t=0 and the peak of the waveform to
-            beamform to. (t=0 is when the first element fires)
-        `rx_apodization` (`jnp.ndarray`): The apodization of the receive elements.
-        `f_number` (`float`): The f-number to use for the beamforming. The f-number is
-            the ratio of the focal length to the aperture size. Elements that are more
-            to the side of the current pixel than the f-number are not used in the
-            beamforming. Default is 3.
-        `iq_beamform` (`bool`): Whether to beamform the IQ data directly. Default is
-            False.
-        `transmits` (`jnp.ndarray`): The transmits to beamform. Default is None, which
-            means all transmits are beamformed.
-        `pixel_chunk_size` (`int`): The number of pixels to beamform at once. Default is
-            1048576.
-        `progress_bar` (`bool`): Whether to display a progress bar. Default is False
+    Parameters
+    ----------
+    rf_data : jnp.ndarray
+        The RF or IQ data to beamform of shape
+        `(n_frames, n_tx, n_samples, n_elements, n_ch)`.
+    pixel_positions : jnp.ndarray
+        The position of the pixel to beamform to in meters of shape `(n_pixels, 2)`.
+    probe_geometry : jnp.ndarray
+        The probe geometry in meters of shape `(n_elements, 2)`.
+    t0_delays : jnp.ndarray
+        The transmit delays of shape `(n_tx, n_el)`. These are the times between t=0 and
+        every element firing in seconds. (t=0 is when the first element fires.)
+    initial_times : jnp.ndarray
+        The time between t=0 and the first sample being recorded. (t=0 is when the first
+        element fires.)
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    carrier_frequency : float
+        The center frequency of the RF data in Hz.
+    sound_speed : float
+        The speed of sound in m/s.
+    t_peak : jnp.ndarray
+        The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
+        the first element fires)
+    rx_apodization : jnp.ndarray
+        The apodization of the receive elements.
+    f_number : float
+        The f-number to use for the beamforming. The f-number is the ratio of the focal
+        length to the aperture size. Elements that are more to the side of the current
+        pixel than the f-number are not used in the beamforming. Default is 3.
+    iq_beamform : bool
+        Whether to beamform the IQ data directly. Default is False.
+    transmits : jnp.ndarray
+        The transmits to beamform. Default is None, which means all transmits are
+        beamformed.
+    pixel_chunk_size : int
+        The number of pixels to beamform at once. Default is 1048576.
+    progress_bar : bool
+        Whether to display a progress bar. Default is False
 
-    ### Returns:
-        `bf` (`jnp.ndarray`): The beamformed image of shape
-            `(n_frames, n_z, n_x)`
+    Returns
+    -------
+    bf : jnp.ndarray
+        The beamformed image of shape `(n_frames, n_z, n_x)`
     """
     # Perform input error checking
     rf_data = check_standard_rf_or_iq_data(rf_data)
@@ -916,13 +927,16 @@ class Beamformer:
     def beamform(self, rf_data: jnp.ndarray):
         """Beamforms RF data to a pixel grid using the parameters of the beamformer.
 
-        ### Args:
-            `rf_data` (`jnp.ndarray`): The RF data to beamform of shape
-                (n_frames, n_tx, n_samples, n_elements, n_ch).
+        Parameters
+        ----------
+        rf_data : jnp.ndarray
+            The RF data to beamform of shape
+            `(n_frames, n_tx, n_samples, n_elements, n_ch)`.
 
-        ### Returns:
-            `beamformed_images` (`jnp.ndarray`): The beamformed images of shape
-                (n_frames, n_z, n_x).
+        Returns
+        -------
+        beamformed_images : jnp.ndarray
+            The beamformed images of shape `(n_frames, n_z, n_x)`.
         """
 
         beamformed = beamform_das(

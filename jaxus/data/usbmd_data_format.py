@@ -541,8 +541,10 @@ def generate_usbmd_dataset(
 def validate_dataset(path):
     """Reads the hdf5 dataset at the given path and validates its structure.
 
-    ### Args:
-        path (str, pathlike): The path to the hdf5 dataset.
+    Parameters
+    ----------
+    path : str or pathlike
+        The path to the hdf5 dataset.
 
     """
     with h5py.File(path, "r") as dataset:
@@ -601,11 +603,14 @@ def validate_dataset(path):
 def assert_scan_keys_present(dataset):
     """Ensure that all required keys are present.
 
-    ### Args:
-        `dataset` (`h5py.File`): The dataset instance to check.
+    Parameters
+    ----------
+    dataset : h5py.File
+        The dataset instance to check.
 
-    Raises:
-        AssertionError: If a required key is missing or does not have the right shape.
+    Raises
+    ------
+    AssertionError : If a required key is missing or does not have the right shape.
     """
 
     # Ensure that all keys have the correct shape
@@ -681,12 +686,14 @@ def assert_scan_keys_present(dataset):
 def assert_unit_and_description_present(hdf5_file, _prefix=""):
     """Checks that all datasets have a unit and description attribute.
 
-    ### Args:
-        `hdf5_file` (`h5py.File`): The hdf5 file to check.
+    Parameters
+    ----------
+    hdf5_file : h5py.File
+        The hdf5 file to check.
 
-    Raises:
-        AssertionError: If a dataset does not have a unit or description
-            attribute.
+    Raises
+    ------
+    AssertionError : If a dataset does not have a unit or description attribute.
     """
     for key in hdf5_file.keys():
         if isinstance(hdf5_file[key], h5py.Group):
@@ -711,15 +718,20 @@ def load_usbmd(
     """
     Loads a USBMD dataset into a python dictionary.
 
-    ### Args:
-        `path` (`str`): The path to the USBMD dataset.
-        `frames` (`list`): The frames to load (list of indices).
-        `transmits` (`list`): The transmits to load (list of indices).
-        `reduce_probe_to_2d` (`bool`): Whether to reduce the probe geometry to 2D,
-            omitting the y-coordinate.
+    Parameters
+    ----------
+    path : str
+        The path to the USBMD dataset.
+    frames : list
+        The frames to load (list of indices).
+    transmits : list
+        The transmits to load (list of indices).
+    reduce_probe_to_2d : bool
+        Whether to reduce the probe geometry to 2D, omitting the y-coordinate.
 
-    ### Returns:
-        `dict`: The loaded data.
+    Returns
+    -------
+    dict : The loaded data.
     """
 
     frames = np.array(frames)

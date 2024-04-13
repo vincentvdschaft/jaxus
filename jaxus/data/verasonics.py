@@ -69,12 +69,16 @@ def read_probe_geometry(file):
     """
     Read the probe geometry from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the probe geometry from. (The file should
-            be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the probe geometry from. (The file should be opened in read
+        mode.)
 
-    ## Returns
-        `probe_geometry` (`np.ndarray`): The probe geometry of shape (n_el, 3).
+    Returns
+    -------
+    probe_geometry : np.ndarray
+        The probe geometry of shape `(n_el, 3)`.
     """
     # Read the probe geometry from the file
     probe_geometry = file["Trans"]["ElementPos"][:3, :]
@@ -98,12 +102,15 @@ def read_probe_geometry(file):
 def read_wavelength(file):
     """Reads the wavelength from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the wavelength from. (The file should be
-            opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the wavelength from. (The file should be opened in read mode.)
 
-    ## Returns
-        `wavelength` (`float`): The wavelength of the probe.
+    Returns
+    -------
+    wavelength : float
+        The wavelength of the probe.
     """
     center_frequency = read_probe_center_frequency(file)
     sound_speed = read_sound_speed(file)
@@ -115,15 +122,19 @@ def read_transmit_events(file):
     """Read the events from the file and finds the order in which transmits and receives
     appear in the events.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the events from. (The file should be
-            opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the events from. (The file should be opened in read mode.)
 
-    ## Returns
-        `tx_order` (`list`): The order in which the transmits appear in the events.
-        `rcv_order` (`list`): The order in which the receives appear in the events.
-        `time_to_next_acq` (`np.ndarray`): The time to next acquisition of shape
-            (n_frames, n_tx).
+    Returns
+    -------
+    tx_order : list
+        The order in which the transmits appear in the events.
+    rcv_order : list
+        The order in which the receives appear in the events.
+    time_to_next_acq : np.ndarray
+        The time to next acquisition of shape `(n_frames, n_tx)`.
     """
     num_events = file["Event"]["info"].shape[0]
 
@@ -196,13 +207,17 @@ def read_t0_delays_apod(file, tx_order):
     """
     Read the t0 delays and apodization from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the t0 delays from. (The file should be
-            opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the t0 delays from. (The file should be opened in read mode.)
 
-    ## Returns
-        `t0_delays` (`np.ndarray`): The t0 delays of shape (n_tx, n_el).
-        `apod` (`np.ndarray`): The apodization of shape (n_el,).
+    Returns
+    -------
+    t0_delays : np.ndarray
+        The t0 delays of shape `(n_tx, n_el)`.
+    apod : np.ndarray
+        The apodization of shape `(n_el,)`.
     """
 
     t0_delays_list = []
@@ -238,12 +253,16 @@ def read_sampling_frequency(file):
     """
     Read the sampling frequency from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the sampling frequency from. (The file
-            should be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the sampling frequency from. (The file should be opened in read
+        mode.)
 
-    ## Returns
-        `sampling_frequency` (`float`): The sampling frequency.
+    Returns
+    -------
+    sampling_frequency : float
+        The sampling frequency.
     """
     # Read the sampling frequency from the file
     adc_rate = dereference_index(file, file["Receive"]["decimSampleRate"], 0)
@@ -260,12 +279,15 @@ def read_waveforms(file, tx_order):
     """
     Read the waveforms from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the waveforms from. (The file should be
-            opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the waveforms from. (The file should be opened in read mode.)
 
-    ## Returns
-        `waveforms` (`np.ndarray`): The waveforms of shape (n_tx, n_samples).
+    Returns
+    -------
+    waveforms : np.ndarray
+        The waveforms of shape `(n_tx, n_samples)`.
     """
     waveforms_one_way_list = []
     waveforms_two_way_list = []
@@ -308,12 +330,16 @@ def read_polar_angles(file, tx_order):
     """
     Read the polar angles from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the polar angles from. (The file should
-            be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the polar angles from. (The file should be opened in read
+        mode.)
 
-    ## Returns
-        `polar_angles` (`np.ndarray`): The polar angles of shape (n_tx,).
+    Returns
+    -------
+    polar_angles : np.ndarray
+        The polar angles of shape `(n_tx,)`.
     """
     polar_angles_list = []
 
@@ -334,12 +360,16 @@ def read_azimuth_angles(file, tx_order):
     """
     Read the azimuth angles from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the azimuth angles from. (The file should
-            be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the azimuth angles from. (The file should be opened in read
+        mode.)
 
-    ## Returns
-        `azimuth_angles` (`np.ndarray`): The azimuth angles of shape (n_tx,).
+    Returns
+    -------
+    azimuth_angles : np.ndarray
+        The azimuth angles of shape `(n_tx,)`.
     """
     azimuth_angles_list = []
 
@@ -360,12 +390,15 @@ def read_raw_data(file):
     """
     Read the raw data from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the raw data from. (The file should be
-            opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the raw data from. (The file should be opened in read mode.)
 
-    ## Returns
-        `raw_data` (`np.ndarray`): The raw data of shape (n_rcv, n_samples).
+    Returns
+    -------
+    raw_data : np.ndarray
+        The raw data of shape `(n_rcv, n_samples)`.
     """
     # Get the number of axial samples
     start_sample = dereference_index(file, file["Receive"]["startSample"], 0).item()
@@ -393,12 +426,16 @@ def read_raw_data(file):
 def read_probe_center_frequency(file):
     """Reads the center frequency of the probe from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the center frequency from. (The file
-            should be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the center frequency from. (The file should be opened in read
+        mode.)
 
-    ## Returns
-        `center_frequency` (`float`): The center frequency of the probe.
+    Returns
+    -------
+    float
+        The center frequency of the probe.
     """
     center_frequency = file["Trans"]["frequency"][0, 0] * 1e6
     return center_frequency
@@ -407,12 +444,16 @@ def read_probe_center_frequency(file):
 def read_sound_speed(file):
     """Reads the speed of sound from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the speed of sound from. (The file
-            should be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the speed of sound from. (The file should be opened in read
+        mode.)
 
-    ## Returns
-        `sound_speed` (`float`): The speed of sound.
+    Returns
+    -------
+    float
+        The speed of sound.
     """
 
     sound_speed = file["Resource"]["Parameters"]["speedOfSound"][0, 0].item()
@@ -422,14 +463,20 @@ def read_sound_speed(file):
 def read_initial_times(file, rcv_order, sound_speed):
     """Reads the initial times from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the initial times from. (The file should
-            be opened in read mode.)
-        `rcv_order` (`list`): The order in which the receives appear in the events.
-        `sound_speed` (`float`): The speed of sound.
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the initial times from. (The file should be opened in read
+        mode.)
+    rcv_order : list
+        The order in which the receives appear in the events.
+    sound_speed : float
+        The speed of sound.
 
-    ## Returns
-        `initial_times` (`np.ndarray`): The initial times of shape (n_rcv,).
+    Returns
+    -------
+    np.ndarray
+        The initial times of shape `(n_rcv,)`.
     """
     wavelength = read_wavelength(file)
     initial_times = []
@@ -444,12 +491,16 @@ def read_initial_times(file, rcv_order, sound_speed):
 def read_probe_name(file):
     """Reads the name of the probe from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the name of the probe from. (The file
-            should be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the name of the probe from. (The file should be opened in read
+        mode.)
 
-    ## Returns
-        `probe_name` (`str`): The name of the probe.
+    Returns
+    -------
+    str
+        The name of the probe.
     """
     probe_name = file["Trans"]["name"][:]
     probe_name = decode_string(probe_name)
@@ -459,12 +510,16 @@ def read_probe_name(file):
 def read_probe_element_width(file):
     """Reads the element width from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the element width from. (The file should
-            be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the element width from. (The file should be opened in read
+        mode.)
 
-    ## Returns
-        `element_width` (`float`): The element width.
+    Returns
+    -------
+    float
+        The element width.
     """
     element_width = file["Trans"]["elementWidth"][:][0, 0]
 
@@ -484,12 +539,16 @@ def read_probe_element_width(file):
 def read_probe_bandwidth(file):
     """Reads the transducer bandwidth from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the transducer bandwidth from. (The file
-            should be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the transducer bandwidth from. (The file should be opened in
+        read mode.)
 
-    ## Returns
-        `bandwidth` (`tuple`): The bandwidth of the probe in Hz.
+    Returns
+    -------
+    bandwidth : tuple
+        The bandwidth of the probe in Hz.
     """
     bandwidth = file["Trans"]["Bandwidth"][:]
     bandwidth = (bandwidth[0, 0] * 1e6, bandwidth[1, 0] * 1e6)
@@ -499,13 +558,18 @@ def read_probe_bandwidth(file):
 def read_focus_distances(file, tx_order):
     """Reads the focus distances from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the focus distances from. (The file
-            should be opened in read mode.)
-        `tx_order` (`list`): The order in which the transmits appear in the events.
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the focus distances from. (The file should be opened in read
+        mode.)
+    tx_order : list
+        The order in which the transmits appear in the events.
 
-    ## Returns
-        `focus_distances` (`list`): The focus distances.
+    Returns
+    -------
+    list
+        The focus distances.
     """
     focus_distances = []
     for n in tx_order:
@@ -517,12 +581,16 @@ def read_focus_distances(file, tx_order):
 def read_tgc_gain_curve(file):
     """Reads the TGC gain curve from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the TGC gain curve from. (The file
-            should be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the TGC gain curve from. (The file should be opened in read
+        mode.)
 
-    ## Returns
-        `gain_curve` (`np.ndarray`): The TGC gain curve of shape (n_ax,).
+    Returns
+    -------
+    np.ndarray
+        The TGC gain curve of shape `(n_ax,)`.
     """
 
     gain_curve = file["TGC"]["Waveform"][:][:, 0]
@@ -560,12 +628,16 @@ def read_tgc_gain_curve(file):
 def read_bandwidth_percent(file):
     """Reads the bandwidth percent from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the bandwidth percent from. (The file
-            should be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the bandwidth percent from. (The file should be opened in read
+        mode.)
 
-    ## Returns
-        `bandwidth_percent` (`int`): The bandwidth percent.
+    Returns
+    -------
+    int
+        The bandwidth percent.
     """
     bandwidth_percent = dereference_index(file, file["Receive"]["sampleMode"], 0)
     bandwidth_percent = decode_string(bandwidth_percent)
@@ -576,12 +648,16 @@ def read_bandwidth_percent(file):
 def read_lens_correction(file):
     """Reads the lens correction from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the lens correction from. (The file
-            should be opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the lens correction from. (The file should be opened in read
+        mode.)
 
-    ## Returns
-        `lens_correction` (`np.ndarray`): The lens correction.
+    Returns
+    -------
+    np.ndarray
+        The lens correction.
     """
     lens_correction = file["Trans"]["lensCorrection"][0, 0].item()
     return lens_correction
@@ -590,12 +666,15 @@ def read_lens_correction(file):
 def read_image_data_p(file):
     """Reads the image data from the file.
 
-    ## Parameters
-        `file` (`h5py.File`): The file to read the image data from. (The file should be
-            opened in read mode.)
+    Parameters
+    ----------
+    file : h5py.File
+        The file to read the image data from. (The file should be opened in read mode.)
 
-    ## Returns
-        `image_data` (`np.ndarray`): The image data.
+    Returns
+    -------
+    np.ndarray
+        The image data.
     """
     # Get the dataset reference
     image_data_ref = file["ImgDataP"][0, 0]
@@ -610,9 +689,12 @@ def usbmd_from_matlab_raw(input_path, output_path):
     """Converts a Verasonics matlab raw file to the usbmd format. The MATLAB file
     should be created using the `save_raw` function and be stored in "v7.3" format.
 
-    ## Parameters
-        `input_path` (`str`): The path to the input file (.mat file).
-        `output_path` (`str`): The path to the output file (.hdf5 file).
+    Parameters
+    ----------
+    input_path : str
+        The path to the input file (.mat file).
+    output_path : str
+        The path to the output file (.hdf5 file).
     """
     # Load the data
     with h5py.File(input_path, "r") as file:

@@ -71,8 +71,9 @@ class Receive:
             TypeError: If the n_ax is not an int.
         """
 
+        # ==============================================================================
         # Check sampling frequency
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         if not isinstance(sampling_frequency, float):
             raise TypeError(
                 f"The sampling frequency must be a float. It was {type(sampling_frequency)}."
@@ -83,18 +84,18 @@ class Receive:
                 f"The sampling frequency must be positive. It was {sampling_frequency}."
             )
 
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         # Check n_ax
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         if not isinstance(n_ax, int):
             raise TypeError(f"The n_ax must be an int. It was {type(n_ax)}.")
 
         if n_ax <= 0:
             raise ValueError(f"The n_ax must be positive. It was {n_ax}.")
 
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         # Check initial_time
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         if not isinstance(initial_time, (float, int)):
             raise TypeError(
                 f"The initial time must be a float or int. It was {type(initial_time)}."
@@ -105,9 +106,9 @@ class Receive:
                 f"The initial time must be positive. It was {initial_time}."
             )
 
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         # Warnings
-        # ------------------------------------------------------------------------------
+        # ==============================================================================
         if sampling_frequency < 1000:
             log.warning(
                 "The sampling frequency is very low. "

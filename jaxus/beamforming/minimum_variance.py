@@ -389,32 +389,42 @@ def mv_beamform_transmit(
     algorithm. The beamforming can be performed before or after the data is converted
     to complex IQ data.
 
-    ### Parameters:
-        `rf_data` (`jnp.ndarray`): The RF or IQ data to beamform of shape
-            `(n_samples, n_el)`.
-        `pixel_positions` (`jnp.ndarray`): The position of the pixel to beamform to in
-            meters of shape `(n_pixels, 2)`.
-        `probe_geometry` (`jnp.ndarray`): The probe geometry in meters of shape
-            (n_el, 2).
-        `t0_delays` (`jnp.ndarray`): The transmit delays of shape (n_tx, n_el). These are
-            the times between t=0 and every element firing in seconds. (t=0 is when the
-            first element fires.)
-        `initial_time` (`jnp.ndarray`): The time between t=0 and the first sample being
-            recorded. (t=0 is when the first element fires.)
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
-        `sound_speed` (`float`): The speed of sound in m/s.
-        `t_peak` (`float`): The time between t=0 and the peak of the waveform to beamform
-            to. (t=0 is when the first element fires)
-        `rx_apodization` (`jnp.ndarray`): The apodization of the receive elements.
-        `f_number` (`float`): The f-number to use for the beamforming. The f-number is the
-            ratio of the focal length to the aperture size. Elements that are more to the
-            side of the current pixel than the f-number are not used in the beamforming.
-            Default is 3.
-        `iq_beamform` (`bool`): Whether to beamform the IQ data directly. Default is False.
+    Parameters
+    ----------
+    rf_data : jnp.ndarray
+        The RF or IQ data to beamform of shape `(n_samples, n_el)`.
+    pixel_positions : jnp.ndarray
+        The position of the pixel to beamform to in meters of shape `(n_pixels, 2)`.
+    probe_geometry : jnp.ndarray
+        The probe geometry in meters of shape `(n_el, 2)`.
+    t0_delays : jnp.ndarray
+        The transmit delays of shape `(n_tx, n_el)`. These are the times between t=0 and
+        every element firing in seconds. (t=0 is when the first element fires.)
+    initial_time : jnp.ndarray
+        The time between t=0 and the first sample being recorded. (t=0 is when the first
+        element fires.)
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    carrier_frequency : float
+        The center frequency of the RF data in Hz.
+    sound_speed : float
+        The speed of sound in m/s.
+    t_peak : float
+        The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
+        the first element fires)
+    rx_apodization : jnp.ndarray
+        The apodization of the receive elements.
+    f_number : float
+        The f-number to use for the beamforming. The f-number is the ratio of the focal
+        length to the aperture size. Elements that are more to the side of the current
+        pixel than the f-number are not used in the beamforming.
+    iq_beamform : bool
+        Whether to beamform the IQ data directly. Default is False.
 
-    ### Returns:
-        `bf_value` (`float`): The beamformed value for the pixel.
+    Returns
+    -------
+    float
+        The beamformed value for the pixel.
     """
     return vmap(
         mv_beamform_pixel,
@@ -499,20 +509,45 @@ class MinimumVarianceBeamformer(Beamformer):
             raise TypeError("epsilon must be a float or int")
         self._epsilon = float(epsilon)
 
-    def _get_beamform_func(
-        self,
-    ):
-        """Returns a jit-compiled function that can be used to beamform a transmit.
-
-        ### Returns:
-            `_beamform_pixel` (`function`): A function that can be used to beamform a
-                transmit
-        """
-
-        # ==============================================================================
-        # Define the _beamform_pixel function to be vmapped over all pixels
-        # ==============================================================================
-
     @property
     def l(self):
         return self._l
+
+    def beamform(self, rf_data: jnp.ndarray):
+        """Beamforms RF data to a pixel grid using the parameters of the beamformer.
+
+        Parameters
+        ----------
+        rf_data : jnp.ndarray
+            The RF data to beamform of shape
+            `(n_frames, n_tx, n_samples, n_el, n_ch)`.
+
+        Returns
+        -------
+        beamformed_images : jnp.ndarray
+            The beamformed images of shape `(n_frames, n_z, n_x)`.
+        """
+
+        beamformed = beamform_mv(
+            rf_data=rf_data,
+            pixel_positions=self._pixel_positions_flat,
+            probe_geometry=self._probe_geometry,
+            t0_delays=self._t0_delays,
+            initial_times=self._initial_times,
+            sampling_frequency=self._sampling_frequency,
+            carrier_frequency=self._carrier_frequency,
+            sound_speed=self._sound_speed,
+            t_peak=self._t_peak,
+            subaperture_size=self._l,
+            diagonal_loading=self._epsilon,
+            rx_apodization=self._rx_apodization,
+            f_number=self._f_number,
+            iq_beamform=self._iq_beamform,
+        )
+
+        beamformed = jnp.reshape(
+            beamformed,
+            (beamformed.shape[0], self._pixel_grid.n_rows, self._pixel_grid.n_cols),
+        )
+
+        return beamformed

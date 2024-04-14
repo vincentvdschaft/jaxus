@@ -49,17 +49,23 @@ def check_n_el(n_el):
 def check_t0_delays(t0_delays, jax_allowed=True, numpy_allowed=True, transmit_dim=True):
     """Checks if the input is a valid array of t0_delays.
 
-    ### Args:
-        `t0_delays` (`any`): The input array.
-        `jax_allowed` (`bool`, optional): If True, jax arrays are allowed. Defaults to True.
-        `numpy_allowed` (`bool`, optional): If True, numpy arrays are allowed. Defaults to
-            True.
-        `transmit_dim` (`bool`, optional): If True, the array should have shape (n_tx,
-            n_el). Defaults to True.
+    Parameters
+    ----------
+    t0_delays : np.array or jnp.array
+        The input array.
+    jax_allowed : bool, default=True
+        If True, jax arrays are allowed.
+    numpy_allowed : bool, default=True
+        If True, numpy arrays are allowed.
+    transmit_dim : bool, default=True
+        If True, the array should have shape `(n_tx, n_el)`. Defaults to True.
 
-    Raises:
-        TypeError: If the input is not an ndarray.
-        TypeError: If the input is not float32 or float64.
+    Raises
+    ------
+    TypeError
+        If the input is not an ndarray.
+    TypeError
+        If the input is not float32 or float64.
     """
     if not isinstance(t0_delays, (jnp.ndarray, np.ndarray)):
         raise TypeError("t0_delays is not an ndarray")
@@ -93,15 +99,21 @@ def check_t0_delays(t0_delays, jax_allowed=True, numpy_allowed=True, transmit_di
 def check_tx_apodization(tx_apodization, jax_allowed=True, numpy_allowed=True):
     """Checks if the input is a valid array of tx_apodization values.
 
-    ### Args:
-        `tx_apodization` (`any`): The input array.
-        jax_allowed (bool, optional): If True, jax arrays are allowed. Defaults to True.
-        numpy_allowed (bool, optional): If True, numpy arrays are allowed. Defaults to
-        True.
+    Parameters
+    ----------
+    tx_apodization : np.array or jnp.array
+        The input array.
+    jax_allowed : bool, default=True
+        If True, jax arrays are allowed.
+    numpy_allowed : bool, optional
+        If True, numpy arrays are allowed.
 
-    Raises:
-        TypeError: If the input is not an ndarray.
-        TypeError: If the input is not float32 or float64.
+    Raises
+    ------
+    TypeError
+        If the input is not an ndarray.
+    TypeError
+        If the input is not float32 or float64.
     """
     if not isinstance(tx_apodization, (jnp.ndarray, np.ndarray)):
         raise TypeError("tx_apodization is not an ndarray")
@@ -245,12 +257,17 @@ def check_attenuation_coefficient(attenuation_coefficient):
 def check_element_angles(element_angles):
     """Checks if the input is a valid array of element angles.
 
-    ### Args:
-        `element_angles` (`any`): The input array.
+    Parameters
+    ----------
+    element_angles : np.array or jnp.array
+        The input array.
 
-    Raises:
-        TypeError: If the input is not an ndarray.
-        TypeError: If the input is not float32 or float64.
+    Raises
+    ------
+    TypeError
+        If the input is not an ndarray.
+    TypeError
+        If the input is not float32 or float64.
     """
     if not isinstance(element_angles, (jnp.ndarray, np.ndarray)):
         raise TypeError("element_angles is not an ndarray")
@@ -279,19 +296,27 @@ def check_pos_array(
 ):
     """Checks if the input is a valid scatterer positions array.
 
-    ### Args:
-        `positions` (`any`): The input array.
-        jax_allowed (bool, optional): If True, jax arrays are allowed. Defaults to True.
-        numpy_allowed (bool, optional): If True, numpy arrays are allowed. Defaults to
-            True.
-        ax_dim (int, optional): The dimension specifying wheter it is the x- or z-
-            coordinate.
-        name (str, optional): The name of the array. Defaults to "positions_array".
+    Parameters
+    ----------
+    positions : np.array or jnp.array
+        The input array.
+    jax_allowed : bool, default=True
+        If True, jax arrays are allowed.
+    numpy_allowed : bool, default=True
+        If True, numpy arrays are allowed.
+    ax_dim : int, default=1
+        The dimension specifying wheter it is the x- or z-coordinate.
+    name : str, default="positions_array"
+        The name of the array.
 
-    Raises:
-        TypeError: If the input is not an ndarray.
-        TypeError: If the input does not have shape (2, n).
-        TypeError: If the input is not float32 or float64.
+    Raises
+    ------
+    TypeError
+        If the input is not an ndarray.
+    TypeError
+        If the input does not have shape `(2, n)`.
+    TypeError
+        If the input is not float32 or float64.
     """
     if not isinstance(positions, (jnp.ndarray, np.ndarray)):
         raise TypeError(f"{name} is not an ndarray")
@@ -356,15 +381,26 @@ def _check_standard_rf_data(
 ):
     """Checks if the input is a valid RF data array.
 
-    ### Args:
-        `rf_data` (`any`): The input array.
-        jax_allowed (bool, optional): If True, jax arrays are allowed. Defaults to True.
-        numpy_allowed (bool, optional): If True, numpy arrays are allowed. Defaults to
-        True.
+    Parameters
+    ----------
+    rf_data : np.array or jnp.array
+        The input array of RF data.
+    jax_allowed : bool, default=True
+        If True, jax arrays are allowed.
+    numpy_allowed : bool, default=True
+        If True, numpy arrays are allowed.
 
-    Raises:
-        TypeError: If the input is not an ndarray.
-        TypeError: If the input is not float32 or float64.
+    Returns
+    -------
+    np.array
+        The input array as a float32 array.
+
+    Raises
+    ------
+    TypeError
+        If the input is not an ndarray.
+    TypeError
+        If the input is not float32 or float64.
     """
     if not isinstance(rf_data, (jnp.ndarray, np.ndarray)):
         raise TypeError("rf_data is not an ndarray")
@@ -391,15 +427,26 @@ def _check_standard_rf_data(
 def check_standard_rf_data(rf_data, jax_allowed=True, numpy_allowed=True):
     """Checks if the input is a valid RF data array.
 
-    ### Args:
-        `rf_data` (`any`): The input array.
-        jax_allowed (bool, optional): If True, jax arrays are allowed. Defaults to True.
-        numpy_allowed (bool, optional): If True, numpy arrays are allowed. Defaults to
-        True.
+    Parameters
+    ----------
+    rf_data : np.array or jnp.array
+        The input array of RF data.
+    jax_allowed : bool, default=True
+        If True, jax arrays are allowed.
+    numpy_allowed : bool, default=True
+        If True, numpy arrays are allowed.
 
-    Raises:
-        TypeError: If the input is not an ndarray.
-        TypeError: If the input is not float32 or float64.
+    Returns
+    -------
+    np.array
+        The input array as a float32 array.
+
+    Raises
+    ------
+    TypeError
+        If the input is not an ndarray.
+    TypeError
+        If the input is not float32 or float64.
     """
     return _check_standard_rf_data(rf_data, jax_allowed, numpy_allowed, 1).astype(
         np.float32
@@ -409,15 +456,26 @@ def check_standard_rf_data(rf_data, jax_allowed=True, numpy_allowed=True):
 def check_standard_iq_data(iq_data, jax_allowed=True, numpy_allowed=True):
     """Checks if the input is a valid IQ data array.
 
-    ### Args:
-        `iq_data` (`any`): The input array.
-        jax_allowed (bool, optional): If True, jax arrays are allowed. Defaults to True.
-        numpy_allowed (bool, optional): If True, numpy arrays are allowed. Defaults to
-        True.
+    Parameters
+    ----------
+    iq_data : np.array or jnp.array
+        The input array of IQ data.
+    jax_allowed : bool, default=True
+        If True, jax arrays are allowed.
+    numpy_allowed : bool, default=True
+        If True, numpy arrays are allowed.
 
-    Raises:
-        TypeError: If the input is not an ndarray.
-        TypeError: If the input is not float32 or float64.
+    Returns
+    -------
+    np.array
+        The input array as a float32 array.
+
+    Raises
+    ------
+    TypeError
+        If the input is not an ndarray.
+    TypeError
+        If the input is not float32 or float64.
     """
     return _check_standard_rf_data(iq_data, jax_allowed, numpy_allowed, 2).astype(
         np.float32
@@ -425,17 +483,22 @@ def check_standard_iq_data(iq_data, jax_allowed=True, numpy_allowed=True):
 
 
 def check_standard_rf_or_iq_data(rf_or_iq_data, jax_allowed=True, numpy_allowed=True):
-    """Checks if the input is a valid RF or IQ data array in the format (n_frames, n_tx,
-    n_ax, n_el, n_channels).
+    """Checks if the input is a valid RF or IQ data array in the format
+    `(n_frames, n_tx, n_ax, n_el, n_channels)`.
 
-    ### Args:
-        `rf_or_iq_data` (`any`): The input array.
-        jax_allowed (bool, optional): If True, jax arrays are allowed. Defaults to True.
-        numpy_allowed (bool, optional): If True, numpy arrays are allowed. Defaults to
-        True.
+    Parameters
+    ----------
+    rf_or_iq_data : np.array or jnp.array
+        The input array of RF or IQ data.
+    jax_allowed : bool, default=True
+        If True, jax arrays are allowed.
+    numpy_allowed : bool, default=True
+        If True, numpy arrays are allowed.
 
-    ### Returns:
-        ndarray: The input array.
+    Returns
+    -------
+    np.array
+        The input array as a float32 array.
     """
     try:
         return check_standard_rf_data(rf_or_iq_data, jax_allowed, numpy_allowed).astype(
@@ -500,14 +563,23 @@ def check_nonnegfloat(n, name="value"):
 def check_shapes_consistent(probe_geometry, intial_times, t0_delays, apodization):
     """Checks if the shapes of the input arrays are consistent.
 
-    ### Args:
-        `probe_geometry` (`ndarray`): The probe geometry array of shape (n_el, 2).
-        `intial_times` (`ndarray`): The initial times array of shape (n_tx,).
-        `t0_delays` (`ndarray`): The t0_delays array of shape (n_tx, n_el).
-        `apodization` (`ndarray`): The apodization array of shape (n_el).
+    Parameters
+    ----------
+    probe_geometry : np.array
+        The probe geometry array.
+    intial_times : np.array
+        The initial times array.
+    t0_delays : np.array
+        The t0_delays array.
+    apodization : np.array
+        The apodization array.
 
-    Raises:
-        ValueError: If the shapes are not consistent.
+    Raises
+    ------
+    ValueError
+        If the number of elements in all arrays is not equal.
+    ValueError
+        If the number of transmitters in all arrays is not equal.
     """
     # Check the number of elements in all arrays
     if not probe_geometry.shape[0] == apodization.shape[0] == t0_delays.shape[1]:

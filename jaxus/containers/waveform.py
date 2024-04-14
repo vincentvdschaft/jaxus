@@ -160,11 +160,15 @@ def get_pulse(carrier_frequency, pulse_width, chirp_rate=0, phase=0):
     def chirp(t):
         """Computes a pulse waveform.
 
-        ### Args:
-            `t` (`jnp.array`): The time vector.
+        Parameters
+        ----------
+        t : jnp.array
+            The time vector.
 
-        ### Returns:
-            np.array: The pulse waveform sampled at t.
+        Returns
+        -------
+        np.array
+            The pulse waveform sampled at ``t``.
         """
         sigma = (0.5 * pulse_width) / jnp.sqrt(-np.log(0.1))
         t = t - pulse_width
@@ -178,14 +182,21 @@ def get_pulse(carrier_frequency, pulse_width, chirp_rate=0, phase=0):
 def band_limit(signal, cutoff_low, cutoff_high, sampling_frequency):
     """Band limits a signal by applying a butterworth filter twice.
 
-    ### Args:
-        `signal` (`ndarray`): The signal to be filtered.
-        `cutoff_low` (`float`): The lower cutoff frequency in Hz.
-        `cutoff_high` (`float`): The upper cutoff frequency in Hz.
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
+    Parameters
+    ----------
+    signal : ndarray
+        The signal to be filtered.
+    cutoff_low : float
+        The lower cutoff frequency in Hz.
+    cutoff_high : float
+        The upper cutoff frequency in Hz.
+    sampling_frequency :float
+        The sampling frequency in Hz.
 
-    ### Returns:
-        ndarray: The filtered signal.
+    Returns
+    -------
+    ndarray
+        The filtered signal.
     """
     cutoff_low = cutoff_low / (0.5 * sampling_frequency)
     cutoff_high = cutoff_high / (0.5 * sampling_frequency)

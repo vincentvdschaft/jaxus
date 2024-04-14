@@ -5,9 +5,10 @@ class PixelGrid:
     def __init__(self, pixel_positions_cartesian: np.ndarray):
         """Initializes a PixelGrid object.
 
-        ### Args:
-            `pixel_positions_cartesian` (`np.ndarray`): The positions of the pixels in
-                meters of shape (n_rows, n_cols, 2).
+        Parameters
+        ----------
+        pixel_positions_cartesian : np.ndarray
+            The positions of the pixels in meters of shape `(n_rows, n_cols, 2)`.
         """
 
         self.pixel_positions = pixel_positions_cartesian

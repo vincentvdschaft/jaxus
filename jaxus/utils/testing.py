@@ -8,8 +8,10 @@ def get_test_containers():
     """Produces a `Probe`, `Medium`, `Receive`, and `Transmit` containers for testing
     purposes.
 
-    ### Returns
-        `probe`, `medium`, `receive`, `transmit`
+    Returns
+    -------
+    probe, medium, receive, transmit
+        The containers.
     """
     n_el = 128
     probe = Probe(

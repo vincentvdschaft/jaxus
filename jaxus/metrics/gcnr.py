@@ -10,13 +10,19 @@ def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 256):
     intensities. The two input arrays are flattened and the GCNR is computed based on
     the histogram of the pixel intensities with the specified number of bins.
 
-    ### Parameters
-        `region1` (`np.ndarray`): The first set of pixel intensities.
-        `region2` (`np.ndarray`): The second set of pixel intensities.
-        `bins` (`int`): The number of bins to use for the histogram.
+    Parameters
+    ----------
+    region1 : np.ndarray
+        The first set of pixel intensities.
+    region2 : np.ndarray
+        The second set of pixel intensities.
+    bins : int
+        The number of bins to use for the histogram.
 
-    ### Returns
-        `float`: The GCNR value.
+    Returns
+    -------
+    float
+        The GCNR value.
     """
 
     # Flatten arrays of pixels
@@ -27,15 +33,15 @@ def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 256):
     _, bins = np.histogram(np.concatenate((region1, region2)), bins=bins)
 
     # Compute the histograms for the two regions individually with the shared bins
-    f, _ = np.histogram(region1, bins=bins, density=True)
-    g, _ = np.histogram(region2, bins=bins, density=True)
+    hist_region_1, _ = np.histogram(region1, bins=bins, density=True)
+    hist_region_2, _ = np.histogram(region2, bins=bins, density=True)
 
     # Normalize the histograms to unit area
-    f /= f.sum()
-    g /= g.sum()
+    hist_region_1 /= hist_region_1.sum()
+    hist_region_2 /= hist_region_2.sum()
 
     # Compute and return the GCNR
-    return 1 - np.sum(np.minimum(f, g))
+    return 1 - np.sum(np.minimum(hist_region_1, hist_region_2))
 
 
 def gcnr_compute_disk(
@@ -50,18 +56,29 @@ def gcnr_compute_disk(
 ):
     """Computes the GCNR between a circle and a surrounding annulus.
 
-    ### Parameters
-        `image` (`np.ndarray`): The image to compute the GCNR on.
-        `xlims_m` (`tuple`): The limits of the image in the x-direction in meters.
-        `zlims_m` (`tuple`): The limits of the image in the z-direction in meters.
-        `disk_pos_m` (`tuple`): The position of the disk in meters.
-        `inner_radius_m` (`float`): The inner radius of the disk in meters.
-        `outer_radius_start_m` (`float`): The start radius of the annulus in meters.
-        `outer_radius_end_m` (`float`): The end radius of the annulus in meters.
-        `num_bins` (`int`): The number of bins to use for the histogram.
+    Parameters
+    ----------
+    image : np.ndarray
+        The image to compute the GCNR on.
+    xlims_m : tuple
+        The limits of the image in the x-direction in meters.
+    zlims_m : tuple
+        The limits of the image in the z-direction in meters.
+    disk_pos_m : tuple
+        The position of the disk in meters.
+    inner_radius_m : float
+        The inner radius of the disk in meters.
+    outer_radius_start_m : float
+        The start radius of the annulus in meters.
+    outer_radius_end_m : float
+        The end radius of the annulus in meters.
+    num_bins : int
+        The number of bins to use for the histogram.
 
-    ### Returns
-        `float`: The GCNR value.
+    Returns
+    -------
+    float
+        The GCNR value.
     """
 
     # Create meshgrid of locations for the pixels

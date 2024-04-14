@@ -54,32 +54,40 @@ def _beamform_pixel(
     """Beamforms a single pixel of a single frame and single transmit. Further
     processing such as log-compression and envelope detection are not performed.
 
-    ### Args:
-        `rf_data` (`jnp.ndarray`): The IQ data to beamform of shape
-            `(n_samples, n_elements)`.
-        `pixel_pos` (`jnp.ndarray`): The position of the pixel to beamform to in meters
-            of shape `(2,)`.
-        `t0_delays` (`jnp.ndarray`): The transmit delays of shape (n_tx, n_el). These
-            are the times between t=0 and every element firing in seconds. (t=0 is
-            when the first element fires.)
-        `initial_time` (`jnp.ndarray`): The time between t=0 and the first sample being
-            recorded. (t=0 is when the first element fires.)
-        `sound_speed` (`float`): The speed of sound in m/s.
-        `t_peak` (`float`): The time between t=0 and the peak of the waveform to
-            beamform to.
-        `probe_geometry` (`jnp.ndarray`): The probe geometry in meters of shape
-            (n_el, 2).
-        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `f_number` (`float`): The f-number to use for the beamforming. The f-number is
-            the ratio of the focal length to the aperture size. Elements that are more
-            to the side of the current pixel than the f-number are not used in the
-            beamforming.
-        `rx_apodization` (`jnp.ndarray`): The apodization of the receive elements.
+    Parameters
+    ----------
+    rf_data : jnp.ndarray
+        The IQ data to beamform of shape `(n_samples, n_elements)`.
+    pixel_pos : jnp.ndarray
+        The position of the pixel to beamform to in meters of shape `(2,)`.
+    t0_delays : jnp.ndarray
+        The transmit delays of shape (n_tx, n_el). These are the times between t=0 and
+        every element firing in seconds. (t=0 is when the first element fires.)
+    initial_time : jnp.ndarray
+        The time between t=0 and the first sample being recorded. (t=0 is when the first
+        element fires.)
+    sound_speed : float
+        The speed of sound in m/s.
+    t_peak : float
+        The time between t=0 and the peak of the waveform to beamform to.
+    probe_geometry : jnp.ndarray
+        The probe geometry in meters of shape `(n_el, 2)`.
+    carrier_frequency : float
+        The center frequency of the RF data in Hz.
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    f_number : float
+        The f-number to use for the beamforming. The f-number is the ratio of the focal
+        length to the aperture size. Elements that are more to the side of the current
+        pixel than the f-number are not used in the beamforming.
+    rx_apodization : jnp.ndarray
+        The apodization of the receive elements.
 
 
-    ### Returns:
-        `bf_value` (`float`): The beamformed value for the pixel.
+    Returns
+    -------
+    float
+        The beamformed value for the pixel.
     """
 
     tof_corrected = _tof_correct_pixel(
@@ -140,31 +148,40 @@ def dmas_beamform_transmit(
     algorithm. The beamforming can be performed before or after the data is converted
     to complex IQ data.
 
-    ### Parameters:
-        `rf_data` (`jnp.ndarray`): The IQ data to beamform of shape
-            `(n_samples, n_elements)`.
-        `pixel_positions` (`jnp.ndarray`): The position of the pixel to beamform to in
-            meters of shape `(n_pixels, 2)`.
-        `probe_geometry` (`jnp.ndarray`): The probe geometry in meters of shape
-            (n_elements, 2).
-        `t0_delays` (`jnp.ndarray`): The transmit delays of shape (n_tx, n_el). These are
-            the times between t=0 and every element firing in seconds. (t=0 is when the
-            first element fires.)
-        `initial_time` (`jnp.ndarray`): The time between t=0 and the first sample being
-            recorded. (t=0 is when the first element fires.)
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
-        `sound_speed` (`float`): The speed of sound in m/s.
-        `t_peak` (`float`): The time between t=0 and the peak of the waveform to beamform
-            to. (t=0 is when the first element fires)
-        `rx_apodization` (`jnp.ndarray`): The apodization of the receive elements.
-        `f_number` (`float`): The f-number to use for the beamforming. The f-number is the
-            ratio of the focal length to the aperture size. Elements that are more to the
-            side of the current pixel than the f-number are not used in the beamforming.
-            Default is 3.
+    Parameters
+    ----------
+    rf_data : jnp.ndarray
+        The IQ data to beamform of shape `(n_samples, n_elements)`.
+    pixel_positions : jnp.ndarray
+        The position of the pixel to beamform to in meters of shape `(n_pixels, 2)`.
+    probe_geometry : jnp.ndarray
+        The probe geometry in meters of shape `(n_el, 2)`.
+    t0_delays : jnp.ndarray
+        The transmit delays of shape `(n_tx, n_el)`. These are the times between t=0 and
+        every element firing in seconds. (t=0 is when the first element fires.)
+    initial_time : jnp.ndarray
+        The time between t=0 and the first sample being recorded. (t=0 is when the first
+        element fires.)
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    carrier_frequency : float
+        The center frequency of the RF data in Hz.
+    sound_speed : float
+        The speed of sound in m/s.
+    t_peak : float
+        The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
+        the first element fires)
+    rx_apodization : jnp.ndarray
+        The apodization of the receive elements.
+    f_number : float
+        The f-number to use for the beamforming. The f-number is the ratio of the focal
+        length to the aperture size. Elements that are more to the side of the current
+        pixel than the f-number are not used in the beamforming. Default is 3.
 
-    ### Returns:
-        `bf_value` (`float`): The beamformed value for the pixel.
+    Returns
+    -------
+    float
+        The beamformed value for the pixel.
     """
     return vmap(
         _beamform_pixel,
@@ -196,7 +213,6 @@ def beamform_dmas(
     t_peak: jnp.ndarray,
     rx_apodization: jnp.ndarray,
     f_number: float,
-    iq_beamform: bool,
     transmits: jnp.ndarray = None,
     pixel_chunk_size: int = 1048576,
     progress_bar: bool = False,
@@ -207,39 +223,40 @@ def beamform_dmas(
     algorithm. The beamforming can be performed before or after the data is
     converted to complex IQ data.
 
-    ### Args:
-        `rf_data` (`jnp.ndarray`): The RF or IQ data to beamform of shape
-            `(n_frames, n_tx, n_samples, n_elements, n_ch)`.
-        `pixel_positions` (`jnp.ndarray`): The position of the pixel to beamform to in
-            meters of shape `(n_pixels, 2)`.
-        `probe_geometry` (`jnp.ndarray`): The probe geometry in meters of shape
-            (n_elements, 2).
-        `t0_delays` (`jnp.ndarray`): The transmit delays of shape (n_tx, n_el). These
-            are the times between t=0 and every element firing in seconds. (t=0 is when
-            the first element fires.)
-        `initial_times` (`jnp.ndarray`): The time between t=0 and the first sample being
-            recorded. (t=0 is when the first element fires.)
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
-        `sound_speed` (`float`): The speed of sound in m/s.
-        `t_peak` (`jnp.ndarray`): The time between t=0 and the peak of the waveform to
-            beamform to. (t=0 is when the first element fires)
-        `rx_apodization` (`jnp.ndarray`): The apodization of the receive elements.
-        `f_number` (`float`): The f-number to use for the beamforming. The f-number is
-            the ratio of the focal length to the aperture size. Elements that are more
-            to the side of the current pixel than the f-number are not used in the
-            beamforming. Default is 3.
-        `iq_beamform` (`bool`): Whether to beamform the IQ data directly. Default is
-            False.
-        `transmits` (`jnp.ndarray`): The transmits to beamform. Default is None, which
-            means all transmits are beamformed.
-        `pixel_chunk_size` (`int`): The number of pixels to beamform at once. Default is
-            1048576.
-        `progress_bar` (`bool`): Whether to display a progress bar. Default is False
+    Parameters
+    ----------
+    rf_data : jnp.ndarray
+        The RF data to beamform of shape `(n_frames, n_tx, n_samples, n_elements, 1)`.
+    pixel_positions : jnp.ndarray
+        The position of the pixel to beamform to in meters of shape `(n_pixels, 2)`.
+    probe_geometry : jnp.ndarray
+        The probe geometry in meters of shape `(n_el, 2)`.
+    t0_delays : jnp.ndarray
+        The transmit delays of shape `(n_tx, n_el)`. These are the times between t=0 and
+        every element firing in seconds. (t=0 is when the first element fires.)
+    initial_times : jnp.ndarray
+        The time between t=0 and the first sample being recorded. (t=0 is when the first
+        element fires.)
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    carrier_frequency : float
+        The center frequency of the RF data in Hz.
+    sound_speed : float
+        The speed of sound in m/s.
+    t_peak : jnp.ndarray
+        The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
+        the first element fires)
+    rx_apodization : jnp.ndarray
+        The apodization of the receive elements.
+    f_number : float
+        The f-number to use for the beamforming. The f-number is the ratio of the focal
+        length to the aperture size. Elements that are more to the side of the current
+        pixel than the f-number are not used in the beamforming. Default is 3.
 
-    ### Returns:
-        `bf` (`jnp.ndarray`): The beamformed image of shape
-            `(n_frames, n_z, n_x)`
+    Returns
+    -------
+    jnp.ndarray
+        The beamformed image of shape `(n_frames, n_z, n_x)`
     """
     # Perform input error checking
     rf_data = check_standard_rf_or_iq_data(rf_data)
@@ -263,18 +280,14 @@ def beamform_dmas(
     # ==================================================================================
     # Convert to complex IQ data if necessary
     # ==================================================================================
-    if iq_beamform:
-        # Convert to complex IQ data, demodulating if necessary
-        iq_data = to_complex_iq(
-            rf_data=rf_data,
-            carrier_frequency=carrier_frequency,
-            sampling_frequency=sampling_frequency,
-        )
-        input_data = iq_data
-        beamformed_dtype = jnp.complex64
-    else:
-        input_data = rf_data[..., 0]
-        beamformed_dtype = jnp.float32
+    # Convert to complex IQ data, demodulating if necessary
+    iq_data = to_complex_iq(
+        rf_data=rf_data,
+        carrier_frequency=carrier_frequency,
+        sampling_frequency=sampling_frequency,
+    )
+    input_data = iq_data
+    beamformed_dtype = jnp.complex64
 
     n_frames = rf_data.shape[0]
 

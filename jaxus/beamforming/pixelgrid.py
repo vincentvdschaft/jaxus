@@ -109,19 +109,24 @@ class PixelGrid:
 class CartesianPixelGrid(PixelGrid):
     def __init__(self, n_x, n_z, dx_wl, dz_wl, z0, wavelength):
         """Creates a CartesianPixelGrid object. Stores the pixel positions in meters in
-        a 2D array of shape (2, n_rows, n_cols).
+        a 2D array of shape `(2, n_rows, n_cols)`.
 
-        ### Args:
-            `n_x` (`int`): The number of pixels in the beamforming grid in the
-                x-direction.
-            `n_z` (`int`): The number of pixels in the beamforming grid in the
-                z-direction.
-            `dx_wl` (`float`): The pixel size/spacing in the x-direction in wavelengths.
-                (Wavelengths are defined as sound_speed/carrier_frequency.)
-            `dz_wl` (`float`): The pixel size/spacing in the z-direction in wavelengths.
-                (Wavelengths are defined as sound_speed/carrier_frequency.)
-            `z0` (`float`): The start-depth of the beamforming plane in meters.
-            `wavelength` (`float`): The wavelength to define the grid spacing in meters.
+        Parameters
+        ----------
+        n_x : int
+            The number of pixels in the beamforming grid in the x-direction.
+        n_z : int
+            The number of pixels in the beamforming grid in the z-direction.
+        dx_wl : float
+            The pixel size/spacing in the x-direction in wavelengths. (Wavelengths are
+            defined as sound_speed/carrier_frequency.)
+        dz_wl : float
+            The pixel size/spacing in the z-direction in wavelengths. (Wavelengths are
+            defined as sound_speed/carrier_frequency.)
+        z0 : float
+            The start-depth of the beamforming plane in meters.
+        wavelength : float
+            The wavelength to define the grid spacing in meters.
         """
 
         # Construct the grid of pixel positions

@@ -34,7 +34,7 @@ from jaxus.utils.checks import (
     check_t0_delays,
 )
 
-from .beamform import _tof_correct_pixel, rf2iq, to_complex_iq
+from .beamform import _tof_correct_pixel, get_custom_f_number_mask, rf2iq, to_complex_iq
 
 
 @jit
@@ -294,6 +294,9 @@ def beamform_dmas(
     # Initialize the beamformed images to zeros
     beamformed_images = jnp.zeros((n_frames, n_pixels), dtype=beamformed_dtype)
 
+    # ==================================================================================
+    # Define progress bar functions
+    # ==================================================================================
     progbar_func_frames = lambda x: (
         tqdm(x, desc="Beamforming frame", colour="yellow", leave=False)
         if progress_bar and n_frames > 1
@@ -351,25 +354,3 @@ def beamform_dmas(
             beamformed_images = beamformed_images.at[frame].add(beamformed_transmit)
 
     return beamformed_images
-
-
-def get_f_number_mask(pixel_pos, probe_geometry, f_number):
-    """Computes the f-number mask for a pixel."""
-    return jnp.abs(probe_geometry[:, 0] - pixel_pos[0]) < (pixel_pos[1] / f_number)
-
-
-def get_custom_f_number_mask(pixel_pos, probe_geometry, f_number):
-    """Computes the f-number mask for a pixel. This is not a traditional f-number mask
-    but a custom mask that has a smooth transition from 1 to 0."""
-    return jnp.exp(
-        -(
-            (
-                np.sqrt(np.log(2))
-                * (
-                    jnp.abs(probe_geometry[:, 0] - pixel_pos[0])
-                    / (pixel_pos[1] / f_number)
-                )
-            )
-            ** 2
-        )
-    )

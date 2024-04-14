@@ -57,7 +57,7 @@ def _beamform_pixel(
     Parameters
     ----------
     rf_data : jnp.ndarray
-        The IQ data to beamform of shape `(n_samples, n_elements)`.
+        The IQ data to beamform of shape `(n_samples, n_el)`.
     pixel_pos : jnp.ndarray
         The position of the pixel to beamform to in meters of shape `(2,)`.
     t0_delays : jnp.ndarray
@@ -151,7 +151,7 @@ def dmas_beamform_transmit(
     Parameters
     ----------
     rf_data : jnp.ndarray
-        The IQ data to beamform of shape `(n_samples, n_elements)`.
+        The IQ data to beamform of shape `(n_samples, n_el)`.
     pixel_positions : jnp.ndarray
         The position of the pixel to beamform to in meters of shape `(n_pixels, 2)`.
     probe_geometry : jnp.ndarray
@@ -226,7 +226,7 @@ def beamform_dmas(
     Parameters
     ----------
     rf_data : jnp.ndarray
-        The RF data to beamform of shape `(n_frames, n_tx, n_samples, n_elements, 1)`.
+        The RF data to beamform of shape `(n_frames, n_tx, n_samples, n_el, 1)`.
     pixel_positions : jnp.ndarray
         The position of the pixel to beamform to in meters of shape `(n_pixels, 2)`.
     probe_geometry : jnp.ndarray

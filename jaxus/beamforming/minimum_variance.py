@@ -52,7 +52,7 @@ def mv_beamform_pixel(
     Parameters
     ----------
     rf_data : jnp.ndarray
-        The RF or IQ data to beamform of shape `(n_samples, n_elements)`.
+        The RF or IQ data to beamform of shape `(n_samples, n_el)`.
     pixel_pos : jnp.ndarray
         The position of the pixel to beamform to in meters of shape `(n_pixels, 2)`.
     t0_delays : jnp.ndarray
@@ -67,7 +67,7 @@ def mv_beamform_pixel(
         The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
         the first element fires)
     probe_geometry : jnp.ndarray
-        The probe geometry in meters of shape `(n_elements, 2)`.
+        The probe geometry in meters of shape `(n_el, 2)`.
     carrier_frequency : float
         The center frequency of the RF data in Hz.
     sampling_frequency : float
@@ -207,11 +207,11 @@ def beamform_mv(
     Parameters
     ----------
     rf_data : jnp.ndarray
-        The RF or IQ data to beamform of shape `(n_samples, n_elements)`.
+        The RF or IQ data to beamform of shape `(n_samples, n_el)`.
     pixel_positions : jnp.ndarray
         The position of the pixel to beamform to in meters of shape `(n_pixels, 2)`.
     probe_geometry : jnp.ndarray
-        The probe geometry in meters of shape `(n_elements, 2)`.
+        The probe geometry in meters of shape `(n_el, 2)`.
     t0_delays : jnp.ndarray
         The transmit delays of shape `(n_tx, n_el)`. These are the times between t=0 and
         every element firing in seconds. (t=0 is when the first element fires.)
@@ -391,11 +391,11 @@ def mv_beamform_transmit(
 
     ### Parameters:
         `rf_data` (`jnp.ndarray`): The RF or IQ data to beamform of shape
-            `(n_samples, n_elements)`.
+            `(n_samples, n_el)`.
         `pixel_positions` (`jnp.ndarray`): The position of the pixel to beamform to in
             meters of shape `(n_pixels, 2)`.
         `probe_geometry` (`jnp.ndarray`): The probe geometry in meters of shape
-            (n_elements, 2).
+            (n_el, 2).
         `t0_delays` (`jnp.ndarray`): The transmit delays of shape (n_tx, n_el). These are
             the times between t=0 and every element firing in seconds. (t=0 is when the
             first element fires.)

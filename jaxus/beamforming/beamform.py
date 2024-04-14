@@ -37,24 +37,29 @@ from jaxus.utils.checks import (
 from .pixelgrid import PixelGrid
 
 
-def rf2iq(
-    rf_data, carrier_frequency, sampling_frequency, bandwidth=None, padding=512
-):  #
+def rf2iq(rf_data, carrier_frequency, sampling_frequency, bandwidth=None, padding=512):
     """Converts RF data to complex valued IQ data.
 
-    ### Args:
-        `rf_data` (`np.ndarray`): The RF data of shape (n_frames, n_tx, n_ax, n_el, n_ch)
-        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `bandwidth` (`float`): The bandwidth of the RF data, normalized to the Nyquist
-            frequency (0.5 fs). Should be between 0 and 1.0, where 1.0 corresponds to
-            the full bandwidth up to the Nyquist frequency. Default is 0.5.
-        `padding` (`int`): The number of samples to pad the RF data with on both sides
-            before performing the Hilbert transform. This helps combat edge effects.
-            Default is 256.
+    Parameters
+    ----------
+    rf_data : np.ndarray
+        The RF data of shape `(n_frames, n_tx, n_ax, n_el, n_ch)`
+    carrier_frequency : float
+        The center frequency of the RF data in Hz.
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    bandwidth : float
+        The bandwidth of the RF data, normalized to the Nyquist frequency (0.5 fs).
+        Should be between 0 and 1.0, where 1.0 corresponds to the full bandwidth up to
+        the Nyquist frequency. Default is 0.5.
+    padding : int
+        The number of samples to pad the RF data with on both sides before performing
+        the Hilbert transform. This helps combat edge effects. Default is 256.
 
-    ### Returns:
-        `iq_data` (`np.ndarray`): The IQ data of shape `(n_frames, n_tx, n_ax, n_el)`
+    Returns
+    -------
+    iq_data : np.ndarray
+        The IQ data of shape `(n_frames, n_tx, n_ax, n_el)`
     """
     # ==================================================================================
     # Perform error checking
@@ -122,15 +127,19 @@ def to_complex_iq(
 ):
     """Converts RF data or 2-channel IQ data to complex valued IQ data.
 
-    ### Args:
-        `rf_data` (`np.ndarray`, `jnp.ndarray`): The RF or IQ data to convert of shape
-            (n_frames, n_tx, n_samples, n_elements, n_ch).
-        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
+    Parameters
+    ----------
+    rf_data : np.ndarray or jnp.ndarray
+        The RF or IQ data to convert of shape
+        `(n_frames, n_tx, n_samples, n_el, n_ch)`.
+    carrier_frequency : float
+        The center frequency of the RF data in Hz.
+    sampling_frequency : float
+        The sampling frequency in Hz.
 
-    ### Returns:
-        `iq_data` (`np.ndarray`, `jnp.ndarray`): The IQ data of shape
-            `(n_frames, n_tx, n_samples, n_elements)`
+    Returns
+    iq_data : np.ndarray : jnp.ndarray
+        The IQ data of shape `(n_frames, n_tx, n_samples, n_el)`
     """
     # Input error checking
     rf_data = check_standard_rf_or_iq_data(rf_data)
@@ -149,7 +158,7 @@ def to_complex_iq(
 
     else:
         raise ValueError(
-            "rf_data must be of shape (n_frames, n_tx, n_samples, n_elements, n_ch). "
+            "rf_data must be of shape (n_frames, n_tx, n_samples, n_el, n_ch). "
             f"Got shape {rf_data.shape}."
         )
 
@@ -158,16 +167,19 @@ def detect_envelope_beamformed(bf_data, dz_wl):
     """Performs envelope detection on the beamformed data by turning it into IQ-data and
     taking the absolute value.
 
-    ### Args:
-        `rf_data` (`np.ndarray`): The RF data to perform envelope detection on of shape
-            (n_frames, n_rows, n_cols)
-        `dz_wl` (`float`): The pixel size/spacing in the z-direction in wavelengths of
-            the beamforming grid. (Wavelengths are defined as
-            sound_speed/carrier_frequency.)
+    Parameters
+    ----------
+    rf_data : np.ndarray
+        The RF data to perform envelope detection on of shape
+        `(n_frames, n_rows, n_cols)`.
+    dz_wl : float
+        The pixel size/spacing in the z-direction in wavelengths of the beamforming
+        grid. (Wavelengths are defined as sound_speed/carrier_frequency.)
 
-    ### Returns:
-        `envelope` (`np.ndarray`): The envelope detected RF data of the same shape as
-            the input.
+    Returns
+    -------
+     np.ndarray
+        The envelope detected RF data of the same shape as the input.
     """
     if not isinstance(bf_data, (np.ndarray, jnp.ndarray)):
         raise TypeError(f"bf_data must be a ndarray. Got {type(bf_data)}.")
@@ -204,14 +216,17 @@ def detect_envelope_beamformed(bf_data, dz_wl):
 def log_compress(beamformed: jnp.ndarray, normalize: bool = False):
     """Log-compresses the beamformed image.
 
-    ### Args:
-        `beamformed` (`jnp.ndarray`): The beamformed image to log-compress of any shape.
-        `normalize` (`bool`): Whether to normalize the beamformed image. Default is
-            False.
+    Parameters
+    ----------
+    beamformed : jnp.ndarray
+        The beamformed image to log-compress of any shape.
+    normalize : bool, default=False
+        Whether to normalize the beamformed image.
 
-    ### Returns:
-        `beamformed` (`jnp.ndarray`): The log-compressed image of the same shape as the
-            input in dB.
+    Returns
+    -------
+    beamformed : jnp.ndarray
+        The log-compressed image of the same shape as the input in dB.
     """
     if not isinstance(beamformed, (jnp.ndarray, np.ndarray)):
         raise TypeError(f"beamformed must be a ndarray. Got {type(beamformed)}.")
@@ -229,13 +244,17 @@ def log_compress(beamformed: jnp.ndarray, normalize: bool = False):
 def hilbert_get_analytical_signal(x: jnp.ndarray, axis=-1) -> jnp.ndarray:
     """Returns the analytical signal of `x` using the Hilbert transform.
 
-    ### Arguments:
-        `x` (`jnp.ndarray`): The input signal.
-        `axis` (`int`): The axis along which to compute the Hilbert transform.
-            Default is -1.
+    Parameters
+    ----------
+    x : jnp.ndarray
+        The input signal.
+    axis : int, default=-1
+        The axis along which to compute the Hilbert transform.
 
-    ### Returns:
-        `analytical_signal` (`jnp.ndarray`): The analytical signal of `x`.
+    Returns
+    -------
+    analytical_signal : jnp.ndarray
+        The analytical signal of `x`.
     """
     size = x.shape[axis]
     size_power_of_two = 2 ** jnp.ceil(jnp.log2(size)).astype(jnp.int32)
@@ -257,12 +276,15 @@ def hilbert_get_analytical_signal(x: jnp.ndarray, axis=-1) -> jnp.ndarray:
 def find_t_peak(signal, sampling_frequency=250e6):
     """Finds the peak of the signal and returns the time between t=0 and the peak.
 
-    ### Args:
-        `signal` (`np.ndarray`): The signal to find the peak of.
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
+    Parameters
+    signal : np.ndarray
+        The signal to find the peak of.
+    sampling_frequency : float
+        The sampling frequency in Hz.
 
-    ### Returns:
-        `t_peak` (`float`): The time between t=0 and the peak of the signal.
+    Returns
+    float
+        The time between t=0 and the peak of the signal.
     """
     # Perform input error checking
     sampling_frequency = check_frequency(sampling_frequency)
@@ -288,6 +310,43 @@ def _tof_correct_pixel(
     sampling_frequency,
     iq_beamform=False,
 ):
+    """Performs time-of-flight correction for a single pixel. The RF data is indexed
+    along the axial dimension to find the samples left and right of the exact
+    time-of-flight for each element. The samples are then interpolated to find the
+    interpolated sample.
+
+    Parameters
+    ----------
+    rf_data : jnp.ndarray
+        The RF or IQ data to beamform of shape `(n_samples, n_el)`.
+    pixel_pos : jnp.ndarray
+        The position of the pixel to beamform to in meters of shape `(2,)`.
+    t0_delays : jnp.ndarray
+        The transmit delays of shape (n_tx, n_el). These are the times between t=0 and
+        every element firing in seconds. (t=0 is when the first element fires.)
+    initial_time : jnp.ndarray
+        The time between t=0 and the first sample being recorded. (t=0 is when the first
+        element fires.)
+    sound_speed : float
+        The speed of sound in m/s.
+    t_peak : float
+        The time between t=0 and the peak of the waveform to beamform to.
+    probe_geometry : jnp.ndarray
+        The probe geometry in meters of shape (n_el, 2).
+    carrier_frequency : float
+        The center frequency of the RF data in Hz.
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    iq_beamform : bool, default=False
+        Set to True for IQ beamforming. In this case the function will perform phase
+        rotation.
+
+    Returns
+    -------
+    jnp.ndarray
+        The interpolated RF or IQ data of shape `(n_el,)`.
+    """
+
     n_ax = rf_data.shape[-2]
 
     # Compute the distance from the pixel to each element of shape (n_el,)
@@ -352,35 +411,37 @@ def _beamform_pixel(
     """Beamforms a single pixel of a single frame and single transmit. Further
     processing such as log-compression and envelope detection are not performed.
 
-    ### Args:
-        `rf_data` (`jnp.ndarray`): The RF or IQ data to beamform of shape
-            `(n_samples, n_elements)`.
-        `pixel_pos` (`jnp.ndarray`): The position of the pixel to beamform to in meters
-            of shape `(2,)`.
-        `t0_delays` (`jnp.ndarray`): The transmit delays of shape (n_tx, n_el). These
-            are the times between t=0 and every element firing in seconds. (t=0 is
-            when the first element fires.)
-        `initial_time` (`jnp.ndarray`): The time between t=0 and the first sample being
-            recorded. (t=0 is when the first element fires.)
-        `sound_speed` (`float`): The speed of sound in m/s.
-        `t_peak` (`float`): The time between t=0 and the peak of the waveform to
-            beamform to.
-        `probe_geometry` (`jnp.ndarray`): The probe geometry in meters of shape
-            (n_el, 2).
-        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `f_number` (`float`): The f-number to use for the beamforming. The f-number is
-            the ratio of the focal length to the aperture size. Elements that are more
-            to the side of the current pixel than the f-number are not used in the
-            beamforming.
-        `rx_apodization` (`jnp.ndarray`): The apodization of the receive elements.
-        `iq_beamform` (`bool`): Set to True to do demodulation first and then beamform
-            the IQ data. Set to False to beamform the RF data directly. In this case
-            envelope detection is done after beamforming. Default is False.
-
-
-    ### Returns:
-        `bf_value` (`float`): The beamformed value for the pixel.
+    Parameters
+    ----------
+    rf_data : jnp.ndarray
+        The RF or IQ data to beamform of shape `(n_samples, n_el)`.
+    pixel_pos : jnp.ndarray
+        The position of the pixel to beamform to in meters of shape `(2,)`.
+    t0_delays : jnp.ndarray
+        The transmit delays of shape (n_tx, n_el). These are the times between t=0 and
+        every element firing in seconds. (t=0 is when the first element fires.)
+    initial_time : jnp.ndarray
+        The time between t=0 and the first sample being recorded. (t=0 is when the first
+        element fires.)
+    sound_speed : float
+        The speed of sound in m/s.
+    t_peak : float
+        The time between t=0 and the peak of the waveform to beamform to.
+    probe_geometry : jnp.ndarray
+        The probe geometry in meters of shape (n_el, 2).
+    carrier_frequency : float
+        The center frequency of the RF data in Hz.
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    f_number : float
+        The f-number to use for the beamforming. The f-number is the ratio of the focal
+        length to the aperture size. Elements that are more to the side of the current
+        pixel than the f-number are not used in the beamforming.
+    rx_apodization : jnp.ndarray
+        The apodization of the receive elements.
+    iq_beamform : bool, default=False
+        Set to True for IQ beamforming. In this case the function will perform phase
+        rotation.
     """
 
     tof_corrected = _tof_correct_pixel(
@@ -423,32 +484,42 @@ def das_beamform_transmit(
     algorithm. The beamforming can be performed before or after the data is converted
     to complex IQ data.
 
-    ### Parameters:
-        `rf_data` (`jnp.ndarray`): The RF or IQ data to beamform of shape
-            `(n_samples, n_elements)`.
-        `pixel_positions` (`jnp.ndarray`): The position of the pixel to beamform to in
-            meters of shape `(n_pixels, 2)`.
-        `probe_geometry` (`jnp.ndarray`): The probe geometry in meters of shape
-            (n_elements, 2).
-        `t0_delays` (`jnp.ndarray`): The transmit delays of shape (n_tx, n_el). These are
-            the times between t=0 and every element firing in seconds. (t=0 is when the
-            first element fires.)
-        `initial_time` (`jnp.ndarray`): The time between t=0 and the first sample being
-            recorded. (t=0 is when the first element fires.)
-        `sampling_frequency` (`float`): The sampling frequency in Hz.
-        `carrier_frequency` (`float`): The center frequency of the RF data in Hz.
-        `sound_speed` (`float`): The speed of sound in m/s.
-        `t_peak` (`float`): The time between t=0 and the peak of the waveform to beamform
-            to. (t=0 is when the first element fires)
-        `rx_apodization` (`jnp.ndarray`): The apodization of the receive elements.
-        `f_number` (`float`): The f-number to use for the beamforming. The f-number is the
-            ratio of the focal length to the aperture size. Elements that are more to the
-            side of the current pixel than the f-number are not used in the beamforming.
-            Default is 3.
-        `iq_beamform` (`bool`): Whether to beamform the IQ data directly. Default is False.
+    Parameters
+    ----------
+    rf_data : jnp.ndarray
+        The RF or IQ data to beamform of shape `(n_samples, n_el)`.
+    pixel_positions : jnp.ndarray
+        The position of the pixels to beamform to in meters of shape `(n_pixels, 2)`.
+    probe_geometry : jnp.ndarray
+        The probe geometry in meters of shape `(n_el, 2)`.
+    t0_delays : jnp.ndarray
+        The transmit delays of shape `(n_tx, n_el)`. These are the times between t=0 and
+        every element firing in seconds. (t=0 is when the first element fires.)
+    initial_time : jnp.ndarray
+        The time between t=0 and the first sample being recorded. (t=0 is when the first
+        element fires.)
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    carrier_frequency : float
+        The center frequency of the RF data in Hz.
+    sound_speed : float
+        The speed of sound in m/s.
+    t_peak : jnp.ndarray
+        The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
+        the first element fires)
+    rx_apodization : jnp.ndarray
+        The apodization of the receive elements.
+    f_number : float
+        The f-number to use for the beamforming. The f-number is the ratio of the focal
+        length to the aperture size. Elements that are more to the side of the current
+        pixel than the f-number are not used in the beamforming.
+    iq_beamform : bool
+        Whether to beamform the IQ data directly. Default is False.
 
-    ### Returns:
-        `bf_value` (`float`): The beamformed value for the pixel.
+    Returns
+    -------
+    jnp.ndarray
+        The beamformed image of shape `(n_pixels,)`.
     """
     return vmap(
         _beamform_pixel,
@@ -496,11 +567,11 @@ def beamform_das(
     ----------
     rf_data : jnp.ndarray
         The RF or IQ data to beamform of shape
-        `(n_frames, n_tx, n_samples, n_elements, n_ch)`.
+        `(n_frames, n_tx, n_samples, n_el, n_ch)`.
     pixel_positions : jnp.ndarray
         The position of the pixel to beamform to in meters of shape `(n_pixels, 2)`.
     probe_geometry : jnp.ndarray
-        The probe geometry in meters of shape `(n_elements, 2)`.
+        The probe geometry in meters of shape `(n_el, 2)`.
     t0_delays : jnp.ndarray
         The transmit delays of shape `(n_tx, n_el)`. These are the times between t=0 and
         every element firing in seconds. (t=0 is when the first element fires.)
@@ -757,13 +828,13 @@ class Beamformer:
 
     @property
     def probe_geometry(self):
-        """The probe geometry in meters of shape (n_elements, 2). The first column is
+        """The probe geometry in meters of shape (n_el, 2). The first column is
         the x position and the second column is the z position."""
         return np.copy(self._probe_geometry)
 
     @property
     def t0_delays(self):
-        """The transmit delays of shape (n_tx, n_elements). These are the times between
+        """The transmit delays of shape (n_tx, n_el). These are the times between
         t=0 and every element firing in seconds. (t=0 is when the first element fires.)
         t0_delays is always of shape (n_tx, n_el)."""
         return np.copy(self._t0_delays)
@@ -931,7 +1002,7 @@ class Beamformer:
         ----------
         rf_data : jnp.ndarray
             The RF data to beamform of shape
-            `(n_frames, n_tx, n_samples, n_elements, n_ch)`.
+            `(n_frames, n_tx, n_samples, n_el, n_ch)`.
 
         Returns
         -------

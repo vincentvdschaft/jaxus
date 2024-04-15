@@ -178,7 +178,7 @@ def detect_envelope_beamformed(bf_data, dz_wl):
 
     Returns
     -------
-     np.ndarray
+    np.ndarray
         The envelope detected RF data of the same shape as the input.
     """
     if not isinstance(bf_data, (np.ndarray, jnp.ndarray)):

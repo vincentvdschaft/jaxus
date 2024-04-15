@@ -21,7 +21,7 @@ USE_POINTSCATTERERS = False
 
 if not USE_POINTSCATTERERS:
     path = Path(
-        r"C:\Users\vince\Documents\3_resources\data\verasonics\usbmd\2024-04-09\L11-5v_carotid_cross_0003.hdf5"
+        r"/mnt/c/Users/vince/Documents/3_resources/data/verasonics/usbmd/2024-04-09/L11-5v_carotid_cross_0000.hdf5"
     )
     SELECTED_TX = [
         # 138 - 8,

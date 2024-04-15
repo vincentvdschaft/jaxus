@@ -95,7 +95,7 @@ images_mv = beamform_mv(
     rx_apodization=np.ones(data_dict["probe_geometry"].shape[0]),
     iq_beamform=True,
     subaperture_size=80,
-    diagonal_loading=80 if USE_POINTSCATTERERS else 0.2,
+    diagonal_loading=90 if USE_POINTSCATTERERS else 0.2,
     pixel_chunk_size=4096,
     progress_bar=True,
 )
@@ -118,7 +118,6 @@ images_dmas = beamform_dmas(
     t_peak=find_t_peak(data_dict["waveform_samples_two_way"], 250e6) * np.ones(n_tx),
     initial_times=data_dict["initial_times"],
     rx_apodization=np.ones(data_dict["probe_geometry"].shape[0]),
-    iq_beamform=True,
     # pixel_chunk_size=1024,
     progress_bar=True,
 )

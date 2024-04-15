@@ -106,6 +106,11 @@ class PixelGrid:
         """The pixel size/spacing in the z-direction in m."""
         return np.abs(self.pixel_positions[1, 0, 1] - self.pixel_positions[0, 0, 1])
 
+    @property
+    def shape(self):
+        """The shape of the pixel grid [n_rows, n_cols]."""
+        return (self.n_rows, self.n_cols)
+
 
 class CartesianPixelGrid(PixelGrid):
     def __init__(self, n_x, n_z, dx_wl, dz_wl, z0, wavelength):

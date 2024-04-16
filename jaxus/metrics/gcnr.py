@@ -139,7 +139,7 @@ def gcnr_plot_disk_annulus(
         color="r",
         fill=False,
         linestyle="--",
-        linewidth=1,
+        linewidth=0.5,
         alpha=opacity,
     )
     ax.add_artist(circle)
@@ -151,7 +151,7 @@ def gcnr_plot_disk_annulus(
         color="r",
         fill=False,
         linestyle="--",
-        linewidth=1,
+        linewidth=0.5,
         alpha=opacity,
     )
     ax.add_artist(circle)
@@ -161,7 +161,7 @@ def gcnr_plot_disk_annulus(
         color="r",
         fill=False,
         linestyle="--",
-        linewidth=1,
+        linewidth=0.5,
         alpha=opacity,
     )
     ax.add_artist(circle)

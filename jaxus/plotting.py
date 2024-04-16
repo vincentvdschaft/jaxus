@@ -1,3 +1,4 @@
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import FuncFormatter
@@ -246,3 +247,31 @@ def iterate_axes(axes):
             raise ValueError("axes must be 1d or 2d array")
     else:
         raise TypeError("axes must be Axes or ndarray")
+
+
+def use_light_style():
+    """Sets the matplotlib style to the light style."""
+    # ----------------------------------------------------------------------------------
+    # Construct the path to the style sheet
+    # ----------------------------------------------------------------------------------
+    # Get the directory of the current file
+    current_dir = os.path.dirname(__file__)
+    # Construct the path to the style sheet
+    style_path = os.path.join(current_dir, "styles", "lightmode.mplstyle")
+
+    # Use the style
+    plt.style.use(style_path)
+
+
+def use_dark_style():
+    """Sets the matplotlib style to the dark style."""
+    # ----------------------------------------------------------------------------------
+    # Construct the path to the style sheet
+    # ----------------------------------------------------------------------------------
+    # Get the directory of the current file
+    current_dir = os.path.dirname(__file__)
+    # Construct the path to the style sheet
+    style_path = os.path.join(current_dir, "styles", "darkmode.mplstyle")
+
+    # Use the style
+    plt.style.use(style_path)

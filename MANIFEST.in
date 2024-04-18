@@ -1,0 +1,2 @@
+recursive-include *.mplstyle
+prune tests

@@ -1,3 +1,5 @@
 jax
 numpy
 matplotlib
+h5py
+tqdm

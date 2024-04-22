@@ -4,6 +4,8 @@ __pycache__/
 wandb/
 *.code-workspace
 *.egg-info
+.github/
+.devcontainer/
 
 # ng_ indicates "no git" and is used to ignore files that should not be committed to git
 ng_*.py

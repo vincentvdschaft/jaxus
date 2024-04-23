@@ -34,7 +34,7 @@ from jaxus.utils.checks import (
     check_t0_delays,
 )
 
-from .beamform import _tof_correct_pixel, get_custom_f_number_mask, rf2iq, to_complex_iq
+from .beamform import get_custom_f_number_mask, rf2iq, to_complex_iq, tof_correct_pixel
 
 
 @jit
@@ -90,7 +90,7 @@ def _beamform_pixel(
         The beamformed value for the pixel.
     """
 
-    tof_corrected = _tof_correct_pixel(
+    tof_corrected = tof_correct_pixel(
         rf_data,
         pixel_pos,
         t0_delays,

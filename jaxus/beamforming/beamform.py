@@ -298,7 +298,7 @@ def find_t_peak(signal, sampling_frequency=250e6):
     return t_peak
 
 
-def _tof_correct_pixel(
+def tof_correct_pixel(
     rf_data,
     pixel_pos,
     t0_delays,
@@ -444,7 +444,7 @@ def _beamform_pixel(
         rotation.
     """
 
-    tof_corrected = _tof_correct_pixel(
+    tof_corrected = tof_correct_pixel(
         rf_data,
         pixel_pos,
         t0_delays,

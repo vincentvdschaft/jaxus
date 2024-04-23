@@ -1,4 +1,5 @@
 import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import FuncFormatter
@@ -110,7 +111,7 @@ def plot_beamformed(
     ax : plt.Axes
         The axis to plot to.
     image : np.ndarray
-        The image to plot.
+        The image to plot (image should be in decibels).
     extent_m : list
         The extent of the plot in meters.
     vmin : float, optional

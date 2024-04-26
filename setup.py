@@ -15,7 +15,8 @@ setup(
     install_requires=requirements,
     package_data={
         # If any package contains *.mplstyle files, include them:
-        '': ['*.mplstyle'],
-        'jaxus': ['styles/*.mplstyle'],
+        "": ["*.mplstyle"],
+        "jaxus": ["styles/*.mplstyle"],
     },
+    url="https://github.com/vincentvdschaft/jaxus",
 )

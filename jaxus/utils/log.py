@@ -140,36 +140,42 @@ def remove_color_escape_codes(text):
 
 def succes(message):
     """Prints a message to the console in green."""
+    message = str(message)
     logger.info(green(message))
     file_logger.info(remove_color_escape_codes(message))
 
 
 def warning(message, *args, **kwargs):
     """Prints a message with log level warning."""
+    message = str(message)
     logger.warning(message, *args, **kwargs)
     file_logger.warning(remove_color_escape_codes(message), *args, **kwargs)
 
 
 def error(message, *args, **kwargs):
     """Prints a message with log level error."""
+    message = str(message)
     logger.error(message, *args, **kwargs)
     file_logger.error(remove_color_escape_codes(message), *args, **kwargs)
 
 
 def debug(message, *args, **kwargs):
     """Prints a message with log level debug."""
+    message = str(message)
     logger.debug(message, *args, **kwargs)
     file_logger.debug(remove_color_escape_codes(message), *args, **kwargs)
 
 
 def info(message, *args, **kwargs):
     """Prints a message with log level info."""
+    message = str(message)
     logger.info(message, *args, **kwargs)
     file_logger.info(remove_color_escape_codes(message), *args, **kwargs)
 
 
 def critical(message, *args, **kwargs):
     """Prints a message with log level critical."""
+    message = str(message)
     logger.critical(message, *args, **kwargs)
     file_logger.critical(message, *args, **kwargs)
 

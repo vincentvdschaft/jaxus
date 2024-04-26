@@ -1,4 +1,5 @@
 import os
+
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import FuncFormatter
@@ -8,12 +9,10 @@ def plot_rf(
     ax,
     rf_data,
     start_sample=0,
-    extent_m=None,
     cmap="viridis",
     vmin=None,
     vmax=None,
     aspect="auto",
-    axis_in_mm=True,
     title=None,
 ):
     """Plots RF data to an axis.
@@ -26,9 +25,6 @@ def plot_rf(
         The RF data to plot.
     start_sample : int, optional
         The sample number to start plotting from. Defaults to 0.
-    extent_m : list, optional
-        The extent of the plot in meters. If None, the extent is set to the number of
-        elements and samples. Defaults to None.
     cmap : str, optional
         The colormap to use. Defaults to "viridis".
     vmin : float, optional
@@ -39,23 +35,14 @@ def plot_rf(
         percentile of the data. Defaults to None.
     aspect : str, optional
         The aspect ratio of the plot. Defaults to "auto".
-    axis_in_mm : bool, optional
-        Whether to plot the x-axis in mm. Defaults to True.
+    title : str, optional
+        The title of the plot. Defaults to None.
     """
     formatter = FuncFormatter(lambda x, _: f"{int(x)}")
-    if extent_m is not None:
-        if axis_in_mm:
-            xlabel = "x [mm]"
-            zlabel = "z [mm]"
-        else:
-            xlabel = "x [m]"
-            zlabel = "z [m]"
-        kwargs = {"extent": extent_m}
-
-    else:
-        kwargs = {"aspect": aspect}
-        xlabel = "element [-]"
-        zlabel = "sample [-]"
+    kwargs = {"aspect": aspect}
+    xlabel = "element [-]"
+    zlabel = "sample [-]"
+    extent = [0, rf_data.shape[1], start_sample + rf_data.shape[0], start_sample]
 
     if vmin is None and vmax is None:
         vmin = np.percentile(rf_data, 0.5)
@@ -67,6 +54,7 @@ def plot_rf(
         cmap=cmap,
         vmin=vmin,
         vmax=vmax,
+        extent=extent,
         **kwargs,
     )
 
@@ -110,7 +98,7 @@ def plot_beamformed(
     ax : plt.Axes
         The axis to plot to.
     image : np.ndarray
-        The image to plot.
+        The image to plot (image should be in decibels).
     extent_m : list
         The extent of the plot in meters.
     vmin : float, optional

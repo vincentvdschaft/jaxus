@@ -3,18 +3,11 @@ Ultrasound beamforming and processing in JAX.
 
 ## Installation
 ```bash
+cd jaxus
 pip install .
 ```
-or if you want to install in editable mode:
-```bash
-pip install -e .
-```
 
-The project also depends on JAX. You can install it via pip:
+The project also depends on JAX. To install JAX follow the [official instructions](https://jax.readthedocs.io/en/latest/installation.html). At the time of writing, the following command should work for CUDA 12:
 ```bash
-pip install jax[cpu]
-```
-or
-```bash
-pip install jax[cuda122]
+pip install -U "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 ```

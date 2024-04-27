@@ -2,8 +2,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jaxus.plotting import plot_rf, use_dark_style
-from jaxus.rf_simulator import simulate_rf_data
+from jaxus import plot_rf, use_dark_style, simulate_rf_data
 
 # Set to True to plot the result
 PLOT = True

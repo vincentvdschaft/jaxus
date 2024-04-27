@@ -16,78 +16,106 @@ pip install -U "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/
 ## Usage
 ### Simulating ultrasound data
 ```python
-from jaxus import (
-    Probe,
-    Transmit,
-    Receive,
-    Pulse,
-    Medium,
-    simulate_to_hdf5,
-    plot_beamformed,
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import numpy as np
+
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import numpy as np
+
+from jaxus import plot_rf, use_dark_style, simulate_rf_data
+
+# The number of axial samples to simulate
+n_ax = 1024
+# The number of elements in the probe
+n_el = 128
+# The center frequency in Hz
+carrier_frequency = 7e6
+# Sampling frequency in Hz
+sampling_frequency = 4 * carrier_frequency
+# The speed of sound in m/s
+c = 1540
+# The width of the elements in wavelengths of the center frequency
+width_wl = 1.33
+# The time instant of the first sample in seconds
+initial_time = 0.0
+# The number of scatterers to process simultaneously. If it does not fit in memory
+# then lower this number.
+scatterer_chunk_size = 512
+# The number of axial samples to process simultaneously. If it does not fit in
+# memory then lower this number.
+ax_chunk_size = 1024
+# Set to True to simulate a single point scatterer. If False a region filled
+# with randomly placed scatterers is simulated.
+single_point_scatterer = True
+# The attenuation coefficient in dB/(MHz*cm)
+attenuation_coefficient = 0.9
+# Set to True to simulate the wavefront only. Instead of summing the wavefronts
+# from each transmit element, the wavefront from the transmit element with the
+# shortest time of flight is used. The reduces computation time, but is less
+# accurate.
+wavefront_only = False
+
+# Generate probe geometry
+probe_geometry = jnp.stack(
+    [jnp.linspace(-19e-3, 19e-3, n_el), jnp.zeros(n_el)], axis=1
 )
 
-# Set the number of elements in the probe
-n_el = 64
+element_angles = 0 * jnp.ones(n_el) * jnp.pi / 2
 
-# Define the positions of the elements in the probe
-probe_geometry = np.stack([np.linspace(-9.5e-3, 9.5e-3, n_el), np.zeros(n_el)], axis=1)
+# Set all t0_delays to 0 to simulate a plane wave with angle 0
+t0_delays = jnp.zeros(n_el)
 
-# Create a probe object
-probe = Probe(
-    probe_geometry=probe_geometry,
-    center_frequency=5e6,
-    element_width=probe_geometry[1, 0] - probe_geometry[0, 0],
-    bandwidth=(2e6, 9e6),
+# Set the tx apodization to 1
+tx_apodization = jnp.ones(n_el)
+
+# Alternative: Set hanning apodization
+# tx_apodization = jnp.hanning(n_el)
+
+if single_point_scatterer:
+    scatterer_positions = jnp.array(
+        [
+            [0e-3, 0, 0],
+            [10e-3, 20e-3, 30e-3],
+        ],
+    ).T
+else:
+    n_scat = 10000
+    x_pos = np.random.uniform(-1e-3, 5e-3, n_scat)
+    z_pos = np.random.uniform(2e-3, 8e-3, n_scat)
+    scatterer_positions = np.stack([x_pos, z_pos], axis=1)
+
+scatterer_amplitudes = np.ones((scatterer_positions.shape[0]))
+
+scatterer_positions = jnp.array(scatterer_positions)
+scatterer_amplitudes = jnp.array(scatterer_amplitudes)
+
+print("scatterer_positions.shape: ", scatterer_positions.shape)
+print("scatterer_amplitudes.shape: ", scatterer_amplitudes.shape)
+
+rf_data = simulate_rf_data(
+    n_ax,
+    scatterer_positions,
+    scatterer_amplitudes,
+    t0_delays,
+    probe_geometry,
+    element_angles,
+    tx_apodization,
+    initial_time,
+    width_wl,
+    sampling_frequency,
+    carrier_frequency,
+    c,
+    attenuation_coefficient,
+    wavefront_only,
+    ax_chunk_size=ax_chunk_size,
+    scatterer_chunk_size=scatterer_chunk_size,
+    progress_bar=True,
 )
 
-# Create a transmit object
-transmit = Transmit(
-    t0_delays=np.zeros(probe.n_el),
-    tx_apodization=np.ones(probe.n_el),
-    waveform=Pulse(
-        carrier_frequency=probe.center_frequency,
-        pulse_width=700e-9,
-        chirp_rate=0.0,
-        phase=0.0,
-    ),
-)
-
-# Create a receive object
-receive = Receive(
-    sampling_frequency=4 * probe.center_frequency,
-    n_ax=1024,
-    initial_time=0.0,
-)
-
-# Define the scatterer positions
-scat_x = np.concatenate([np.linspace(-5e-3, 5e-3, 5), np.zeros(5)])
-scat_y = np.concatenate([np.ones(5) * 15e-3, np.linspace(15e-3, 30e-3, 5)])
-
-positions = np.stack([scat_x, scat_y], axis=1)
-
-# Create a medium object containing the scatterer positions
-medium = Medium(
-    scatterer_positions=positions,
-    scatterer_amplitudes=np.ones(scat_x.shape[0]),
-    sound_speed=1540,
-)
-output_path = Path(r"./output.h5")
-
-# Simulate the ultrasound data
-result = simulate_to_hdf5(
-    path=output_path,
-    probe=probe,
-    transmit=transmit,
-    receive=receive,
-    medium=medium,
-)
-
-# Plot the beamformed image
 use_dark_style()
-fig, ax = plt.subplots()
-depth = receive.n_ax / 2 / receive.sampling_frequency * medium.sound_speed
-plot_beamformed(
-    ax, result[0], extent_m=[-19e-3, 19e-3, depth, 0], probe_geometry=probe_geometry
-)
+fig, ax = plt.subplots(1, 1)
+plot_rf(ax, rf_data, cmap="cividis")
 plt.show()
 ```

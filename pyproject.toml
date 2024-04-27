@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jaxus"
-version = "0.1.3"
+version = "0.1.4"
 description = "Basic ultrasound simulation and reconstruction functionality implemented in JAX."
 authors = ["Vincent van de Schaft"]
 readme = "README.md"

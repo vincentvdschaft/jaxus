@@ -561,7 +561,7 @@ legend.fancybox:      False     # if True, use a rounded box for the
 #figure.labelsize:   large     # size of the figure label (``Figure.sup[x|y]label()``)
 #figure.labelweight: normal    # weight of the figure label
 #figure.figsize:     6.4, 4.8  # figure size in inches
-figure.dpi:         200       # figure dots per inch
+figure.dpi:          150       # figure dots per inch
 figure.facecolor:   black     # figure face color
 #figure.edgecolor:   white     # figure edge color
 #figure.frameon:     True      # enable figure frame

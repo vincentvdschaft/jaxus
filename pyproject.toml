@@ -1,16 +1,16 @@
 [tool.poetry]
 name = "jaxus"
-version = "0.1.0"
+version = "0.1.2"
 description = "Basic ultrasound simulation and reconstruction functionality implemented in JAX."
 authors = ["Vincent van de Schaft <vincentvdschaft@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-numpy = "^1.26.4"
-matplotlib = "^3.8.4"
-h5py = "^3.11.0"
-tqdm = "^4.66.2"
+numpy = "*"
+matplotlib = "*"
+h5py = "*"
+tqdm = "*"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.4.2"

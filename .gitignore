@@ -37,3 +37,5 @@ data
 *.dll
 *.gif
 *.zip
+*.whl
+*.tar.gz

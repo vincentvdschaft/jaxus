@@ -9,7 +9,7 @@ import numpy as np
 import jaxus.utils.log as log
 from jaxus.beamforming import CartesianPixelGrid, PixelGrid, beamform_das, log_compress
 from jaxus.containers import Medium, Probe, Pulse, Receive, Transmit
-from jaxus.data import generate_usbmd_dataset
+from jaxus.data import generate_hdf5_dataset
 from jaxus.rf_simulator import simulate_rf_data
 
 
@@ -86,7 +86,7 @@ def simulate_rf(
     return rf_data
 
 
-def simulate_to_usbmd(
+def simulate_to_hdf5(
     path: Union[str, Path],
     probe: Probe,
     transmit: Union[Transmit, list],
@@ -199,7 +199,7 @@ def simulate_to_usbmd(
     # ==================================================================================
     # Generate USBMD dataset
     # ==================================================================================
-    generate_usbmd_dataset(
+    generate_hdf5_dataset(
         path,
         raw_data=rf_data,
         beamformed_data=beamformed,
@@ -236,7 +236,7 @@ def simulate_to_usbmd(
     return beamformed
 
 
-def beamform_usbmd(
+def beamform_hdf5(
     path,
     frames: Union[np.ndarray, None] = None,
     transmits: Union[np.ndarray, None] = None,

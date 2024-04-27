@@ -22,7 +22,7 @@ from jaxus import (
     Receive,
     Pulse,
     Medium,
-    simulate_to_usbmd,
+    simulate_to_hdf5,
     plot_beamformed,
 )
 
@@ -74,7 +74,7 @@ medium = Medium(
 output_path = Path(r"./output.h5")
 
 # Simulate the ultrasound data
-result = simulate_to_usbmd(
+result = simulate_to_hdf5(
     path=output_path,
     probe=probe,
     transmit=transmit,

@@ -23,7 +23,7 @@ def _first_not_none_item(arr):
     return non_none_items[0] if non_none_items else None
 
 
-def generate_usbmd_dataset(
+def generate_hdf5_dataset(
     path,
     raw_data=None,
     aligned_data=None,
@@ -735,7 +735,7 @@ def assert_unit_and_description_present(hdf5_file, _prefix=""):
             ), f"The dataset {_prefix}/{key} does not have a description attribute."
 
 
-def load_usbmd(
+def load_hdf5(
     path,
     frames: Union[Tuple, List, np.ndarray],
     transmits: Union[Tuple, List, np.ndarray],

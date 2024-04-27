@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jaxus.plotting import plot_rf, plot_to_darkmode
+from jaxus.plotting import plot_rf, use_dark_style
 from jaxus.rf_simulator import simulate_rf_data
 
 # Set to True to plot the result
@@ -105,7 +105,7 @@ def test_rf_simulator():
     if not PLOT:
         return
 
+    use_dark_style()
     fig, ax = plt.subplots(1, 1)
-    plot_rf(ax, rf_data, axis_in_mm=True, cmap="cividis")
-    plot_to_darkmode(fig, ax)
+    plot_rf(ax, rf_data, cmap="cividis")
     plt.show()

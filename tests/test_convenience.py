@@ -3,12 +3,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jaxus import simulate_to_usbmd
+from jaxus import simulate_to_hdf5
 from jaxus.containers import Medium, Probe, Pulse, Receive, Transmit
 from jaxus.plotting import plot_beamformed, plot_rf, plot_to_darkmode, use_dark_style
 
 
-def test_simulate_to_usbmd():
+def test_simulate_to_hdf5():
 
     n_el = 64
     probe_geometry = np.stack(
@@ -47,13 +47,13 @@ def test_simulate_to_usbmd():
         sound_speed=1540,
     )
     output_path = Path(
-        r"C:\Users\vince\Documents\3_resources\data\verasonics\usbmd\simu\output.h5"
+        r"C:\Users\vince\Documents\3_resources\data\verasonics\hdf5\simu\output.h5"
     )
     # Remove the file if it exists
     if output_path.exists():
         output_path.unlink()
 
-    result = simulate_to_usbmd(
+    result = simulate_to_hdf5(
         path=output_path,
         probe=probe,
         transmit=transmit,

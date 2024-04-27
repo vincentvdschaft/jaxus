@@ -16,7 +16,7 @@ from jaxus.containers.probe import Probe
 from jaxus.containers.receive import Receive
 from jaxus.containers.transmit import Transmit
 from jaxus.containers.waveform import Pulse
-from jaxus.data.usbmd_data_format import generate_usbmd_dataset
+from jaxus.data.hdf5_data_format import generate_hdf5_dataset
 from jaxus.plotting import plot_beamformed, plot_rf, plot_to_darkmode
 from jaxus.rf_simulator import simulate_rf_data
 from jaxus.utils.testing import get_test_containers

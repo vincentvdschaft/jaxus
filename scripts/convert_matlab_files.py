@@ -11,7 +11,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox
 
 import jaxus.utils.log as log
-from jaxus.data import usbmd_from_matlab_raw
+from jaxus.data import hdf5_from_matlab_raw
 
 # Create a Tkinter root window
 root = tk.Tk()
@@ -50,7 +50,7 @@ if selected_directory:
     # Convert the selected directory to a Path object
     raw_data_dir = find_raw_data_dir(Path(selected_directory))
     print(f"raw_data_dir: {raw_data_dir}")
-    output_dir = raw_data_dir.parent / "usbmd_format"
+    output_dir = raw_data_dir.parent / "hdf5_format"
 
     # Create the output directory if it does not exist
     if not output_dir.exists():
@@ -79,7 +79,7 @@ if selected_directory:
                     continue
 
             try:
-                usbmd_from_matlab_raw(
+                hdf5_from_matlab_raw(
                     full_path,
                     output_path,
                 )

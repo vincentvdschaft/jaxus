@@ -1,4 +1,4 @@
-"""Functionality to convert Verasonics matlab raw files to the usbmd format.
+"""Functionality to convert Verasonics matlab raw files to the hdf5 format.
 
 ## Example
 ```MATLAB
@@ -8,14 +8,14 @@
 ```
 Then in python:
 ```python
-from usbmd.data_format.usbmd_from_matlab_raw import usbmd_from_matlab_raw
+from hdf5.data_format.hdf5_from_matlab_raw import hdf5_from_matlab_raw
 
-usbmd_from_matlab_raw("C:/path/to/raw_data.mat", "C:/path/to/output.hdf5")
+hdf5_from_matlab_raw("C:/path/to/raw_data.mat", "C:/path/to/output.hdf5")
 ```
 
 Or alternatively, use the script below to convert all .mat files in a directory.
 ```commandline
-python usbmd_from_matlab_raw.py
+python hdf5_from_matlab_raw.py
 ```
 """
 
@@ -26,7 +26,7 @@ import numpy as np
 
 import jaxus.utils.log as log
 
-from .usbmd_data_format import generate_usbmd_dataset
+from .hdf5_data_format import generate_hdf5_dataset
 
 
 def dereference_index(file, dataset, index):
@@ -685,8 +685,8 @@ def read_image_data_p(file):
     return image_data
 
 
-def usbmd_from_matlab_raw(input_path, output_path):
-    """Converts a Verasonics matlab raw file to the usbmd format. The MATLAB file
+def hdf5_from_matlab_raw(input_path, output_path):
+    """Converts a Verasonics matlab raw file to the hdf5 format. The MATLAB file
     should be created using the `save_raw` function and be stored in "v7.3" format.
 
     Parameters
@@ -749,8 +749,8 @@ def usbmd_from_matlab_raw(input_path, output_path):
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Generate the usbmd dataset
-        generate_usbmd_dataset(
+        # Generate the hdf5 dataset
+        generate_hdf5_dataset(
             path=output_path,
             raw_data=raw_data,
             image=image_data,

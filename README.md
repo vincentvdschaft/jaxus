@@ -34,11 +34,10 @@ from jaxus import (
     plot_beamformed,
     CartesianPixelGrid,
 )
+```
 
-# ======================================================================================
-# Define simulation parameters
-# ======================================================================================
-
+### Define simulation parameters
+```python
 # The number of axial samples to simulate
 n_ax = 2048
 # The number of elements in the probe
@@ -100,9 +99,9 @@ scatterer_positions = np.stack([scatterer_x, scatterer_z], axis=1)
 
 scatterer_amplitudes = np.ones((scatterer_positions.shape[0]))
 
-# ======================================================================================
-# Simulate RF data
-# ======================================================================================
+```
+### Simulate RF data
+```python
 
 rf_data = simulate_rf_data(
     n_ax,
@@ -124,13 +123,10 @@ rf_data = simulate_rf_data(
     progress_bar=True,
 )
 
-
-# ======================================================================================
-# Beamform the RF data using DAS
-# ======================================================================================
-# --------------------------------------------------------------------------------------
+```
+## Beamform the RF data using delay-and-sum
+```python
 # Define beamforming grid
-# --------------------------------------------------------------------------------------
 pixel_grid = CartesianPixelGrid(
     n_x=512,
     n_z=512,
@@ -140,9 +136,7 @@ pixel_grid = CartesianPixelGrid(
     wavelength=sound_speed / carrier_frequency,
 )
 
-# --------------------------------------------------------------------------------------
 # Perform DAS beamforming
-# --------------------------------------------------------------------------------------
 beamformed_image = beamform_das(
     rf_data[None, None, :, :, None],
     pixel_positions=pixel_grid.pixel_positions_flat,
@@ -162,7 +156,10 @@ beamformed_image = log_compress(
     beamformed_image.reshape(pixel_grid.shape), normalize=True
 )
 
-
+```
+### Plotting
+```python
+# Plot the RF data and the beamformed image
 use_dark_style()
 fig, axes = plt.subplots(1, 2)
 ax_rf, ax_bf = axes
@@ -175,5 +172,4 @@ plot_beamformed(
 )
 plt.tight_layout()
 plt.show()
-
 ```

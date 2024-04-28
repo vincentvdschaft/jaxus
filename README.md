@@ -1,6 +1,8 @@
 # JAX UltraSound
 Basic ultrasound simulation and reconstruction functionality implemented in JAX.
 
+> **⚠️ Note**: The project is in an early stage of development and the API is subject to change. Be sure to pin the version of the package in your `requirements.txt` file.
+
 ## Installation
 Install the package using pip:
 ```bash
@@ -12,7 +14,6 @@ The project also depends on JAX. To install JAX follow the [official instruction
 pip install -U "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 ```
 
-> **⚠️ Note**: The project is in an early stage of development and the API is subject to change. Be sure to pin the version of the package in your `requirements.txt` file.
 
 ## Usage
 ### Define simulation parameters

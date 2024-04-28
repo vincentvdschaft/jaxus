@@ -48,6 +48,10 @@ def plot_rf(
         vmin = np.percentile(rf_data, 0.5)
         vmax = np.percentile(rf_data, 99.5)
 
+        max_abs = max(abs(vmin), abs(vmax))
+        vmin = -max_abs
+        vmax = max_abs
+
     # Plot the RF data to the axis
     ax.imshow(
         rf_data,

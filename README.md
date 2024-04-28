@@ -15,7 +15,7 @@ pip install -U "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/
 > **⚠️ Note**: The project is in an early stage of development and the API is subject to change. Be sure to pin the version of the package in your `requirements.txt` file.
 
 ## Usage
-### Simulating and beamforming RF data
+### Define simulation parameters
 ```python
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
@@ -34,10 +34,6 @@ from jaxus import (
     plot_beamformed,
     CartesianPixelGrid,
 )
-```
-
-### Define simulation parameters
-```python
 # The number of axial samples to simulate
 n_ax = 2048
 # The number of elements in the probe

@@ -18,7 +18,7 @@ from jaxus.containers.transmit import Transmit
 from jaxus.containers.waveform import Pulse
 from jaxus.data.hdf5_data_format import generate_hdf5_dataset
 from jaxus.plotting import plot_beamformed, plot_rf, plot_to_darkmode
-from jaxus.rf_simulator import simulate_rf_data
+from jaxus.rf_simulator import simulate_rf_transmit
 from jaxus.utils.testing import get_test_containers
 
 
@@ -32,7 +32,7 @@ def test_beamform(iq_beamform):
     # ==================================================================================
     # Generate the RF data
     # ==================================================================================
-    rf_data = simulate_rf_data(
+    rf_data = simulate_rf_transmit(
         n_ax=receive.n_ax,
         scatterer_positions=medium.scatterer_positions,
         scatterer_amplitudes=medium.scatterer_amplitudes,
@@ -113,7 +113,7 @@ def test_beamformer_class():
     # ==================================================================================
     # Generate the RF data
     # ==================================================================================
-    rf_data = simulate_rf_data(
+    rf_data = simulate_rf_transmit(
         n_ax=receive.n_ax,
         scatterer_positions=medium.scatterer_positions,
         scatterer_amplitudes=medium.scatterer_amplitudes,

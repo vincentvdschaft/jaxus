@@ -29,7 +29,7 @@ import numpy as np
 from jaxus import (
     plot_rf,
     use_dark_style,
-    simulate_rf_data,
+    simulate_rf_transmit,
     beamform_das,
     log_compress,
     plot_beamformed,
@@ -100,7 +100,7 @@ scatterer_amplitudes = np.ones((scatterer_positions.shape[0]))
 ### Simulate RF data
 ```python
 
-rf_data = simulate_rf_data(
+rf_data = simulate_rf_transmit(
     n_ax,
     scatterer_positions,
     scatterer_amplitudes,

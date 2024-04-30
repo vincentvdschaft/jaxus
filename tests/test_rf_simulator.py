@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jaxus import plot_rf, use_dark_style, simulate_rf_data
+from jaxus import plot_rf, use_dark_style, simulate_rf_transmit
 
 # Set to True to plot the result
 PLOT = True
@@ -78,7 +78,7 @@ def test_rf_simulator():
     print("scatterer_positions.shape: ", scatterer_positions.shape)
     print("scatterer_amplitudes.shape: ", scatterer_amplitudes.shape)
 
-    rf_data = simulate_rf_data(
+    rf_data = simulate_rf_transmit(
         n_ax,
         scatterer_positions,
         scatterer_amplitudes,

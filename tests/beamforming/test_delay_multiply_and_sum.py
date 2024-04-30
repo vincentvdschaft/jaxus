@@ -6,7 +6,7 @@ from scipy.signal.windows import hamming
 
 from jaxus.beamforming import CartesianPixelGrid, beamform_dmas, log_compress
 from jaxus.plotting import plot_beamformed, plot_rf, plot_to_darkmode
-from jaxus.rf_simulator import simulate_rf_data
+from jaxus.rf_simulator import simulate_rf_transmit
 from jaxus.utils.testing import get_test_containers
 
 
@@ -19,7 +19,7 @@ def test_beamform():
     # ==================================================================================
     # Generate the RF data
     # ==================================================================================
-    rf_data = simulate_rf_data(
+    rf_data = simulate_rf_transmit(
         n_ax=receive.n_ax,
         scatterer_positions=medium.scatterer_positions,
         scatterer_amplitudes=medium.scatterer_amplitudes,

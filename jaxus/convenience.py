@@ -10,7 +10,7 @@ import jaxus.utils.log as log
 from jaxus.beamforming import CartesianPixelGrid, PixelGrid, beamform_das, log_compress
 from jaxus.containers import Medium, Probe, Pulse, Receive, Transmit
 from jaxus.data import generate_hdf5_dataset
-from jaxus.rf_simulator import simulate_rf_data
+from jaxus.rf_simulator import simulate_rf_transmit
 
 
 def simulate_rf(
@@ -59,7 +59,7 @@ def simulate_rf(
         wavelength = medium.sound_speed / tx.carrier_frequency
 
         # Simulate the RF data
-        rf_data = simulate_rf_data(
+        rf_data = simulate_rf_transmit(
             n_ax=receive.n_ax,
             scatterer_positions=medium.scatterer_positions,
             scatterer_amplitudes=medium.scatterer_amplitudes,

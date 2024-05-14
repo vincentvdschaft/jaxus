@@ -482,7 +482,7 @@ axes.prop_cycle: cycler('color', ['E02222', '0EA7FF', 'FFE70E', '67D627', '9467b
 #xtick.minor.pad:     3.4     # distance to the minor tick label in points
 xtick.color:          white   # color of the ticks
 #xtick.labelcolor:    inherit # color of the tick labels or inherit from xtick.color
-#xtick.labelsize:     medium  # font size of the tick labels
+xtick.labelsize:     small  # font size of the tick labels
 #xtick.direction:     out     # direction: {in, out, inout}
 #xtick.minor.visible: False   # visibility of minor ticks on x-axis
 #xtick.major.top:     True    # draw x axis top major ticks

@@ -42,6 +42,7 @@ def mv_beamform_pixel(
     carrier_frequency,
     sampling_frequency,
     f_number,
+    tx_apodization,
     rx_apodization,
     subaperture_size,
     epsilon=1 / 16,
@@ -80,6 +81,8 @@ def mv_beamform_pixel(
         The apodization of the receive elements.
     subaperture_size : int
         The size of the subaperture to use for the spatial smoothing. Default is 16.
+    tx_apodization : jnp.ndarray, optional
+        The apodization of the transmit elements. Default is all ones.
     epsilon : float, optional
         The amount of diagonal loading to use. To increase robustness, an identity
         matrix is added to the covariance matrix multiplied by epsilon/subaperture_size.
@@ -103,6 +106,7 @@ def mv_beamform_pixel(
         probe_geometry,
         carrier_frequency,
         sampling_frequency,
+        tx_apodization,
         iq_beamform,
     )
 
@@ -174,6 +178,7 @@ def beamform_mv(
     carrier_frequency: float,
     sound_speed: float,
     t_peak: jnp.ndarray,
+    tx_apodizations: jnp.ndarray,
     rx_apodization: jnp.ndarray,
     f_number: float,
     subaperture_size: int,
@@ -227,6 +232,8 @@ def beamform_mv(
     t_peak : jnp.ndarray
         The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
         the first element fires)
+    tx_apodizations : jnp.ndarray
+        The apodization of the transmit elements of shape `(n_tx, n_el)`.
     rx_apodization : jnp.ndarray
         The apodization of the receive elements.
     f_number : float
@@ -343,6 +350,7 @@ def beamform_mv(
                         sound_speed=sound_speed,
                         t_peak=t_peak[tx],
                         f_number=f_number,
+                        tx_apodization=tx_apodizations[tx],
                         rx_apodization=rx_apodization,
                         iq_beamform=iq_beamform,
                         subaperture_size=subaperture_size,
@@ -362,9 +370,9 @@ def beamform_mv(
 @partial(
     jit,
     static_argnums=(
-        11,
         12,
         13,
+        14,
     ),
 )
 def mv_beamform_transmit(
@@ -377,6 +385,7 @@ def mv_beamform_transmit(
     carrier_frequency,
     sound_speed,
     t_peak,
+    tx_apodization,
     rx_apodization,
     f_number,
     subaperture_size,
@@ -412,8 +421,10 @@ def mv_beamform_transmit(
     t_peak : float
         The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
         the first element fires)
+    tx_apodization : jnp.ndarray
+        The apodization of the transmit elements of shape `(n_el,)`.
     rx_apodization : jnp.ndarray
-        The apodization of the receive elements.
+        The apodization of the receive elements of shape `(n_el,)`.
     f_number : float
         The f-number to use for the beamforming. The f-number is the ratio of the focal
         length to the aperture size. Elements that are more to the side of the current
@@ -443,6 +454,7 @@ def mv_beamform_transmit(
             None,
             None,
             None,
+            None,
         ),
     )(
         rf_data,
@@ -455,6 +467,7 @@ def mv_beamform_transmit(
         carrier_frequency,
         sampling_frequency,
         f_number,
+        tx_apodization,
         rx_apodization,
         subaperture_size,
         epsilon,

@@ -49,6 +49,7 @@ def _beamform_pixel(
     carrier_frequency,
     sampling_frequency,
     f_number,
+    tx_apodization,
     rx_apodization,
 ):
     """Beamforms a single pixel of a single frame and single transmit. Further
@@ -80,6 +81,8 @@ def _beamform_pixel(
         The f-number to use for the beamforming. The f-number is the ratio of the focal
         length to the aperture size. Elements that are more to the side of the current
         pixel than the f-number are not used in the beamforming.
+    tx_apodization : jnp.ndarray
+        The apodization of the transmit elements.
     rx_apodization : jnp.ndarray
         The apodization of the receive elements.
 
@@ -100,6 +103,7 @@ def _beamform_pixel(
         probe_geometry,
         carrier_frequency,
         sampling_frequency,
+        tx_apodization,
         iq_beamform=True,
     )
     # Traditional f-number mask
@@ -140,6 +144,7 @@ def dmas_beamform_transmit(
     carrier_frequency,
     sound_speed,
     t_peak,
+    tx_apodization,
     rx_apodization,
     f_number,
 ):
@@ -171,6 +176,8 @@ def dmas_beamform_transmit(
     t_peak : float
         The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
         the first element fires)
+    tx_apodization : jnp.ndarray
+        The apodization of the transmit elements.
     rx_apodization : jnp.ndarray
         The apodization of the receive elements.
     f_number : float
@@ -185,7 +192,20 @@ def dmas_beamform_transmit(
     """
     return vmap(
         _beamform_pixel,
-        in_axes=(None, 0, None, None, None, None, None, None, None, None, None),
+        in_axes=(
+            None,
+            0,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ),
     )(
         rf_data,
         pixel_positions,
@@ -197,6 +217,7 @@ def dmas_beamform_transmit(
         carrier_frequency,
         sampling_frequency,
         f_number,
+        tx_apodization,
         rx_apodization,
     )
 
@@ -211,6 +232,7 @@ def beamform_dmas(
     carrier_frequency: float,
     sound_speed: float,
     t_peak: jnp.ndarray,
+    tx_apodizations: jnp.ndarray,
     rx_apodization: jnp.ndarray,
     f_number: float,
     transmits: jnp.ndarray = None,
@@ -246,6 +268,8 @@ def beamform_dmas(
     t_peak : jnp.ndarray
         The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
         the first element fires)
+    tx_apodizations : jnp.ndarray
+        The apodization of the transmit elements.
     rx_apodization : jnp.ndarray
         The apodization of the receive elements.
     f_number : float
@@ -342,6 +366,7 @@ def beamform_dmas(
                         carrier_frequency,
                         sound_speed,
                         t_peak[tx],
+                        tx_apodizations[tx],
                         rx_apodization,
                         f_number=f_number,
                     )

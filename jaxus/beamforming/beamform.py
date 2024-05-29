@@ -308,6 +308,7 @@ def tof_correct_pixel(
     probe_geometry,
     carrier_frequency,
     sampling_frequency,
+    tx_apodization,
     iq_beamform=False,
 ):
     """Performs time-of-flight correction for a single pixel. The RF data is indexed
@@ -337,6 +338,8 @@ def tof_correct_pixel(
         The center frequency of the RF data in Hz.
     sampling_frequency : float
         The sampling frequency in Hz.
+    tx_apodization : jnp.ndarray
+        The apodization of the transmit elements.
     iq_beamform : bool, default=False
         Set to True for IQ beamforming. In this case the function will perform phase
         rotation.
@@ -352,8 +355,10 @@ def tof_correct_pixel(
     # Compute the distance from the pixel to each element of shape (n_el,)
     dist_to_elements = jnp.linalg.norm(pixel_pos[None] - probe_geometry, axis=1)
 
+    offset = jnp.where(tx_apodization > 0.0, 0.0, 10.0)
+
     # Compute the transmit and receive times of flight (TOF) of shape (n_el,)
-    tof_tx = jnp.min(t0_delays + dist_to_elements / sound_speed)
+    tof_tx = jnp.min(t0_delays + dist_to_elements / sound_speed + offset)
     tof_rx = dist_to_elements / sound_speed
 
     # Compute the float sample index of the TOF of shape (n_el,)
@@ -393,7 +398,7 @@ def tof_correct_pixel(
 
 # Jit and mark iq_beamform as static_argnum, because a different value should trigger
 # recompilation of the function
-@partial(jit, static_argnums=(11,))
+@partial(jit, static_argnums=(12,))
 def _beamform_pixel(
     rf_data,
     pixel_pos,
@@ -405,6 +410,7 @@ def _beamform_pixel(
     carrier_frequency,
     sampling_frequency,
     f_number,
+    tx_apodization,
     rx_apodization,
     iq_beamform=False,
 ):
@@ -437,6 +443,8 @@ def _beamform_pixel(
         The f-number to use for the beamforming. The f-number is the ratio of the focal
         length to the aperture size. Elements that are more to the side of the current
         pixel than the f-number are not used in the beamforming.
+    tx_apodization : jnp.ndarray
+        The transmit apodization of the transmit elements.
     rx_apodization : jnp.ndarray
         The apodization of the receive elements.
     iq_beamform : bool, default=False
@@ -454,6 +462,7 @@ def _beamform_pixel(
         probe_geometry,
         carrier_frequency,
         sampling_frequency,
+        tx_apodization,
         iq_beamform,
     )
 
@@ -463,7 +472,7 @@ def _beamform_pixel(
     return jnp.sum(tof_corrected * f_number_mask * rx_apodization)
 
 
-@partial(jit, static_argnums=(11,))
+@partial(jit, static_argnums=(12,))
 def das_beamform_transmit(
     rf_data,
     pixel_positions,
@@ -474,6 +483,7 @@ def das_beamform_transmit(
     carrier_frequency,
     sound_speed,
     t_peak,
+    tx_apodization,
     rx_apodization,
     f_number,
     iq_beamform,
@@ -507,6 +517,8 @@ def das_beamform_transmit(
     t_peak : jnp.ndarray
         The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
         the first element fires)
+    tx_apodization : jnp.ndarray
+        The apodization of the transmit elements.
     rx_apodization : jnp.ndarray
         The apodization of the receive elements.
     f_number : float
@@ -523,7 +535,21 @@ def das_beamform_transmit(
     """
     return vmap(
         _beamform_pixel,
-        in_axes=(None, 0, None, None, None, None, None, None, None, None, None, None),
+        in_axes=(
+            None,
+            0,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ),
     )(
         rf_data,
         pixel_positions,
@@ -535,6 +561,7 @@ def das_beamform_transmit(
         carrier_frequency,
         sampling_frequency,
         f_number,
+        tx_apodization,
         rx_apodization,
         iq_beamform,
     )
@@ -550,6 +577,7 @@ def beamform_das(
     carrier_frequency: float,
     sound_speed: float,
     t_peak: jnp.ndarray,
+    tx_apodizations: jnp.ndarray,
     rx_apodization: jnp.ndarray,
     f_number: float,
     iq_beamform: bool,
@@ -587,8 +615,10 @@ def beamform_das(
     t_peak : jnp.ndarray
         The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
         the first element fires)
+    tx_apodizations : jnp.ndarray
+        The apodization of the transmit elements of shape `(n_tx, n_el)`.
     rx_apodization : jnp.ndarray
-        The apodization of the receive elements.
+        The apodization of the receive elements of shape `(n_el,)`.
     f_number : float
         The f-number to use for the beamforming. The f-number is the ratio of the focal
         length to the aperture size. Elements that are more to the side of the current
@@ -698,6 +728,7 @@ def beamform_das(
                         carrier_frequency,
                         sound_speed,
                         t_peak[tx],
+                        tx_apodizations[tx],
                         rx_apodization,
                         f_number=f_number,
                         iq_beamform=iq_beamform,

@@ -2,6 +2,7 @@ import logging
 import re
 import sys
 from pathlib import Path
+import datetime
 
 # The logger to use
 logger = None
@@ -118,8 +119,12 @@ def configure_file_logger(level="INFO"):
     if not new_logger.hasHandlers():
         LOG_DIR.mkdir(parents=True, exist_ok=True)
 
+        datetime_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
         # Add file handler
-        file_handler = logging.FileHandler(Path(LOG_DIR, "log.log"), mode="a")
+        file_handler = logging.FileHandler(
+            Path(LOG_DIR, f"{datetime_str}.log"), mode="a"
+        )
         file_handler.setFormatter(formatter)
         file_handler.setLevel("DEBUG")
         new_logger.addHandler(file_handler)

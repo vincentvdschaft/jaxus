@@ -125,8 +125,10 @@ def _get_vectorized_simulate_function(
 
         # Compute the total time of flight required to end up in the sample at ax_index
         t_sample = ax_index * sampling_period
+
         # Compute the time of flight from the pixel to the receiving element
         t_rx = jnp.linalg.norm(scatterer_position - rx_element_pos) / sound_speed
+
         # Compute the time of flight from each transmitting element to the pixel
         t_tx = (
             jnp.linalg.norm(probe_geometry - scatterer_position[None, :], axis=1)
@@ -238,7 +240,7 @@ def _get_vectorized_simulate_function(
     return jit(vectorized_function)
 
 
-def simulate_rf_data(
+def simulate_rf_transmit(
     n_ax: int,
     scatterer_positions: jnp.array,
     scatterer_amplitudes: jnp.array,
@@ -407,13 +409,15 @@ def simulate_rf_data(
     el_indices = device_put(el_indices, device=device)
 
     # Get either a progresbar function or a dummy function
-    progbar_func = lambda x, **kwargs: x if not progress_bar else tqdm(x, **kwargs)
+    progbar_func = lambda x, **kwargs: (x if not progress_bar else tqdm(x, **kwargs))
 
     # Initialize a list that will contain the chunks of rf data each containing a
     # subset of the rows)
     rf_data_row_sections = []
 
-    for ax0 in progbar_func(range(0, n_ax, ax_chunk_size), desc="Axial chunks"):
+    for ax0 in progbar_func(
+        range(0, n_ax, ax_chunk_size), desc="Axial chunks", leave=False
+    ):
         ax1 = min(ax0 + ax_chunk_size, n_ax)
         ax_indices_chunk = jnp.arange(ax0, ax1)
         ax_indices_chunk = device_put(ax_indices_chunk, device=device)
@@ -448,3 +452,127 @@ def simulate_rf_data(
     rf_data = jnp.concatenate(rf_data_row_sections, axis=0)
 
     return rf_data
+
+
+def simulate_rf_data(
+    n_ax: int,
+    scatterer_positions: jnp.array,
+    scatterer_amplitudes: jnp.array,
+    t0_delays: jnp.array,
+    probe_geometry: jnp.array,
+    element_angles: jnp.array,
+    tx_apodizations: jnp.array,
+    initial_times: float,
+    element_width_wl: float,
+    sampling_frequency: Union[float, int],
+    carrier_frequency: Union[float, int],
+    sound_speed: Union[float, int] = 1540,
+    attenuation_coefficient: Union[float, int] = 0.0,
+    wavefront_only: bool = False,
+    tx_angle_sensitivity: bool = True,
+    rx_angle_sensitivity: bool = True,
+    waveform_function: bool = None,
+    ax_chunk_size: int = 1024,
+    scatterer_chunk_size: int = 1024,
+    progress_bar: bool = False,
+    device=None,
+    verbose: bool = False,
+):
+    """Simulates rf data based on transmit settings and scatterer positions and
+    amplitudes.
+
+
+    Parameters
+    ----------
+    n_ax : int
+        The number of axial samples.
+    scatterer_positions : jnp.array
+        The scatterer positions of shape `(n_scat, 2)`.
+    scatterer_amplitudes : jnp.array
+        The scatterer amplitudes of shape `(n_scat,)`.
+    ax_chunk_size : int
+        The number of axial samples to compute simultaneously.
+    scatterer_chunk_size : int
+        The number of scatterers to compute simultaneously.
+    t0_delays : jnp.array
+        The t0_delays of shape `(n_tx, n_el)`. These are shifted such that the smallest value
+        in t0_delays is 0.
+    probe_geometry : jnp.array
+        The probe geometry of shape `(n_el, 2)`.
+    element_angles : jnp.array
+        The element angles in radians of shape `(n_el,)`. Can be used to simulate curved
+        arrays.
+    tx_apodizations : jnp.array
+        The transmit apodization of shape `(n_tx, n_el)`.
+    initial_times : np.array
+        The time instant of the first sample in seconds of shape `(n_tx,)`.
+    element_width_wl : float
+        The width of the elements in wavelengths of the center frequency.
+    sampling_frequency : float
+        The sampling frequency in Hz.
+    carrier_frequency : float
+        The center frequency of the transmit pulse in Hz.
+    sound_speed : float
+        The speed of sound in the medium.
+    attenuation_coefficient : float
+        The attenuation coefficient in dB/(MHz*cm)
+    wavefront_only : bool
+        Set to True to only compute the wavefront of the rf data. Otherwise the rf data
+        is computed as the sum of the wavefronts from indivudual transmit elements.
+    tx_angle_sensitivity : bool
+        Set to True to include the angle dependent strength of the transducer elements
+        in the response.
+    rx_angle_sensitivity : bool
+        Set to True to include the angle dependent
+        strength of the transducer elements in the response.
+    progress_bar : bool
+        Set to True to display a progress bar.
+    device : jax.Device
+        The device to run the simulation on. If None then the simulation is run on the
+        default device.
+
+    Returns
+    -------
+        jnp.array: The rf data of shape `(n_ax, n_el)`
+    """
+
+    n_tx, n_el = tx_apodizations.shape
+
+    rf_transmits = []
+
+    if progress_bar:
+        pbar_fn = lambda x: tqdm(x, desc="Transmit", leave=False, colour="red")
+    else:
+        pbar_fn = lambda x: x
+
+    for tx in pbar_fn(range(n_tx)):
+        rf_transmit = simulate_rf_transmit(
+            n_ax=n_ax,
+            scatterer_positions=scatterer_positions,
+            scatterer_amplitudes=scatterer_amplitudes,
+            t0_delays=t0_delays[tx],
+            probe_geometry=probe_geometry,
+            element_angles=element_angles,
+            tx_apodization=tx_apodizations[tx],
+            initial_time=initial_times[tx],
+            element_width_wl=element_width_wl,
+            sampling_frequency=sampling_frequency,
+            carrier_frequency=carrier_frequency,
+            sound_speed=sound_speed,
+            attenuation_coefficient=attenuation_coefficient,
+            wavefront_only=wavefront_only,
+            tx_angle_sensitivity=tx_angle_sensitivity,
+            rx_angle_sensitivity=rx_angle_sensitivity,
+            waveform_function=waveform_function,
+            ax_chunk_size=ax_chunk_size,
+            scatterer_chunk_size=scatterer_chunk_size,
+            progress_bar=progress_bar,
+            device=device,
+            verbose=verbose,
+        )
+
+        rf_transmits.append(rf_transmit)
+
+    rf_data = jnp.stack(rf_transmits, axis=0)
+
+    return rf_data[None, :, :, :, None]

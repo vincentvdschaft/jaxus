@@ -309,6 +309,7 @@ def tof_correct_pixel(
     carrier_frequency,
     sampling_frequency,
     tx_apodization,
+    lens_correction,
     iq_beamform=False,
 ):
     """Performs time-of-flight correction for a single pixel. The RF data is indexed
@@ -340,6 +341,9 @@ def tof_correct_pixel(
         The sampling frequency in Hz.
     tx_apodization : jnp.ndarray
         The apodization of the transmit elements.
+    lens_correction : float
+        The lens correction to apply to the time-of-flight. This is the extra travel
+        time introduced by the lens in a one-way pass in seconds.
     iq_beamform : bool, default=False
         Set to True for IQ beamforming. In this case the function will perform phase
         rotation.
@@ -358,8 +362,10 @@ def tof_correct_pixel(
     offset = jnp.where(tx_apodization > 0.0, 0.0, 10.0)
 
     # Compute the transmit and receive times of flight (TOF) of shape (n_el,)
-    tof_tx = jnp.min(t0_delays + dist_to_elements / sound_speed + offset)
-    tof_rx = dist_to_elements / sound_speed
+    tof_tx = (
+        jnp.min(t0_delays + dist_to_elements / sound_speed + offset) + lens_correction
+    )
+    tof_rx = dist_to_elements / sound_speed + lens_correction
 
     # Compute the float sample index of the TOF of shape (n_el,)
     t_sample = tof_tx + tof_rx + t_peak - initial_time
@@ -398,7 +404,7 @@ def tof_correct_pixel(
 
 # Jit and mark iq_beamform as static_argnum, because a different value should trigger
 # recompilation of the function
-@partial(jit, static_argnums=(12,))
+@partial(jit, static_argnums=(13,))
 def _beamform_pixel(
     rf_data,
     pixel_pos,
@@ -412,6 +418,7 @@ def _beamform_pixel(
     f_number,
     tx_apodization,
     rx_apodization,
+    lens_correction,
     iq_beamform=False,
 ):
     """Beamforms a single pixel of a single frame and single transmit. Further
@@ -447,6 +454,9 @@ def _beamform_pixel(
         The transmit apodization of the transmit elements.
     rx_apodization : jnp.ndarray
         The apodization of the receive elements.
+    lens_correction : float, default=0.0
+        The lens correction to apply to the time-of-flight. This is the extra travel
+        time introduced by the lens in a one-way pass.
     iq_beamform : bool, default=False
         Set to True for IQ beamforming. In this case the function will perform phase
         rotation.
@@ -463,6 +473,7 @@ def _beamform_pixel(
         carrier_frequency,
         sampling_frequency,
         tx_apodization,
+        lens_correction,
         iq_beamform,
     )
 
@@ -472,7 +483,7 @@ def _beamform_pixel(
     return jnp.sum(tof_corrected * f_number_mask * rx_apodization)
 
 
-@partial(jit, static_argnums=(12,))
+@partial(jit, static_argnums=(13,))
 def das_beamform_transmit(
     rf_data,
     pixel_positions,
@@ -486,6 +497,7 @@ def das_beamform_transmit(
     tx_apodization,
     rx_apodization,
     f_number,
+    lens_correction,
     iq_beamform,
 ):
     """Beamforms a single transmit using the given parameters. The input data can be
@@ -525,6 +537,9 @@ def das_beamform_transmit(
         The f-number to use for the beamforming. The f-number is the ratio of the focal
         length to the aperture size. Elements that are more to the side of the current
         pixel than the f-number are not used in the beamforming.
+    lens_correction : float
+        The lens correction to apply to the time-of-flight. This is the extra travel
+        time introduced by the lens in a one-way pass in seconds.
     iq_beamform : bool
         Whether to beamform the IQ data directly. Default is False.
 
@@ -538,6 +553,7 @@ def das_beamform_transmit(
         in_axes=(
             None,
             0,
+            None,
             None,
             None,
             None,
@@ -563,6 +579,7 @@ def das_beamform_transmit(
         f_number,
         tx_apodization,
         rx_apodization,
+        lens_correction,
         iq_beamform,
     )
 
@@ -580,6 +597,7 @@ def beamform_das(
     tx_apodizations: jnp.ndarray,
     rx_apodization: jnp.ndarray,
     f_number: float,
+    lens_correction: float,
     iq_beamform: bool,
     transmits: jnp.ndarray = None,
     pixel_chunk_size: int = 1048576,
@@ -623,6 +641,9 @@ def beamform_das(
         The f-number to use for the beamforming. The f-number is the ratio of the focal
         length to the aperture size. Elements that are more to the side of the current
         pixel than the f-number are not used in the beamforming. Default is 3.
+    lens_correction : float
+        The lens correction to apply to the time-of-flight. This is the extra travel
+        time introduced by the lens in a one-way pass in seconds.
     iq_beamform : bool
         Whether to beamform the IQ data directly. Default is False.
     transmits : jnp.ndarray
@@ -683,21 +704,23 @@ def beamform_das(
     # Initialize the beamformed images to zeros
     beamformed_images = jnp.zeros((n_frames, n_pixels), dtype=beamformed_dtype)
 
-    progbar_func_frames = lambda x: (
-        tqdm(x, desc="Beamforming frame", colour="yellow", leave=False)
-        if progress_bar and n_frames > 1
-        else x
-    )
-    progbar_func_transmits = lambda x: (
-        tqdm(x, desc="Transmit", colour="yellow", leave=False)
-        if progress_bar and len(transmits) > 1
-        else x
-    )
-    progbar_func_pixels = lambda x: (
-        tqdm(x, desc="Pixel chunks", colour="yellow", leave=False)
-        if progress_bar and len(start_indices) > 1
-        else x
-    )
+    def progbar_func_frames(x):
+        if progress_bar and n_frames > 1:
+            return tqdm(x, desc="Beamforming frame", colour="yellow", leave=False)
+        else:
+            return x
+
+    def progbar_func_transmits(x):
+        if progress_bar and len(transmits) > 1:
+            return tqdm(x, desc="Transmit", colour="yellow", leave=False)
+        else:
+            return x
+
+    def progbar_func_pixels(x):
+        if progress_bar and len(start_indices) > 1:
+            return tqdm(x, desc="Pixel chunks", colour="yellow", leave=False)
+        else:
+            return x
 
     for tx in transmits:
         assert 0 <= tx < n_tx, "Transmit index out of bounds"
@@ -731,6 +754,7 @@ def beamform_das(
                         tx_apodizations[tx],
                         rx_apodization,
                         f_number=f_number,
+                        lens_correction=lens_correction,
                         iq_beamform=iq_beamform,
                     )
                 )
@@ -1051,6 +1075,7 @@ class Beamformer:
             carrier_frequency=self._carrier_frequency,
             sound_speed=self._sound_speed,
             t_peak=self._t_peak,
+            tx_apodizations=jnp.ones((rf_data.shape[1], rf_data.shape[3])),
             rx_apodization=self._rx_apodization,
             f_number=self._f_number,
             iq_beamform=self._iq_beamform,

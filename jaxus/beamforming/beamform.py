@@ -35,6 +35,7 @@ from jaxus.utils.checks import (
 )
 
 from .pixelgrid import PixelGrid
+from .lens_correction import compute_lensed_travel_time
 
 
 def rf2iq(rf_data, carrier_frequency, sampling_frequency, bandwidth=None, padding=512):
@@ -353,13 +354,21 @@ def tof_correct_pixel(
     n_ax = rf_data.shape[-2]
 
     # Compute the distance from the pixel to each element of shape (n_el,)
-    dist_to_elements = jnp.linalg.norm(pixel_pos[None] - probe_geometry, axis=1)
+    # dist_to_elements = jnp.linalg.norm(pixel_pos[None] - probe_geometry, axis=1)
+
+    c_lens = sound_speed
+    c_medium = sound_speed
+    lens_thickness = 1e-3
+
+    travel_time = vmap(compute_lensed_travel_time, in_axes=(0, None, None, None, None))(
+        probe_geometry, pixel_pos, lens_thickness, c_lens, c_medium
+    )
 
     offset = jnp.where(tx_apodization > 0.0, 0.0, 10.0)
 
     # Compute the transmit and receive times of flight (TOF) of shape (n_el,)
-    tof_tx = jnp.min(t0_delays + dist_to_elements / sound_speed + offset)
-    tof_rx = dist_to_elements / sound_speed
+    tof_tx = jnp.min(t0_delays + travel_time + offset)
+    tof_rx = travel_time
 
     # Compute the float sample index of the TOF of shape (n_el,)
     t_sample = tof_tx + tof_rx + t_peak - initial_time
@@ -398,7 +407,7 @@ def tof_correct_pixel(
 
 # Jit and mark iq_beamform as static_argnum, because a different value should trigger
 # recompilation of the function
-@partial(jit, static_argnums=(12,))
+# @partial(jit, static_argnums=(12,))
 def _beamform_pixel(
     rf_data,
     pixel_pos,
@@ -472,7 +481,7 @@ def _beamform_pixel(
     return jnp.sum(tof_corrected * f_number_mask * rx_apodization)
 
 
-@partial(jit, static_argnums=(12,))
+# @partial(jit, static_argnums=(12,))
 def das_beamform_transmit(
     rf_data,
     pixel_positions,

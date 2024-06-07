@@ -98,15 +98,15 @@ def compute_travel_time(pos_a, pos_b, c):
 
 @jit
 def compute_lensed_travel_time(
-    pos_element, pos_pixel, lens_thickness, c_lens, c_medium
+    element_pos, pixel_pos, lens_thickness, c_lens, c_medium
 ):
     """Compute the travel time through an acoustic lens.
 
     Parameters
     ----------
-    pos_element : jnp.ndarray
+    element_pos : jnp.ndarray
         The position of the element in the lens of shape (2,).
-    pos_pixel : jnp.ndarray
+    pixel_pos : jnp.ndarray
         The position of the pixel in the medium of shape (2,).
     lens_thickness : float
         The thickness of the lens in meters.
@@ -120,8 +120,8 @@ def compute_lensed_travel_time(
     float
         The travel time in seconds.
     """
-    xe, ze = pos_element
-    xs, zs = pos_pixel
+    xe, ze = element_pos
+    xs, zs = pixel_pos
 
     # Compute the lateral point on the lens that the shortest path goes through
     xl = compute_xl(xe, ze, xs, zs, lens_thickness, c_lens, c_medium)
@@ -130,6 +130,6 @@ def compute_lensed_travel_time(
 
     # Compute the travel time of the shortest path
     travel_time = compute_travel_time(
-        pos_element, pos_lenscrossing, c_lens
-    ) + compute_travel_time(pos_lenscrossing, pos_pixel, c_medium)
+        element_pos, pos_lenscrossing, c_lens
+    ) + compute_travel_time(pos_lenscrossing, pixel_pos, c_medium)
     return travel_time

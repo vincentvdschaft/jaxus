@@ -1,5 +1,4 @@
 from .beamform import (
-    Beamformer,
     PixelGrid,
     beamform_das,
     detect_envelope_beamformed,

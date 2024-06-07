@@ -176,8 +176,11 @@ def simulate_to_hdf5(
         sampling_frequency=receive.sampling_frequency,
         carrier_frequency=transmit[0].carrier_frequency,
         sound_speed=medium.sound_speed,
+        sound_speed_lens=medium.sound_speed,
+        lens_thickness=0.1e-3,
         t_peak=t_peak,
         rx_apodization=np.ones(probe.n_el),
+        tx_apodizations=tx_apodization,
         f_number=1.5,
         iq_beamform=True,
     )

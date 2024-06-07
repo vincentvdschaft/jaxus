@@ -27,7 +27,7 @@ def get_test_containers():
         scatterer_positions=np.stack(
             [
                 np.random.randn(n_scat) * 4e-3,
-                np.abs(35e-3 + np.random.randn(n_scat) * 4e-3),
+                np.abs(25e-3 + np.random.randn(n_scat) * 4e-3),
             ],
             axis=1,
         ),

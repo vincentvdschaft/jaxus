@@ -2,10 +2,6 @@
 
 The core function of this module is the `beamform` function that performs Delay-And-Sum
 beamforming on RF or IQ data.
-
-As a convenience, the `Beamformer` class is provided to store the beamforming parameters
-and make it easy to beamform many frames without having to pass all the parameters to
-the beamforming function every time.
 """
 
 from functools import partial
@@ -44,6 +40,8 @@ def _beamform_pixel(
     t0_delays,
     initial_time,
     sound_speed,
+    sound_speed_lens,
+    lens_thickness,
     t_peak,
     probe_geometry,
     carrier_frequency,
@@ -94,16 +92,18 @@ def _beamform_pixel(
     """
 
     tof_corrected = tof_correct_pixel(
-        rf_data,
-        pixel_pos,
-        t0_delays,
-        initial_time,
-        sound_speed,
-        t_peak,
-        probe_geometry,
-        carrier_frequency,
-        sampling_frequency,
-        tx_apodization,
+        rf_data=rf_data,
+        pixel_pos=pixel_pos,
+        t0_delays=t0_delays,
+        initial_time=initial_time,
+        sound_speed=sound_speed,
+        sound_speed_lens=sound_speed_lens,
+        lens_thickness=lens_thickness,
+        t_peak=t_peak,
+        probe_geometry=probe_geometry,
+        carrier_frequency=carrier_frequency,
+        sampling_frequency=sampling_frequency,
+        tx_apodization=tx_apodization,
         iq_beamform=True,
     )
     # Traditional f-number mask
@@ -143,6 +143,8 @@ def dmas_beamform_transmit(
     sampling_frequency,
     carrier_frequency,
     sound_speed,
+    sound_speed_lens,
+    lens_thickness,
     t_peak,
     tx_apodization,
     rx_apodization,
@@ -205,6 +207,8 @@ def dmas_beamform_transmit(
             None,
             None,
             None,
+            None,
+            None,
         ),
     )(
         rf_data,
@@ -212,6 +216,8 @@ def dmas_beamform_transmit(
         t0_delays,
         initial_time,
         sound_speed,
+        sound_speed_lens,
+        lens_thickness,
         t_peak,
         probe_geometry,
         carrier_frequency,
@@ -231,6 +237,8 @@ def beamform_dmas(
     sampling_frequency: float,
     carrier_frequency: float,
     sound_speed: float,
+    sound_speed_lens: float,
+    lens_thickness: float,
     t_peak: jnp.ndarray,
     tx_apodizations: jnp.ndarray,
     rx_apodization: jnp.ndarray,
@@ -365,6 +373,8 @@ def beamform_dmas(
                         sampling_frequency,
                         carrier_frequency,
                         sound_speed,
+                        sound_speed_lens,
+                        lens_thickness,
                         t_peak[tx],
                         tx_apodizations[tx],
                         rx_apodization,

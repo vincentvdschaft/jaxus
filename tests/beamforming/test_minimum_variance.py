@@ -47,10 +47,10 @@ def test_beamform(iq_beamform):
     # ==================================================================================
     # Define beamforming grid
     # ==================================================================================
-    n_z, n_x = 256, 256
-    dz_wl = 0.5
+    n_z, n_x = 512 + 256, 512
+    dz_wl = 0.25
     pixel_grid = CartesianPixelGrid(
-        n_x=n_x, n_z=n_z, dx_wl=0.5, dz_wl=dz_wl, z0=20e-3, wavelength=wavelength
+        n_x=n_x, n_z=n_z, dx_wl=0.25, dz_wl=dz_wl, z0=1e-3, wavelength=wavelength
     )
 
     # ==================================================================================
@@ -65,12 +65,16 @@ def test_beamform(iq_beamform):
         sampling_frequency=receive.sampling_frequency,
         carrier_frequency=transmit.waveform.carrier_frequency,
         sound_speed=medium.sound_speed,
+        sound_speed_lens=medium.sound_speed,
+        lens_thickness=0.1e-3,
         t_peak=transmit.waveform.t_peak * jnp.ones(1),
         rx_apodization=hamming(n_el),
+        tx_apodizations=transmit.tx_apodization[None],
         f_number=1.5,
-        subaperture_size=18,
+        subaperture_size=30,
         iq_beamform=iq_beamform,
         pixel_chunk_size=2**14,
+        diagonal_loading=0.001,
     )
 
     if not iq_beamform:
@@ -92,7 +96,7 @@ def test_beamform(iq_beamform):
         pixel_grid.extent,
         probe_geometry=probe.probe_geometry,
     )
-    plot_rf(axes[1], rf_data[0], cmap="cividis", axis_in_mm=True)
+    plot_rf(axes[1], rf_data[0], cmap="cividis")
     plot_to_darkmode(fig, axes)
     axes[0].set_title(
         "MV RF beamformed data" if not iq_beamform else "MV IQ beamformed data"

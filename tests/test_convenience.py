@@ -64,6 +64,9 @@ def test_simulate_to_hdf5():
     fig, ax = plt.subplots()
     depth = receive.n_ax / 2 / receive.sampling_frequency * medium.sound_speed
     plot_beamformed(
-        ax, result[0], extent_m=[-19e-3, 19e-3, depth, 0], probe_geometry=probe_geometry
+        ax,
+        result[0],
+        extent_m=[-19e-3, 19e-3, depth, -1e-3],
+        probe_geometry=probe_geometry,
     )
     plt.show()

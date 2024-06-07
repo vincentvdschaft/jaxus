@@ -21,7 +21,6 @@ from jaxus.utils.checks import (
 )
 
 from .beamform import (
-    Beamformer,
     PixelGrid,
     check_standard_rf_or_iq_data,
     get_custom_f_number_mask,
@@ -37,6 +36,8 @@ def mv_beamform_pixel(
     t0_delays,
     initial_time,
     sound_speed,
+    sound_speed_lens,
+    lens_thickness,
     t_peak,
     probe_geometry,
     carrier_frequency,
@@ -64,6 +65,10 @@ def mv_beamform_pixel(
         element fires.)
     sound_speed : float
         The speed of sound in m/s.
+    sound_speed_lens : float
+        The speed of sound in the lens in m/s.
+    lens_thickness : float
+        The thickness of the lens in meters.
     t_peak : float
         The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
         the first element fires)
@@ -102,6 +107,8 @@ def mv_beamform_pixel(
         t0_delays,
         initial_time,
         sound_speed,
+        sound_speed_lens,
+        lens_thickness,
         t_peak,
         probe_geometry,
         carrier_frequency,
@@ -129,6 +136,17 @@ def mv_beamform_pixel(
 
     # Vectorized outer product for a batch of subvectors
     outer_product = vmap(lambda x: jnp.outer(x, x))(subvectors)
+
+    # Midpoints of the subaperatures
+    mid_indices = indices[:, subaperture_size // 2]
+    midpoints = probe_geometry[mid_indices, 0]
+
+    dx = midpoints - pixel_pos[0]
+    dz = pixel_pos[1]
+
+    mask = dz / dx < f_number
+
+    outer_product *= mask[:, None, None]
 
     # Sum the outer products
     R_L = jnp.sum(outer_product, axis=0)
@@ -177,6 +195,8 @@ def beamform_mv(
     sampling_frequency: float,
     carrier_frequency: float,
     sound_speed: float,
+    sound_speed_lens: float,
+    lens_thickness: float,
     t_peak: jnp.ndarray,
     tx_apodizations: jnp.ndarray,
     rx_apodization: jnp.ndarray,
@@ -229,6 +249,10 @@ def beamform_mv(
         The center frequency of the RF data in Hz.
     sound_speed : float
         The speed of sound in m/s.
+    sound_speed_lens : float
+        The speed of sound in the lens in m/s.
+    lens_thickness : float
+        The thickness of the lens in meters.
     t_peak : jnp.ndarray
         The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
         the first element fires)
@@ -348,6 +372,8 @@ def beamform_mv(
                         sampling_frequency=sampling_frequency,
                         carrier_frequency=carrier_frequency,
                         sound_speed=sound_speed,
+                        sound_speed_lens=sound_speed_lens,
+                        lens_thickness=lens_thickness,
                         t_peak=t_peak[tx],
                         f_number=f_number,
                         tx_apodization=tx_apodizations[tx],
@@ -369,11 +395,7 @@ def beamform_mv(
 
 @partial(
     jit,
-    static_argnums=(
-        12,
-        13,
-        14,
-    ),
+    static_argnums=(14, 15, 16),
 )
 def mv_beamform_transmit(
     rf_data,
@@ -384,6 +406,8 @@ def mv_beamform_transmit(
     sampling_frequency,
     carrier_frequency,
     sound_speed,
+    sound_speed_lens,
+    lens_thickness,
     t_peak,
     tx_apodization,
     rx_apodization,
@@ -418,6 +442,10 @@ def mv_beamform_transmit(
         The center frequency of the RF data in Hz.
     sound_speed : float
         The speed of sound in m/s.
+    sound_speed_lens : float
+        The speed of sound in the lens in m/s.
+    lens_thickness : float
+        The thickness of the lens in meters.
     t_peak : float
         The time between t=0 and the peak of the waveform to beamform to. (t=0 is when
         the first element fires)
@@ -455,6 +483,8 @@ def mv_beamform_transmit(
             None,
             None,
             None,
+            None,
+            None,
         ),
     )(
         rf_data,
@@ -462,6 +492,8 @@ def mv_beamform_transmit(
         t0_delays,
         initial_time,
         sound_speed,
+        sound_speed_lens,
+        lens_thickness,
         t_peak,
         probe_geometry,
         carrier_frequency,
@@ -473,94 +505,3 @@ def mv_beamform_transmit(
         epsilon,
         iq_beamform,
     )
-
-
-class MinimumVarianceBeamformer(Beamformer):
-    def __init__(
-        self,
-        pixel_grid: PixelGrid,
-        probe_geometry: np.ndarray,
-        t0_delays: np.ndarray,
-        initial_times: np.ndarray,
-        sampling_frequency: Union[float, int],
-        center_frequency: Union[float, int],
-        sound_speed: Union[float, int],
-        t_peak: Union[float, int],
-        rx_apodization: np.ndarray,
-        f_number: Union[float, int] = 3,
-        z0: Union[float, int] = 0,
-        iq_beamform: bool = False,
-        l: Union[int, None] = None,
-        epsilon: Union[float, int] = 1e-2,
-    ):
-        super().__init__(
-            pixel_grid,
-            probe_geometry,
-            t0_delays,
-            initial_times,
-            sampling_frequency,
-            center_frequency,
-            sound_speed,
-            t_peak,
-            rx_apodization,
-            f_number,
-            z0,
-            iq_beamform,
-        )
-        self.configure(l, epsilon)
-
-    def configure(
-        self,
-        l: int | None = None,
-        epsilon: float | int = 1e-5,
-    ):
-        if l is None:
-            l = self._probe_geometry.shape[0] // 3
-        self._l = l
-
-        if not isinstance(epsilon, (float, int)):
-            raise TypeError("epsilon must be a float or int")
-        self._epsilon = float(epsilon)
-
-    @property
-    def l(self):
-        return self._l
-
-    def beamform(self, rf_data: jnp.ndarray):
-        """Beamforms RF data to a pixel grid using the parameters of the beamformer.
-
-        Parameters
-        ----------
-        rf_data : jnp.ndarray
-            The RF data to beamform of shape
-            `(n_frames, n_tx, n_samples, n_el, n_ch)`.
-
-        Returns
-        -------
-        beamformed_images : jnp.ndarray
-            The beamformed images of shape `(n_frames, n_z, n_x)`.
-        """
-
-        beamformed = beamform_mv(
-            rf_data=rf_data,
-            pixel_positions=self._pixel_positions_flat,
-            probe_geometry=self._probe_geometry,
-            t0_delays=self._t0_delays,
-            initial_times=self._initial_times,
-            sampling_frequency=self._sampling_frequency,
-            carrier_frequency=self._carrier_frequency,
-            sound_speed=self._sound_speed,
-            t_peak=self._t_peak,
-            subaperture_size=self._l,
-            diagonal_loading=self._epsilon,
-            rx_apodization=self._rx_apodization,
-            f_number=self._f_number,
-            iq_beamform=self._iq_beamform,
-        )
-
-        beamformed = jnp.reshape(
-            beamformed,
-            (beamformed.shape[0], self._pixel_grid.n_rows, self._pixel_grid.n_cols),
-        )
-
-        return beamformed

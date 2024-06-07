@@ -595,7 +595,7 @@ def tof_correct_pixel(
 
 # Jit and mark iq_beamform as static_argnum, because a different value should trigger
 # recompilation of the function
-# @partial(jit, static_argnums=(12,))
+@partial(jit, static_argnums=(14,))
 def _beamform_pixel(
     rf_data,
     pixel_pos,
@@ -677,7 +677,7 @@ def _beamform_pixel(
     return jnp.sum(tof_corrected * f_number_mask * rx_apodization)
 
 
-# @partial(jit, static_argnums=(12,))
+@partial(jit, static_argnums=(14,))
 def das_beamform_transmit(
     rf_data,
     pixel_positions,

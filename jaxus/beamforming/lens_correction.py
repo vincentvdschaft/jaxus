@@ -35,10 +35,10 @@ def compute_xl(xe, ze, xs, zs, lens_thickness, c_lens, c_medium):
     """
     xl_init = lens_thickness * (xs - xe) / (zs - ze) + xe
     xl = xl_init
-    for i in range(1):
+    for i in range(3):
         xl = xl + dxl(xe, ze, xl, xs, zs, lens_thickness, c_lens, c_medium)
 
-    xl = jnp.clip(xl, xl_init - 10 * lens_thickness, xl_init + 10 * lens_thickness)
+    xl = jnp.clip(xl, xl_init - 3 * lens_thickness, xl_init + 3 * lens_thickness)
 
     # return xl_init
     return xl
@@ -84,7 +84,9 @@ def dxl(xe, ze, xl, xs, zs, zl, c_lens, c_medium):
     result = jnp.nan_to_num(result)
 
     # Clip the update step to prevent divergence
-    result = jnp.clip(result, -0.5e-3, 0.5e-3)
+    # This value is chosen to be small enough to prevent divergence but large enough to
+    # cover the distance accross a normal ultrasound aperture in a single step.
+    result = jnp.clip(result, -10e-3, 10e-3)
 
     return result
 

@@ -675,7 +675,7 @@ def _beamform_pixel(
     )
 
     # Traditional f-number mask
-    f_number_mask = get_f_number_mask(pixel_pos, probe_geometry, f_number, hann)
+    f_number_mask = get_f_number_mask(pixel_pos, probe_geometry, f_number, tukey)
 
     return jnp.sum(tof_corrected * f_number_mask * rx_apodization)
 
@@ -785,20 +785,34 @@ def das_beamform_transmit(
     )
 
 
-def hann(theta):
-    """Computes the Hann window for a given angle, where the windows is 1 at theta=0
-    and 0 at theta=pi/2."""
-    return jnp.cos(theta) ** 2
-
-
 def rect(theta):
     """Computes the rectangular window for a given angle, where the windows is 1 at theta=0
     and 0 at theta=pi/2."""
     return jnp.where(theta < jnp.pi / 2, 1.0, 0.0)
 
 
+def hann(theta):
+    """Computes the Hann window for a given angle, where the windows is 1 at theta=0
+    and 0 at theta=pi/2."""
+    return jnp.cos(theta) ** 2
+
+
+def tukey(theta, alpha=0.2):
+    """Computes the Tukey window for a given angle, where the windows is 1 at theta=0
+    and 0 at theta=pi/2. The parameter alpha controls the fraction of the window that
+    is tapered. alpha=0 corresponds to a rectangular window and alpha=1 corresponds to
+    a Hann window.
+    """
+    theta = jnp.abs(theta)
+    return jnp.where(
+        theta <= (1 - alpha) * jnp.pi / 2,
+        1.0,
+        jnp.cos((theta - (1 - alpha) * jnp.pi / 2) / alpha) ** 2,
+    )
+
+
 @partial(jit, static_argnums=(2, 3))
-def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=hann):
+def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=tukey):
     """Computes the f-number mask for a pixel for all elements in the probe geometry
     with a given f-number and window function.
 

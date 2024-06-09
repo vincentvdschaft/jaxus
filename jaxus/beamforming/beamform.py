@@ -234,9 +234,9 @@ def rf2iq(rf_data, carrier_frequency, sampling_frequency, bandwidth=None, paddin
         The bandwidth of the RF data, normalized to the Nyquist frequency (0.5 fs).
         Should be between 0 and 1.0, where 1.0 corresponds to the full bandwidth up to
         the Nyquist frequency. Default is 0.5.
-    padding : int
+    padding : int, default=512
         The number of samples to pad the RF data with on both sides before performing
-        the Hilbert transform. This helps combat edge effects. Default is 256.
+        the Hilbert transform. This helps combat edge effects.
 
     Returns
     -------
@@ -616,6 +616,9 @@ def _beamform_pixel(
     """Beamforms a single pixel of a single frame and single transmit. Further
     processing such as log-compression and envelope detection are not performed.
 
+    This function does time-of-flight correction and then applies a f-number mask to
+    the beamformed data.
+
     Parameters
     ----------
     rf_data : jnp.ndarray
@@ -672,7 +675,7 @@ def _beamform_pixel(
     )
 
     # Traditional f-number mask
-    f_number_mask = get_custom_f_number_mask(pixel_pos, probe_geometry, f_number)
+    f_number_mask = get_f_number_mask(pixel_pos, probe_geometry, f_number, hann)
 
     return jnp.sum(tof_corrected * f_number_mask * rx_apodization)
 
@@ -782,23 +785,52 @@ def das_beamform_transmit(
     )
 
 
-def get_f_number_mask(pixel_pos, probe_geometry, f_number):
-    """Computes the f-number mask for a pixel."""
-    return jnp.abs(probe_geometry[:, 0] - pixel_pos[0]) < (pixel_pos[1] / f_number)
+def hann(theta):
+    """Computes the Hann window for a given angle, where the windows is 1 at theta=0
+    and 0 at theta=pi/2."""
+    return jnp.cos(theta) ** 2
 
 
-def get_custom_f_number_mask(pixel_pos, probe_geometry, f_number):
-    """Computes the f-number mask for a pixel. This is not a traditional f-number mask
-    but a custom mask that has a smooth transition from 1 to 0."""
-    return jnp.exp(
-        -(
-            (
-                np.sqrt(np.log(2))
-                * (
-                    jnp.abs(probe_geometry[:, 0] - pixel_pos[0])
-                    / (pixel_pos[1] / f_number)
-                )
-            )
-            ** 2
-        )
-    )
+def rect(theta):
+    """Computes the rectangular window for a given angle, where the windows is 1 at theta=0
+    and 0 at theta=pi/2."""
+    return jnp.where(theta < jnp.pi / 2, 1.0, 0.0)
+
+
+@partial(jit, static_argnums=(2, 3))
+def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=hann):
+    """Computes the f-number mask for a pixel for all elements in the probe geometry
+    with a given f-number and window function.
+
+    Parameters
+    ----------
+    pixel_pos : ndarray, shape (2,)
+        The position of the pixel in the x-z plane.
+    probe_geometry : ndarray, shape (n_elements, 2)
+        The positions of the probe elements in the x-z plane.
+    f_number : float
+        The f-number to use. This is the ratio of the depth over the aperture size.
+    window_fn : callable, optional
+        The window function to use. This function should accept an angle in radians and
+        return a value between 0 and 1. The window should be defined for angles between
+        -pi/2 and pi/2.
+
+    Returns
+    -------
+    mask : ndarray, shape (n_elements,)
+        The mask for the pixel for each element in the probe geometry.
+    """
+
+    # Compute the angle between the pixel and the probe element positions
+    theta = jnp.arctan(jnp.abs(probe_geometry[:, 0] - pixel_pos[0]) / pixel_pos[1])
+
+    # Compute the angle at the edge of the cone
+    theta_max = jnp.atan(0.5 / f_number)
+
+    # Clip the angle to the maximum angle to ensure the value remains static outside the
+    # cone
+    theta = jnp.clip(theta, 0.0, theta_max)
+
+    # Apply the window function. It is scaled from [-pi/2, pi/2] to
+    # [-theta_max, theta_max]
+    return window_fn(theta * jnp.pi / 2 / theta_max)

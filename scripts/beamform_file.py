@@ -112,7 +112,7 @@ if input_transmit is None:
 # Interpret show
 # --------------------------------------------------------------------------------------
 if args.show:
-    input_show = True
+    input_show = "yes"
 else:
     # Ask yes no
     input_show = messagebox.askquestion("show", "Show images in popup window?")
@@ -143,7 +143,7 @@ for frame in frames:
 
     pixel_grid = CartesianPixelGrid(
         n_x=1024 + 256,
-        n_z=1024 + 512 - 128,
+        n_z=1024 + 512 - 128 - 256,
         dx_wl=0.25,
         dz_wl=0.25,
         z0=1e-3,
@@ -161,6 +161,8 @@ for frame in frames:
         sampling_frequency=data["sampling_frequency"],
         carrier_frequency=data["center_frequency"],
         sound_speed=data["sound_speed"],
+        sound_speed_lens=1000,
+        lens_thickness=1.5e-3,
         tx_apodizations=data["tx_apodizations"],
         rx_apodization=jnp.ones(data["tx_apodizations"].shape[1]),
         f_number=0.5,

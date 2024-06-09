@@ -30,7 +30,7 @@ from jaxus.utils.checks import (
     check_t0_delays,
 )
 
-from .beamform import get_custom_f_number_mask, rf2iq, to_complex_iq, tof_correct_pixel
+from .beamform import get_f_number_mask, rf2iq, to_complex_iq, tof_correct_pixel
 
 
 @jit
@@ -107,7 +107,7 @@ def _beamform_pixel(
         iq_beamform=True,
     )
     # Traditional f-number mask
-    f_number_mask = get_custom_f_number_mask(pixel_pos, probe_geometry, f_number)
+    f_number_mask = get_f_number_mask(pixel_pos, probe_geometry, f_number)
 
     # Compute the inverse of the square root of the magnitude of the TOF corrected data
     tof_corrected_sqrt_inv = 1 / jnp.sqrt(jnp.abs(tof_corrected))

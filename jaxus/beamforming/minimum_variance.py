@@ -23,7 +23,7 @@ from jaxus.utils.checks import (
 from .beamform import (
     PixelGrid,
     check_standard_rf_or_iq_data,
-    get_custom_f_number_mask,
+    get_f_number_mask,
     rf2iq,
     to_complex_iq,
     tof_correct_pixel,
@@ -117,7 +117,7 @@ def mv_beamform_pixel(
         iq_beamform,
     )
 
-    f_number_mask = get_custom_f_number_mask(pixel_pos, probe_geometry, f_number)
+    f_number_mask = get_f_number_mask(pixel_pos, probe_geometry, f_number)
 
     tof_corrected = tof_corrected * rx_apodization * f_number_mask
 

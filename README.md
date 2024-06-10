@@ -22,10 +22,6 @@ import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
 
-import jax.numpy as jnp
-import matplotlib.pyplot as plt
-import numpy as np
-
 from jaxus import (
     plot_rf,
     use_dark_style,

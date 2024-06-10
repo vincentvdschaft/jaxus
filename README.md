@@ -143,8 +143,11 @@ beamformed_image = beamform_das(
     sampling_frequency=sampling_frequency,
     carrier_frequency=carrier_frequency,
     sound_speed=sound_speed,
+    sound_speed_lens=sound_speed,
+    lens_thickness=0.0,
     f_number=1.5,
     rx_apodization=np.ones(n_el),
+    tx_apodizations=tx_apodization[None],
     iq_beamform=True,
     t_peak=np.array([0.0]),
 )

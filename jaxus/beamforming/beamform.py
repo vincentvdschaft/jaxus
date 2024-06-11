@@ -675,7 +675,7 @@ def _beamform_pixel(
     )
 
     # Traditional f-number mask
-    f_number_mask = get_f_number_mask(pixel_pos, probe_geometry, f_number, tukey)
+    f_number_mask = get_f_number_mask(pixel_pos, probe_geometry, f_number)
 
     return jnp.sum(tof_corrected * f_number_mask * rx_apodization)
 
@@ -788,7 +788,7 @@ def das_beamform_transmit(
 def rect(theta):
     """Computes the rectangular window for a given angle, where the windows is 1 at theta=0
     and 0 at theta=pi/2."""
-    return jnp.where(theta < jnp.pi / 2, 1.0, 0.0)
+    return 1.0
 
 
 def hann(theta):
@@ -797,7 +797,7 @@ def hann(theta):
     return jnp.cos(theta) ** 2
 
 
-def tukey(theta, alpha=0.2):
+def tukey(theta, alpha=0.8):
     """Computes the Tukey window for a given angle, where the windows is 1 at theta=0
     and 0 at theta=pi/2. The parameter alpha controls the fraction of the window that
     is tapered. alpha=0 corresponds to a rectangular window and alpha=1 corresponds to
@@ -812,7 +812,7 @@ def tukey(theta, alpha=0.2):
 
 
 @partial(jit, static_argnums=(2, 3))
-def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=tukey):
+def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=rect):
     """Computes the f-number mask for a pixel for all elements in the probe geometry
     with a given f-number and window function.
 
@@ -838,13 +838,18 @@ def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=tukey):
     # Compute the angle between the pixel and the probe element positions
     theta = jnp.arctan(jnp.abs(probe_geometry[:, 0] - pixel_pos[0]) / pixel_pos[1])
 
-    # Compute the angle at the edge of the cone
-    theta_max = jnp.atan(0.5 / f_number)
+    # Handle the case where the pixel is at the same height as the probe elements
+    theta = jnp.nan_to_num(theta, nan=jnp.pi / 2)
 
-    # Clip the angle to the maximum angle to ensure the value remains static outside the
-    # cone
-    theta = jnp.clip(theta, 0.0, theta_max)
+    # Compute the angle at the edge of the cone. This is where the mask should start
+    # being zero.
+    theta_max = jnp.arctan(0.5 / f_number)
 
     # Apply the window function. It is scaled from [-pi/2, pi/2] to
     # [-theta_max, theta_max]
-    return window_fn(theta * jnp.pi / 2 / theta_max)
+    mask_val = window_fn(theta * jnp.pi / 2 / theta_max)
+
+    # Set values outside the cone to zero
+    mask_val = jnp.where(theta <= theta_max, mask_val, 0.0)
+
+    return mask_val

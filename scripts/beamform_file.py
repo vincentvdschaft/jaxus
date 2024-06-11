@@ -32,7 +32,7 @@ args = parser.parse_args()
 # Create a Tkinter root window
 root = tk.Tk()
 root.withdraw()
-root.eval("tk::PlaceWindow . right")
+
 if args.file is None:
 
     # Prompt the user to select a directory and turn into Path object

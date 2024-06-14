@@ -132,11 +132,15 @@ def gcnr_plot_disk_annulus(
             0.5.
 
     """
+
+    # Get color cycle
+    color_cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+
     # Plot the inner circle
     circle = plt.Circle(
         pos_m,
         inner_radius_m,
-        color="r",
+        color=color_cycle[0],
         fill=False,
         linestyle="--",
         linewidth=0.5,
@@ -148,7 +152,7 @@ def gcnr_plot_disk_annulus(
     circle = plt.Circle(
         pos_m,
         outer_radius_start_m,
-        color="r",
+        color=color_cycle[1],
         fill=False,
         linestyle="--",
         linewidth=0.5,
@@ -158,7 +162,7 @@ def gcnr_plot_disk_annulus(
     circle = plt.Circle(
         pos_m,
         outer_radius_end_m,
-        color="r",
+        color=color_cycle[1],
         fill=False,
         linestyle="--",
         linewidth=0.5,

@@ -370,7 +370,7 @@ mathtext.fontset: dejavuserif  # Should be 'dejavusans' (default),
 #axes.grid.which:    major   # grid lines at {major, minor, both} ticks
 #axes.titlelocation: center  # alignment of the title: {left, right, center}
 axes.titlesize:     medium   # font size of the axes title
-#axes.titleweight:   normal  # font weight of title
+axes.titleweight:   bold  # font weight of title
 #axes.titlecolor:    auto    # color of the axes title, auto falls back to
                              # text.color as default value
 #axes.titley:        None    # position title (axes relative units).  None implies auto
@@ -411,7 +411,7 @@ axes.labelpad:      1.0     # space between label and axis
 
 #axes.unicode_minus: True  # use Unicode for the minus symbol rather than hyphen.  See
                            # https://en.wikipedia.org/wiki/Plus_and_minus_signs#Character_codes
-axes.prop_cycle: cycler('color', ['E02222', '0EA7FF', 'FF820E', '67D627', '9467bd', '8c564b', 'e377c2', '7f7f7f', 'bcbd22', '17becf'])
+axes.prop_cycle: cycler('color', ['E02222', '005AB5', 'FF820E', '67D627', '9467bd', '8c564b', 'e377c2', '7f7f7f', 'bcbd22', '17becf'])
                   # color cycle for plot lines as list of string color specs:
                   # single letter, long name, or web-style hex
                   # As opposed to all other parameters in this file, the color

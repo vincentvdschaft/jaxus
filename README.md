@@ -92,9 +92,9 @@ scatterer_positions = np.stack([scatterer_x, scatterer_z], axis=1)
 
 scatterer_amplitudes = np.ones((scatterer_positions.shape[0]))
 
-```
-### Simulate RF data
-```python
+
+# Simulate RF data
+# -----------------
 
 rf_data = simulate_rf_transmit(
     n_ax,
@@ -116,9 +116,10 @@ rf_data = simulate_rf_transmit(
     progress_bar=True,
 )
 
-```
-## Beamform the RF data using delay-and-sum
-```python
+
+# Beamform the RF data using delay-and-sum
+# ----------------------------------------
+
 # Define beamforming grid
 pixel_grid = CartesianPixelGrid(
     n_x=512,
@@ -152,9 +153,10 @@ beamformed_image = log_compress(
     beamformed_image.reshape(pixel_grid.shape), normalize=True
 )
 
-```
-### Plotting
-```python
+
+# Plotting
+# --------
+
 # Plot the RF data and the beamformed image
 use_dark_style()
 fig, axes = plt.subplots(1, 2)

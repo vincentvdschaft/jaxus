@@ -160,6 +160,9 @@ def plot_beamformed(
     if title is not None:
         ax.set_title(title)
 
+    # Turn the axes background black
+    ax.set_facecolor("black")
+
 
 def plot_to_darkmode(fig, axes, grid=False):
     """Turns a plot into a dark plot with a black background and white text, ticks, and

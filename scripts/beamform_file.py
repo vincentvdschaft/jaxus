@@ -111,20 +111,25 @@ if input_transmit is None:
 # --------------------------------------------------------------------------------------
 # Interpret show
 # --------------------------------------------------------------------------------------
-if args.show:
-    input_show = "yes"
+# Check if show was supplied
+if args.show is not None:
+    show = args.show
 else:
     # Ask yes no
     input_show = messagebox.askquestion("show", "Show images in popup window?")
-
-show = input_show == "yes"
+    show = input_show == "yes"
 # --------------------------------------------------------------------------------------
 # Report the command to reproduce the results
 # --------------------------------------------------------------------------------------
 current_python_file = Path(__file__).resolve()
 
 log.info(
-    f"Command to reproduce:'\npython {current_python_file} {selected_file} --frames {input_frame} --transmits {input_transmit} {'--show'if show else ''} "
+    f"Command to reproduce:'\n"
+    f"python {current_python_file} {selected_file} "
+    f"--frames {input_frame} "
+    f"--transmits {input_transmit} "
+    f"{'--show'if show else '--no-show'} "
+    f"{'--fnumber '+str(args.fnumber) if args.fnumber != 1.0 else ''}"
 )
 
 output_dir = Path("results", f"{datetime.now().strftime('%Y%m%d-%H%M%S')}")
@@ -165,7 +170,7 @@ for frame in frames:
         lens_thickness=1.5e-3,
         tx_apodizations=data["tx_apodizations"],
         rx_apodization=jnp.ones(data["tx_apodizations"].shape[1]),
-        f_number=0.5,
+        f_number=args.fnumber,
         t_peak=t_peak,
         iq_beamform=True,
         progress_bar=True,

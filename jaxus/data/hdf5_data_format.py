@@ -792,11 +792,13 @@ def load_hdf5(
             probe_geometry = probe_geometry[:, np.array([0, 2])]
         data["probe_geometry"] = probe_geometry.astype(np.float32)
 
-        element_width = dataset["scan"]["element_width"][()]
-        data["element_width"] = float(element_width)
+        if "element_width" in dataset["scan"]:
+            element_width = dataset["scan"]["element_width"][()]
+            data["element_width"] = float(element_width)
 
-        bandwidth = dataset["scan"]["bandwidth"][()]
-        data["bandwidth"] = (float(bandwidth[0]), float(bandwidth[1]))
+        if "bandwidth" in dataset["scan"]:
+            bandwidth = dataset["scan"]["bandwidth"][()]
+            data["bandwidth"] = (float(bandwidth[0]), float(bandwidth[1]))
 
         waveform_samples_one_way = []
         waveform_samples_two_way = []

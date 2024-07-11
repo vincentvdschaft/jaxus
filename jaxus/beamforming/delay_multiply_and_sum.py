@@ -292,8 +292,6 @@ def beamform_dmas(
     """
     # Perform input error checking
     rf_data = check_standard_rf_or_iq_data(rf_data)
-    if rf_data.shape[4] != 1:
-        raise ValueError("Only IQ data with one channel is supported")
 
     check_frequency(carrier_frequency)
     check_frequency(sampling_frequency)

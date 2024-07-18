@@ -151,12 +151,15 @@ for frame in frames:
     )
 
     wavelength = data["sound_speed"] / data["center_frequency"]
+    n_ax = data["raw_data"].shape[2]
+    dz_wl = 0.25
+    n_z = int(0.25 * n_ax / (2 * dz_wl))
 
     pixel_grid = CartesianPixelGrid(
         n_x=1024 + 256,
-        n_z=1024 + 512 - 128 - 256,
+        n_z=n_z,
         dx_wl=0.25,
-        dz_wl=0.25,
+        dz_wl=dz_wl,
         z0=1e-3,
         wavelength=wavelength,
     )

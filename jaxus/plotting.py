@@ -270,3 +270,17 @@ def use_dark_style():
 
     # Use the style
     plt.style.use(style_path)
+
+
+def symlog(data: np.ndarray, threshold: float = 1e-6):
+    """Converts the data to a symmetric log scale."""
+    positive_data = data >= threshold
+    negative_data = data <= -threshold
+    zero_data = np.logical_not(positive_data | negative_data)
+
+    symlog_data = np.zeros_like(data)
+    symlog_data[positive_data] = 20 * np.log10(data[positive_data])
+    symlog_data[negative_data] = -20 * np.log10(-data[negative_data])
+    symlog_data[zero_data] = 0.0
+
+    return symlog_data

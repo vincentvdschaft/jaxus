@@ -99,12 +99,16 @@ class PixelGrid:
     @property
     def dx(self):
         """The pixel size/spacing in the x-direction in m."""
-        return np.abs(self.pixel_positions[0, 1, 0] - self.pixel_positions[0, 0, 0])
+        return float(
+            np.abs(self.pixel_positions[0, 1, 0] - self.pixel_positions[0, 0, 0])
+        )
 
     @property
     def dz(self):
         """The pixel size/spacing in the z-direction in m."""
-        return np.abs(self.pixel_positions[1, 0, 1] - self.pixel_positions[0, 0, 1])
+        return float(
+            np.abs(self.pixel_positions[1, 0, 1] - self.pixel_positions[0, 0, 1])
+        )
 
     @property
     def shape(self):

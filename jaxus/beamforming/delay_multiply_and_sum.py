@@ -4,33 +4,24 @@ The core function of this module is the `beamform` function that performs Delay-
 beamforming on RF or IQ data.
 """
 
-from functools import partial
-from typing import Callable, Union
-
-import jax
-import jax.lax as lax
 import jax.numpy as jnp
-import matplotlib.pyplot as plt
 import numpy as np
 from jax import jit, vmap
-from jax.lax import gather
-from scipy.signal import butter, filtfilt, hilbert
-from scipy.signal.windows import hamming
-from tqdm import tqdm
 
 from jaxus.utils.checks import (
     check_frequency,
-    check_initial_times,
     check_pos_array,
-    check_posfloat,
-    check_shapes_consistent,
     check_sound_speed,
-    check_standard_rf_data,
     check_standard_rf_or_iq_data,
     check_t0_delays,
 )
 
-from .beamform import get_f_number_mask, rf2iq, to_complex_iq, tof_correct_pixel
+from .beamform import (
+    get_f_number_mask,
+    to_complex_iq,
+    tof_correct_pixel,
+    get_progbar_functions,
+)
 
 
 @jit
@@ -324,25 +315,6 @@ def beamform_dmas(
     # Initialize the beamformed images to zeros
     beamformed_images = jnp.zeros((n_frames, n_pixels), dtype=beamformed_dtype)
 
-    # ==================================================================================
-    # Define progress bar functions
-    # ==================================================================================
-    progbar_func_frames = lambda x: (
-        tqdm(x, desc="Beamforming frame", colour="yellow", leave=False)
-        if progress_bar and n_frames > 1
-        else x
-    )
-    progbar_func_transmits = lambda x: (
-        tqdm(x, desc="Transmit", colour="yellow", leave=False)
-        if progress_bar and len(transmits) > 1
-        else x
-    )
-    progbar_func_pixels = lambda x: (
-        tqdm(x, desc="Pixel chunks", colour="yellow", leave=False)
-        if progress_bar and len(start_indices) > 1
-        else x
-    )
-
     for tx in transmits:
         assert 0 <= tx < n_tx, "Transmit index out of bounds"
 
@@ -351,6 +323,15 @@ def beamform_dmas(
     # ==================================================================================
     start_indices = (
         jnp.arange(jnp.ceil(n_pixels / pixel_chunk_size).astype(int)) * pixel_chunk_size
+    )
+
+    # ==========================================================================
+    # Define progress bar functions
+    # ==========================================================================
+    progbar_func_frames, progbar_func_transmits, progbar_func_pixels = (
+        get_progbar_functions(
+            progress_bar, n_frames, len(transmits), len(start_indices)
+        )
     )
 
     for frame in progbar_func_frames(range(n_frames)):

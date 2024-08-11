@@ -6,7 +6,6 @@ import datetime
 
 # The logger to use
 logger = None
-file_logger = None
 
 LOG_DIR = Path("log")
 
@@ -147,61 +146,41 @@ def succes(message):
     """Prints a message to the console in green."""
     message = str(message)
     logger.info(green(message))
-    file_logger.info(remove_color_escape_codes(message))
 
 
 def warning(message, *args, **kwargs):
     """Prints a message with log level warning."""
     message = str(message)
     logger.warning(message, *args, **kwargs)
-    file_logger.warning(remove_color_escape_codes(message), *args, **kwargs)
 
 
 def error(message, *args, **kwargs):
     """Prints a message with log level error."""
     message = str(message)
     logger.error(message, *args, **kwargs)
-    file_logger.error(remove_color_escape_codes(message), *args, **kwargs)
 
 
 def debug(message, *args, **kwargs):
     """Prints a message with log level debug."""
     message = str(message)
     logger.debug(message, *args, **kwargs)
-    file_logger.debug(remove_color_escape_codes(message), *args, **kwargs)
 
 
 def info(message, *args, **kwargs):
     """Prints a message with log level info."""
     message = str(message)
     logger.info(message, *args, **kwargs)
-    file_logger.info(remove_color_escape_codes(message), *args, **kwargs)
 
 
 def critical(message, *args, **kwargs):
     """Prints a message with log level critical."""
     message = str(message)
     logger.critical(message, *args, **kwargs)
-    file_logger.critical(message, *args, **kwargs)
 
 
 def set_level(level):
     """Sets the log level of the logger."""
     logger.setLevel(level)
-    file_logger.setLevel(level)
-
-
-def set_file_logger_directory(directory):
-    """Sets the log level of the logger."""
-    global LOG_DIR, file_logger
-    LOG_DIR = directory
-    # Remove all handlers from the file logger
-    for handler in file_logger.handlers:
-        file_logger.removeHandler(handler)
-
-    # Add file handler
-    file_logger = configure_file_logger(level="DEBUG")
 
 
 logger = configure_console_logger(level="DEBUG")
-file_logger = configure_file_logger(level="DEBUG")

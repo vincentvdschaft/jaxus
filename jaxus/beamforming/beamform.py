@@ -156,31 +156,24 @@ def beamform_das(
     # Initialize the beamformed images to zeros
     beamformed_images = jnp.zeros((n_frames, n_pixels), dtype=beamformed_dtype)
 
-    progbar_func_frames = lambda x: (
-        tqdm(x, desc="Beamforming frame", colour="yellow", leave=False)
-        if progress_bar and n_frames > 1
-        else x
-    )
-    progbar_func_transmits = lambda x: (
-        tqdm(x, desc="Transmit", colour="yellow", leave=False)
-        if progress_bar and len(transmits) > 1
-        else x
-    )
-    progbar_func_pixels = lambda x: (
-        tqdm(x, desc="Pixel chunks", colour="yellow", leave=False)
-        if progress_bar and len(start_indices) > 1
-        else x
-    )
-
-    for tx in transmits:
-        assert 0 <= tx < n_tx, "Transmit index out of bounds"
-
     # ==================================================================================
     # Define pixel chunks
     # ==================================================================================
     start_indices = (
         jnp.arange(jnp.ceil(n_pixels / pixel_chunk_size).astype(int)) * pixel_chunk_size
     )
+
+    # ==========================================================================
+    # Define progress bar functions
+    # ==========================================================================
+    progbar_func_frames, progbar_func_transmits, progbar_func_pixels = (
+        get_progbar_functions(
+            progress_bar, n_frames, len(transmits), len(start_indices)
+        )
+    )
+
+    for tx in transmits:
+        assert 0 <= tx < n_tx, "Transmit index out of bounds"
 
     for frame in progbar_func_frames(range(n_frames)):
 
@@ -595,7 +588,13 @@ def tof_correct_pixel(
 
 # Jit and mark iq_beamform as static_argnum, because a different value should trigger
 # recompilation of the function
-@partial(jit, static_argnums=(11, 14,))
+@partial(
+    jit,
+    static_argnums=(
+        11,
+        14,
+    ),
+)
 def _beamform_pixel(
     rf_data,
     pixel_pos,
@@ -680,7 +679,13 @@ def _beamform_pixel(
     return jnp.sum(tof_corrected * f_number_mask * rx_apodization)
 
 
-@partial(jit, static_argnums=(13, 14,))
+@partial(
+    jit,
+    static_argnums=(
+        13,
+        14,
+    ),
+)
 def das_beamform_transmit(
     rf_data,
     pixel_positions,
@@ -853,3 +858,55 @@ def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=rect):
     mask_val = jnp.where(theta <= theta_max, mask_val, 0.0)
 
     return mask_val
+
+
+def get_progbar_functions(enable_progress_bar, n_frames, transmits, start_indices):
+    """Produces three functions that can be used to display progress bars for the
+    beamforming process.
+
+    Parameters
+    ----------
+    enable_progress_bar : bool
+        Whether to enable the progress bar. Set to false to return dummy functions.
+    n_frames : int
+        The length of the frames progress bar.
+    transmits : int
+        The length of the transmits progress bar.
+    start_indices : int
+        The length of the start_indices progress bar.
+
+    Returns
+    -------
+    progbar_func_frames : callable
+        A function that returns a progress bar for the frames.
+    progbar_func_transmits : callable
+        A function that returns a progress bar for the transmits.
+    progbar_func_pixels : callable
+        A function that returns a progress bar for the pixels.
+    """
+
+    def progbar_func_frames(x):
+        """Progress bar for the frames."""
+        return (
+            tqdm(x, desc="Beamforming frame", colour="yellow", leave=False)
+            if enable_progress_bar and n_frames > 1
+            else x
+        )
+
+    def progbar_func_transmits(x):
+        """Progress bar for the transmits."""
+        return (
+            tqdm(x, desc="Transmit", colour="yellow", leave=False)
+            if enable_progress_bar and len(transmits) > 1
+            else x
+        )
+
+    def progbar_func_pixels(x):
+        """Progress bar for the pixels."""
+        return (
+            tqdm(x, desc="Pixel chunks", colour="yellow", leave=False)
+            if enable_progress_bar and len(start_indices) > 1
+            else x
+        )
+
+    return progbar_func_frames, progbar_func_transmits, progbar_func_pixels

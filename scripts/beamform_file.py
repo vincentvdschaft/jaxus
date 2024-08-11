@@ -27,8 +27,9 @@ parser.add_argument("file", type=Path, default=None, nargs="?")
 parser.add_argument("--frames", type=str, nargs="+", default=None)
 # Add variable number of transmits
 parser.add_argument("--transmits", type=str, nargs="+", default=None)
-parser.add_argument("--show", action="store_true")
-parser.add_argument("--fnumber", type=float, default=1.5)
+parser.add_argument("--show", action=argparse.BooleanOptionalAction)
+parser.add_argument("--fnumber", type=float, default=1.0)
+parser.add_argument("--save", action=argparse.BooleanOptionalAction, default=False)
 args = parser.parse_args()
 # Create a Tkinter root window
 root = tk.Tk()
@@ -119,6 +120,8 @@ else:
     # Ask yes no
     input_show = messagebox.askquestion("show", "Show images in popup window?")
     show = input_show == "yes"
+
+
 # --------------------------------------------------------------------------------------
 # Report the command to reproduce the results
 # --------------------------------------------------------------------------------------
@@ -131,10 +134,12 @@ log.info(
     f"--transmits {input_transmit} "
     f"{'--show'if show else '--no-show'} "
     f"{'--fnumber '+str(args.fnumber) if args.fnumber != 1.0 else ''}"
+    f"{'--save' if args.save else ''}"
 )
 
-output_dir = Path("results", f"{datetime.now().strftime('%Y%m%d-%H%M%S')}")
-output_dir.mkdir(parents=True, exist_ok=True)
+if args.save:
+    output_dir = Path("results", f"{datetime.now().strftime('%Y%m%d-%H%M%S')}")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
 for frame in frames:
 
@@ -146,12 +151,15 @@ for frame in frames:
     )
 
     wavelength = data["sound_speed"] / data["center_frequency"]
+    n_ax = data["raw_data"].shape[2]
+    dz_wl = 0.25
+    n_z = int(0.25 * n_ax / (2 * dz_wl))
 
     pixel_grid = CartesianPixelGrid(
         n_x=1024 + 256,
-        n_z=1024 + 512 - 128 - 256,
+        n_z=n_z,
         dx_wl=0.25,
-        dz_wl=0.25,
+        dz_wl=dz_wl,
         z0=1e-3,
         wavelength=wavelength,
     )
@@ -192,8 +200,9 @@ for frame in frames:
         probe_geometry=data["probe_geometry"],
         vmin=-60,
     )
-    output_path = output_dir / f"frame_{str(frame).zfill(3)}.png"
-    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    if args.save:
+        output_path = output_dir / f"frame_{str(frame).zfill(3)}.png"
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
     if show:
         plt.show()
     else:

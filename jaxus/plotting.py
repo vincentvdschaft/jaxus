@@ -22,7 +22,7 @@ def plot_rf(
     ax : plt.Axes
         The axis to plot to.
     rf_data : np.ndarray
-        The RF data to plot.
+        The RF data to plot of shape (n_ax, n_ch).
     start_sample : int, optional
         The sample number to start plotting from. Defaults to 0.
     cmap : str, optional

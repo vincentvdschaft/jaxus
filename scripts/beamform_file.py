@@ -28,6 +28,7 @@ parser.add_argument("--frames", type=str, nargs="+", default=None)
 # Add variable number of transmits
 parser.add_argument("--transmits", type=str, nargs="+", default=None)
 parser.add_argument("--show", action="store_true")
+parser.add_argument("--fnumber", type=float, default=1.5)
 args = parser.parse_args()
 # Create a Tkinter root window
 root = tk.Tk()

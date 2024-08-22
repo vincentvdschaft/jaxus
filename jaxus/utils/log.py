@@ -40,19 +40,19 @@ class CustomFormatter(logging.Formatter):
 
     FORMATS = {
         logging.INFO: logging.Formatter(
-            ("".join([blue("%(levelname)s"), " - %(message)s"]))
+            ("".join([blue("%(levelname)-8s"), " - %(message)s"]))
         ),
         logging.WARNING: logging.Formatter(
-            ("".join([orange("%(levelname)s"), " - %(message)s"]))
+            ("".join([orange("%(levelname)-8s"), " - %(message)s"]))
         ),
         logging.ERROR: logging.Formatter(
-            ("".join([red("%(levelname)s"), " - %(message)s"]))
+            ("".join([red("%(levelname)-8s"), " - %(message)s"]))
         ),
         logging.DEBUG: logging.Formatter(
-            ("".join([yellow("%(levelname)s"), " - %(message)s"]))
+            ("".join([yellow("%(levelname)-8s"), " - %(message)s"]))
         ),
         "DEFAULT": logging.Formatter(
-            ("".join([yellow("%(levelname)s"), " - %(message)s"]))
+            ("".join([yellow("%(levelname)-8s"), " - %(message)s"]))
         ),
     }
 

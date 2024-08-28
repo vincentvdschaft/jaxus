@@ -320,10 +320,10 @@ def check_pos_array(
     """
     if not isinstance(positions, (jnp.ndarray, np.ndarray)):
         raise TypeError(f"{name} is not an ndarray")
-    if positions.ndim != 2:
-        raise ValueError(f"{name}.ndim != 2")
-    if positions.shape[ax_dim] != 2:
-        raise ValueError(f"{name}.shape[{ax_dim}] != 2")
+    if not positions.ndim in (2, 3):
+        raise ValueError(f"{name}.ndim must be 2 or 3")
+    if not positions.shape[ax_dim] in (2, 3):
+        raise ValueError(f"{name}.shape[{ax_dim}] must be 2 or 3")
     if not positions.dtype in [jnp.float32, jnp.float64]:
         raise TypeError(f"{name}.dtype is not float32 or float64")
 

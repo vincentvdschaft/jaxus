@@ -376,7 +376,7 @@ def detect_envelope_beamformed(bf_data, dz_wl):
         # Apply initial filtering to remove high frequencies. This prevents streaks in
         # the Hilbert transform image when the beamforming grid is a bit too coarse.
         b, a = butter(2, 0.8, "low")
-        bf_data = filtfilt(b, a, bf_data, axis=1)
+        bf_data = filtfilt(b, a, bf_data, axis=2)
 
     iq_data = rf2iq(
         bf_data[:, None, ..., None],
@@ -841,7 +841,7 @@ def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=rect):
     """
 
     # Compute the angle between the pixel and the probe element positions
-    theta = jnp.arctan(jnp.abs(probe_geometry[:, 0] - pixel_pos[0]) / pixel_pos[1])
+    theta = jnp.arctan(jnp.abs(probe_geometry[:, 0] - pixel_pos[0]) / pixel_pos[-1])
 
     # Handle the case where the pixel is at the same height as the probe elements
     theta = jnp.nan_to_num(theta, nan=jnp.pi / 2)
@@ -857,6 +857,15 @@ def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=rect):
     # Set values outside the cone to zero
     mask_val = jnp.where(theta <= theta_max, mask_val, 0.0)
 
+    # Do the same in the other direction for 3D imaging
+    if pixel_pos.size == 3:
+        theta_2 = jnp.arctan(
+            jnp.abs(probe_geometry[:, 1] - pixel_pos[1]) / pixel_pos[-1]
+        )
+        theta_2 = jnp.nan_to_num(theta_2, nan=jnp.pi / 2)
+        mask_val_2 = window_fn(theta_2 * jnp.pi / 2 / theta_max)
+        mask_val_2 = jnp.where(theta_2 <= theta_max, mask_val_2, 0.0)
+        mask_val = mask_val * mask_val_2
     return mask_val
 
 

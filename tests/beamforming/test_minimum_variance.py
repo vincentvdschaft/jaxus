@@ -5,10 +5,10 @@ import pytest
 from scipy.signal.windows import hamming
 
 from jaxus.beamforming import (
-    CartesianPixelGrid,
     beamform_mv,
     detect_envelope_beamformed,
     log_compress,
+    get_pixel_grid,
 )
 from jaxus.plotting import plot_beamformed, plot_rf, plot_to_darkmode
 from jaxus.rf_simulator import simulate_rf_transmit
@@ -48,9 +48,13 @@ def test_beamform(iq_beamform):
     # Define beamforming grid
     # ==================================================================================
     n_z, n_x = 512 + 256, 512
-    dz_wl = 0.25
-    pixel_grid = CartesianPixelGrid(
-        n_x=n_x, n_z=n_z, dx_wl=0.25, dz_wl=dz_wl, z0=1e-3, wavelength=wavelength
+    dx_wl, dz_wl = 0.25, 0.25
+    spacing = np.array([dx_wl, dz_wl]) * wavelength
+    pixel_grid = get_pixel_grid(
+        shape=(n_x, n_z),
+        spacing=spacing,
+        startpoints=(0, 1e-3),
+        center=(True, False),
     )
 
     # ==================================================================================
@@ -80,10 +84,11 @@ def test_beamform(iq_beamform):
     if not iq_beamform:
         # Perform envelope detection
         bf_data = detect_envelope_beamformed(
-            bf_data.reshape((n_z, n_x))[None], dz_wl=dz_wl
+            bf_data.reshape(pixel_grid.shape_2d)[None], dz_wl=pixel_grid.dz / wavelength
         )[0]
+        # bf_data = bf_data.reshape((n_z, n_x))
 
-    bf_data = log_compress(bf_data.reshape((n_z, n_x)), normalize=True)
+    bf_data = log_compress(bf_data.reshape(pixel_grid.shape_2d).T, normalize=True)
 
     # ==================================================================================
     # Plot the beamformed data
@@ -93,7 +98,7 @@ def test_beamform(iq_beamform):
     plot_beamformed(
         axes[0],
         bf_data,
-        pixel_grid.extent,
+        pixel_grid.extent_m_2d_zflipped,
         probe_geometry=probe.probe_geometry,
     )
     plot_rf(axes[1], rf_data[0], cmap="cividis")

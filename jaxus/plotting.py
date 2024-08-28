@@ -102,7 +102,7 @@ def plot_beamformed(
     ax : plt.Axes
         The axis to plot to.
     image : np.ndarray
-        The image to plot (image should be in decibels).
+        The image to plot of shape (n_x, n_z) (image should be in decibels).
     extent_m : list
         The extent of the plot in meters.
     vmin : float, optional
@@ -129,8 +129,15 @@ def plot_beamformed(
         zlabel = "z [m]"
         formatter = FuncFormatter(lambda x, _: f"{x:.3f}")
 
+    extent_m = [
+        np.min(extent_m[:2]),
+        np.max(extent_m[:2]),
+        np.max(extent_m[-2:]),
+        np.min(extent_m[-2:]),
+    ]
+
     ax.imshow(
-        image,
+        image.T,
         extent=extent_m,
         vmin=vmin,
         vmax=vmax,

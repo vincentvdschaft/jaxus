@@ -41,20 +41,7 @@ def test_wrong_datatypes(probe_geometry, center_frequency):
     """Tests that the probe is correctly initialized without errors."""
 
     with pytest.raises(TypeError):
-        Probe(probe_geometry, center_frequency)
-
-
-def test_wrong_shape():
-    """Tests if the class raises an error if the probe geometry has the wrong shape."""
-
-    # Define the probe geometry
-    probe_geometry = np.ones((128, 3), dtype=np.float32)
-    center_frequency = 4e6
-    element_width = 1e-3
-    bandwidth = (2e6, 6e6)
-
-    with pytest.raises(ValueError):
-        Probe(probe_geometry, center_frequency, element_width, bandwidth)
+        Probe(probe_geometry, center_frequency, 1e-3, (2e6, 6e6))
 
 
 def test_negative_frequency():

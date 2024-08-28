@@ -2,168 +2,325 @@ import numpy as np
 
 
 class PixelGrid:
-    def __init__(self, pixel_positions_cartesian: np.ndarray):
-        """Initializes a PixelGrid object.
+    """Container class for a pixel grid of 2 or 3 dimensions."""
 
-        Parameters
-        ----------
-        pixel_positions_cartesian : np.ndarray
-            The positions of the pixels in meters of shape `(n_rows, n_cols, 2)`.
+    def __init__(self, extent_m, pixel_positions_flat, shape):
+        self._extent_m = np.array([float(val) for val in extent_m])
+        self._pixel_positions_flat = pixel_positions_flat
+        self._shape = np.array([int(val) for val in shape])
+
+        # Sort the extent to ensure that x0 < x1, y0 < y1, z0 < z1, ...
+        self._extent_m = sort_extent(self._extent_m)
+
+        assert len(extent_m) == 2 * len(shape)
+        assert pixel_positions_flat.shape[0] == np.prod(shape)
+
+    @property
+    def extent_m(self):
+        """Returns the extent of the pixel grid in m.
+
+        Returns
+        -------
+        extent_m : np.ndarray
+            The extent of the pixel grid in m (x0, x1, z1, z0)
         """
-
-        self.pixel_positions = pixel_positions_cartesian
-
-    @property
-    def pixel_positions(self):
-        """The positions of all pixels in the beamforming grid in meters of shape
-        (n_row, n_col, 2)."""
-        return np.copy(self._pixel_positions)
-
-    @pixel_positions.setter
-    def pixel_positions(self, value):
-        """Sets the pixel positions. The pixel positions must be a 3D array with the
-        first dimension being the rows, the second dimension being the columns, and
-        the third dimension being the x and z positions."""
-        if not isinstance(value, np.ndarray):
-            raise TypeError("pixel_positions must be a numpy array.")
-        if value.ndim != 3:
-            raise ValueError("pixel_positions must be a 3D array.")
-        if value.shape[2] != 2:
-            raise ValueError("pixel_positions must have size (n_rows, n_cols, 2).")
-        self._pixel_positions = value.astype(np.float32)
+        return self._extent_m
 
     @property
-    def pixel_positions_flat(self):
-        """The positions of all pixels in the beamforming grid in meters of shape
-        (n_pixels, 2)."""
-        return np.reshape(self.pixel_positions, (-1, 2))
+    def extent_m_zflipped(self):
+        """Returns the extent of the pixel grid in m with the z-axis flipped."""
 
-    @property
-    def n_pixels(self):
-        """The number of pixels in the beamforming grid."""
-        return self.pixel_positions.shape[0] * self.pixel_positions.shape[1]
-
-    @property
-    def n_cols(self):
-        """The number of columns in the pixel grid."""
-        return self.pixel_positions.shape[1]
-
-    @property
-    def n_rows(self):
-        """The number of rows in the pixel grid."""
-        return self.pixel_positions.shape[0]
-
-    @property
-    def collim(self):
-        """The col-axis limits of the pixel grid. in meters. For a cartesian
-        grid these values are in meters. For a polar grid these are in radians. For a
-        polar grid these are the extreme values at furthest left and right.
-        """
-        return (self.pixel_positions[0, 0, 0], self.pixel_positions[0, -1, 0])
-
-    @property
-    def rowlim(self):
-        """The row-axis limits of the pixel grid in meters. For a polar grid
-        these are the extreme values at the center"""
-        return (self.pixel_positions[0, 0, 1], self.pixel_positions[-1, 0, 1])
-
-    @property
-    def xlim(self):
-        """The smallest and largest x-position in the grid in meters."""
-        xmin = np.min(self.pixel_positions[:, :, 0])
-        xmax = np.max(self.pixel_positions[:, :, 0])
-        return (xmin, xmax)
-
-    @property
-    def zlim(self):
-        """The smallest and largest z-position in the grid in meters."""
-        zmin = np.min(self.pixel_positions[:, :, 1])
-        zmax = np.max(self.pixel_positions[:, :, 1])
-        return (zmin, zmax)
-
-    @property
-    def extent(self):
-        """The extent of the beamformed image. (xmin, xmax, zmax, zmin) in meters."""
-        return (
-            np.min(self.pixel_positions[:, :, 0]),
-            np.max(self.pixel_positions[:, :, 0]),
-            np.max(self.pixel_positions[:, :, 1]),
-            np.min(self.pixel_positions[:, :, 1]),
+        extent_zflipped = self._extent_m.copy()
+        extent_zflipped[-2], extent_zflipped[-1] = (
+            extent_zflipped[-1],
+            extent_zflipped[-2],
         )
+        return extent_zflipped
 
     @property
     def extent_mm(self):
-        """The extent of the beamformed image in mm."""
-        return tuple([val * 1e3 for val in self.extent])
+        """Returns the extent of the pixel grid in mm.
+
+        Returns
+        -------
+        extent_mm : np.ndarray
+            The extent of the pixel grid in mm (x0, x1, z1, z0)
+        """
+        return self._extent_m * 1e3
 
     @property
-    def dx(self):
-        """The pixel size/spacing in the x-direction in m."""
-        return float(
-            np.abs(self.pixel_positions[0, 1, 0] - self.pixel_positions[0, 0, 0])
-        )
+    def pixel_positions_flat(self):
+        """Returns the pixel positions in a flat array of shape (n_points, n_dims)."""
+        return self._pixel_positions_flat
 
     @property
-    def dz(self):
-        """The pixel size/spacing in the z-direction in m."""
-        return float(
-            np.abs(self.pixel_positions[1, 0, 1] - self.pixel_positions[0, 0, 1])
-        )
+    def pixel_positions(self):
+        """Returns the pixel positions in a grid of shape (x, y) or (x, y, z)."""
+        return self._pixel_positions_flat.reshape(self.shape_ndims)
 
     @property
     def shape(self):
-        """The shape of the pixel grid [n_rows, n_cols]."""
-        return (self.n_rows, self.n_cols)
+        """Returns the shape of the pixel grid.
 
+        Note: This does not include the number of dimensions that is present in the
+        pixel_positions array.
 
-class CartesianPixelGrid(PixelGrid):
-    def __init__(self, n_x, n_z, dx_wl, dz_wl, z0, wavelength):
-        """Creates a CartesianPixelGrid object. Stores the pixel positions in meters in
-        a 2D array of shape `(2, n_rows, n_cols)`.
-
-        Parameters
-        ----------
-        n_x : int
-            The number of pixels in the beamforming grid in the x-direction.
-        n_z : int
-            The number of pixels in the beamforming grid in the z-direction.
-        dx_wl : float
-            The pixel size/spacing in the x-direction in wavelengths. (Wavelengths are
-            defined as sound_speed/carrier_frequency.)
-        dz_wl : float
-            The pixel size/spacing in the z-direction in wavelengths. (Wavelengths are
-            defined as sound_speed/carrier_frequency.)
-        z0 : float
-            The start-depth of the beamforming plane in meters.
-        wavelength : float
-            The wavelength to define the grid spacing in meters.
+        Returns
+        -------
+        shape : tuple
+            The shape of the pixel grid (x, y) or (x, y, z).
         """
+        return np.copy(self._shape)
 
-        # Construct the grid of pixel positions
-        x_vals = (np.arange(n_x) - n_x / 2) * dx_wl * wavelength
-        z_vals = np.arange(n_z) * dz_wl * wavelength + z0
+    @property
+    def shape_ndims(self):
+        """Returns the shape of the pixel grid including the number of dimensions."""
+        return np.concatenate([self._shape, [self._shape.shape[0]]])
 
-        x_grid, z_grid = np.meshgrid(x_vals, z_vals)
+    @property
+    def n_dims(self):
+        """Returns the number of dimensions of the pixel grid."""
+        return len(self._shape)
 
-        self.pixel_positions = np.stack((x_grid, z_grid), axis=2)
+    @property
+    def n_points(self):
+        """Returns the number of points in the pixel grid."""
+        return np.prod(self._shape)
 
-        super().__init__(self.pixel_positions)
+    @property
+    def xlim(self):
+        """Returns the x limits of the pixel grid."""
+        return float(self._extent_m[0]), float(self._extent_m[1])
+
+    @property
+    def ylim(self):
+        """Returns the y limits of the pixel grid."""
+        if self.n_dims == 3:
+            return float(self._extent_m[2]), float(self._extent_m[3])
+        else:
+            raise ValueError("The grid is 2D and does not have a y dimension.")
+
+    @property
+    def zlim(self):
+        """Returns the z limits of the pixel grid."""
+        if self.n_dims == 3:
+            return float(self._extent_m[4]), float(self._extent_m[5])
+        elif self.n_dims == 2:
+            return float(self._extent_m[2]), float(self._extent_m[3])
+
+    def get_2d_dims(self):
+        """Returns the indices of the 2D dimensions in the pixel grid."""
+        shape = self.shape
+        indices = np.where(shape > 1)[0]
+
+        if indices.size == 2:
+            return indices
+        elif indices.size > 2:
+            raise ValueError(
+                "Cannot determine the 2D dimensions of a grid with more than 2 "
+                "dimensions of size > 1."
+            )
+        elif indices.size == 1:
+            if indices[0] == 0:
+                return np.array([indices[0], indices[0] + 1])
+            else:
+                return np.array([0, indices[0]])
+
+    @property
+    def shape_2d(self):
+        """Returns the shape of the pixel grid in 2D."""
+        shape = self.shape
+        dims = self.get_2d_dims()
+        return shape[dims]
+
+    @property
+    def extent_m_2d(self):
+        """Returns the extent of the pixel grid in 2D."""
+        extent = self.extent_m
+        dims = self.get_2d_dims()
+        return np.array(
+            [
+                extent[2 * dims[0]],
+                extent[2 * dims[0] + 1],
+                extent[2 * dims[1]],
+                extent[2 * dims[1] + 1],
+            ]
+        )
+
+    @property
+    def extent_m_2d_zflipped(self):
+        """Returns the extent of the pixel grid in mm with the z-axis flipped."""
+        extent = self.extent_m_2d
+        return np.array([extent[0], extent[1], extent[3], extent[2]])
+
+    @property
+    def dz(self):
+        """Returns the spacing in the z-direction."""
+        return (self.extent_m[-1] - self.extent_m[-2]) / self.shape[-1]
 
 
-class PolarPixelGrid(PixelGrid):
-    def __init__(self, n_ax, n_theta, dax_wl, dtheta_rad, z0, wavelength):
+def get_flat_grid(shape, spacing, startpoints, center):
+    """
+    Returns a grid of coordinates of a given shape and spacing.
+    The shape can be two or three dimensional.
 
-        total_arc = (n_theta - 1) * dtheta_rad
 
-        # Construct the grid of pixel positions
-        ax_vals = (np.arange(n_ax) - n_ax / 2) * dax_wl * wavelength + z0
-        theta_vals = np.arange(n_theta) * dtheta_rad - total_arc / 2
+    Parameters
+    ----------
+    shape : tuple
+        The shape of the grid.
+    spacing : tuple
+        The spacing between grid points in each dimension.
+    startpoints : tuple
+        The coordinates of the first grid point.
+    center : tuple
+        Set to True to center the grid around the origin.
 
-        ax_grid, theta_grid = np.meshgrid(ax_vals, theta_vals)
+    Returns
+    -------
+    grid : ndarray
+        The grid of coordinates of shape (n_points, n_dimensions).
+    """
+    assert len(shape) == len(spacing) == len(startpoints) == len(center)
 
-        x_grid = ax_grid * np.sin(theta_grid)
-        z_grid = ax_grid * np.cos(theta_grid)
+    # Define the grid values along each dimension
+    vals = [
+        float(start) + np.arange(n_points) * float(delta)
+        for start, n_points, delta in zip(startpoints, shape, spacing)
+    ]
 
-        self.pixel_positions = np.stack((x_grid, z_grid))
+    # Center the grid values along the specified dimensions
+    vals = [val - np.max(val) / 2 if cent else val for cent, val in zip(center, vals)]
 
-        super().__init__(self.pixel_positions)
+    # Create the grid
+    positions = np.meshgrid(*vals, indexing="ij")
+
+    # Flatten the grid
+    flat_grid = np.stack([pos.flatten() for pos in positions], axis=-1)
+
+    return flat_grid
+
+
+def get_pixel_grid(shape, spacing, startpoints, center):
+    """Produces a PixelGrid object from the given parameters.
+
+    Parameters
+    ----------
+    shape : tuple
+        The shape of the grid.
+    spacing : tuple
+        The spacing between grid points in each dimension.
+    startpoints : tuple
+        The coordinates of the first grid point. If center is set to True for a
+        dimension, these will be the midpoints of the grid.
+    center : tuple
+        Set to True to center the grid around the origin. This will change the
+        startpoints into midpoints.
+    """
+
+    n_dim = len(shape)
+
+    flat_grid = get_flat_grid(shape, spacing, startpoints, center)
+
+    lim_min = flat_grid.min(axis=0)
+    lim_max = flat_grid.max(axis=0)
+
+    # 2D case
+    if n_dim == 2:
+        extent = (lim_min[0], lim_max[0], lim_min[1], lim_max[1])
+    # 3D case and higher
+    else:
+        # Create array to store values
+        extent = np.zeros(n_dim * 2)
+        # Fill array with values in the order (x0, x1, y0, y1, z0, z1, ...)
+        extent[::2] = lim_min
+        extent[1::2] = lim_max
+        # Turn into tuple
+        extent = tuple(extent)
+
+    return PixelGrid(extent, flat_grid, shape)
+
+
+def get_pixel_grid_from_lims(lims, pixel_size, prioritize_limits=False):
+    """Produces a PixelGrid object from the given limits and pixel size.
+
+    Note that it is generally not possible to satisfy both the limits and the pixel
+    size exactly. If `prioritize_limits` is set to False the limits will be adjusted
+    to fit the pixel size. If `prioritize_limits` is set to True the pixel size will
+    be adjusted to fit the limits.
+
+    Parameters
+    ----------
+    lims : tuple
+        The limits of the grid as a tuple of tuples. The first tuple is the
+        limits along the first dimension, the second tuple is the limits along
+        the second dimension, and so on.
+    pixel_size : tuple or float
+        The size of the pixels in each dimension.
+    prioritize_limits : bool, default=False
+        Set to True to prioritize using the exact the limits over the exact pixel
+        size.
+
+    Returns
+    -------
+    grid : PixelGrid
+        The pixel grid object.
+    """
+    assert isinstance(lims, (tuple, list)), "lims must be a tuple or a list."
+
+    # Expand pixel_size if it is a single value
+    if isinstance(pixel_size, (float, int)):
+        pixel_size = (pixel_size,) * len(lims)
+
+    for lim in lims:
+        assert isinstance(lim, (tuple, list)), "Each limit must be a tuple or a list."
+        assert len(lim) == 2, "Each limit must have two values."
+
+    # Order the limits
+    lims = [sorted(lim) for lim in lims]
+
+    # Get the shape of the grid
+    shape = tuple(
+        int(np.round((lim[1] - lim[0]) / size)) for lim, size in zip(lims, pixel_size)
+    )
+    shape = tuple(s if s > 0 else 1 for s in shape)
+
+    # Determine the values of the grid
+    if prioritize_limits:
+        # Create arrays of values
+        vals = [
+            np.linspace(lim[0], lim[1], n_points) for lim, n_points in zip(lims, shape)
+        ]
+    else:
+        vals = [
+            np.arange(n_points) * size + lim[0]
+            for lim, n_points, size in zip(lims, shape, pixel_size)
+        ]
+
+    # Create the grid
+    positions = np.meshgrid(*vals, indexing="ij")
+
+    positions = np.stack(positions, axis=-1)
+
+    n_dims = len(shape)
+
+    # Flatten the grid
+    flat_grid = np.reshape(positions, (-1, n_dims))
+
+    # Create the extent
+    extent_m = np.zeros(2 * n_dims)
+    extent_m[::2] = np.min(flat_grid, axis=0)
+    extent_m[1::2] = np.max(flat_grid, axis=0)
+
+    return PixelGrid(extent_m, flat_grid, shape)
+
+
+def sort_extent(extent):
+    """Sorts the extent such that every first value is less than the second value."""
+
+    extent = np.array(extent)
+
+    extent = extent.reshape((-1, 2))
+    np.sort(extent, axis=1)
+    extent = extent.flatten()
+    return extent

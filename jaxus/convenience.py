@@ -7,7 +7,7 @@ import h5py
 import numpy as np
 
 import jaxus.utils.log as log
-from jaxus.beamforming import CartesianPixelGrid, PixelGrid, beamform_das, log_compress
+from jaxus.beamforming import PixelGrid, beamform_das, log_compress, get_pixel_grid
 from jaxus.containers import Medium, Probe, Pulse, Receive, Transmit
 from jaxus.data import generate_hdf5_dataset
 from jaxus.rf_simulator import simulate_rf_transmit
@@ -144,13 +144,15 @@ def simulate_to_hdf5(
 
     depth_m = receive.n_ax / receive.sampling_frequency * medium.sound_speed / 2
 
-    pixel_grid = CartesianPixelGrid(
-        n_x=probe.aperture / (wavelength * dx_wl),
-        n_z=depth_m / (wavelength * dz_wl),
-        dx_wl=dx_wl,
-        dz_wl=dz_wl,
-        wavelength=wavelength,
-        z0=1e-3,
+    n_x = (probe.aperture / (wavelength * dx_wl),)
+    n_z = (depth_m / (wavelength * dz_wl),)
+    dx = (dx_wl * wavelength,)
+    dz = (dz_wl * wavelength,)
+    pixel_grid = get_pixel_grid(
+        shape=(n_x, n_z),
+        spacing=(dx, dz),
+        startpoints=(0, 1e-3),
+        center=(True, False),
     )
 
     # Ensure that all transmit frequencies are the same
@@ -319,6 +321,9 @@ def beamform_hdf5(
         rx_apodization=np.ones(probe_geometry.shape[0]),
         f_number=3.5,
         iq_beamform=True,
+        sound_speed_lens=1000,
+        lens_thickness=1e-3,
+        tx_apodizations=tx_apodizations,
     )
 
     # Reshape the beamformed data

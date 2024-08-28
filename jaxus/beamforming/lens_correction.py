@@ -35,12 +35,12 @@ def compute_xl(xe, ze, xs, zs, lens_thickness, c_lens, c_medium):
     """
     xl_init = lens_thickness * (xs - xe) / (zs - ze) + xe
     xl = xl_init
-    for i in range(3):
+    for _ in range(1):
         xl = xl + dxl(xe, ze, xl, xs, zs, lens_thickness, c_lens, c_medium)
 
-    xl = jnp.clip(xl, xl_init - 3 * lens_thickness, xl_init + 3 * lens_thickness)
+        # Clip the lateral point to be in between the element and the pixel
+        xl = jnp.clip(xl, jnp.min(jnp.array([xe, xs])), jnp.max(jnp.array([xe, xs])))
 
-    # return xl_init
     return xl
 
 
@@ -97,7 +97,7 @@ def compute_travel_time(pos_a, pos_b, c):
 
 
 @jit
-def compute_lensed_travel_time(
+def compute_lensed_travel_time_2d(
     element_pos, pixel_pos, lens_thickness, c_lens, c_medium
 ):
     """Compute the travel time through an acoustic lens.
@@ -133,3 +133,72 @@ def compute_lensed_travel_time(
         element_pos, pos_lenscrossing, c_lens
     ) + compute_travel_time(pos_lenscrossing, pixel_pos, c_medium)
     return travel_time
+
+
+def compute_lensed_travel_time_3d(
+    element_pos, pixel_pos, lens_thickness, c_lens, c_medium
+):
+    """Compute the travel time through an acoustic lens in 3D.
+
+    Parameters
+    ----------
+    element_pos : jnp.ndarray
+        The position of the element in the lens of shape (3,).
+    pixel_pos : jnp.ndarray
+        The position of the pixel in the medium of shape (3,).
+    lens_thickness : float
+        The thickness of the lens in meters.
+    c_lens : float
+        The speed of sound in the lens in m/s.
+    c_medium : float
+        The speed of sound in the medium in m/s.
+
+    Returns
+    -------
+    float
+        The travel time in seconds.
+    """
+
+    element_pos_2d = jnp.array([0.0, element_pos[2]])
+    pixel_pos_2d = jnp.array(
+        [jnp.linalg.norm(pixel_pos[:2] - element_pos[:2]), pixel_pos[2]]
+    )
+
+    return compute_lensed_travel_time_2d(
+        element_pos_2d, pixel_pos_2d, lens_thickness, c_lens, c_medium
+    )
+
+
+def compute_lensed_travel_time(
+    element_pos, pixel_pos, lens_thickness, c_lens, c_medium
+):
+    """Compute the travel time through an acoustic lens.
+
+    Parameters
+    ----------
+    element_pos : jnp.ndarray
+        The position of the element in the lens of shape (2,) or (3,).
+    pixel_pos : jnp.ndarray
+        The position of the pixel in the medium of shape (2,) or (3,).
+    lens_thickness : float
+        The thickness of the lens in meters.
+    c_lens : float
+        The speed of sound in the lens in m/s.
+    c_medium : float
+        The speed of sound in the medium in m/s.
+
+    Returns
+    -------
+    float
+        The travel time in seconds.
+    """
+    if element_pos.shape[0] == 2:
+        return compute_lensed_travel_time_2d(
+            element_pos, pixel_pos, lens_thickness, c_lens, c_medium
+        )
+    elif element_pos.shape[0] == 3:
+        return compute_lensed_travel_time_3d(
+            element_pos, pixel_pos, lens_thickness, c_lens, c_medium
+        )
+    else:
+        raise ValueError("element_pos and pixel_pos must have shape (2,) or (3,).")

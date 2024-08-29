@@ -94,6 +94,8 @@ def plot_beamformed(
     axis_in_mm=True,
     probe_geometry=None,
     title=None,
+    xlabel_override=None,
+    zlabel_override=None,
 ):
     """Plots a beamformed image to an axis.
 
@@ -118,6 +120,10 @@ def plot_beamformed(
         geometry is plotted on top of the image. Defaults to None.
     title : str, optional
         The title of the plot. Defaults to None.
+    xlabel_override : str, optional
+        The x-axis label to use. If None, the default label is used. Defaults to None.
+    zlabel_override : str, optional
+        The z-axis label to use. If None, the default label is used. Defaults to None.
     """
 
     if axis_in_mm:
@@ -128,6 +134,11 @@ def plot_beamformed(
         xlabel = "x [m]"
         zlabel = "z [m]"
         formatter = FuncFormatter(lambda x, _: f"{x:.3f}")
+
+    if xlabel_override is not None:
+        xlabel = xlabel_override
+    if zlabel_override is not None:
+        zlabel = zlabel_override
 
     extent_m = [
         np.min(extent_m[:2]),

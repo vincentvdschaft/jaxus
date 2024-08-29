@@ -802,7 +802,7 @@ def hann(theta):
     return jnp.cos(theta) ** 2
 
 
-def tukey(theta, alpha=0.8):
+def tukey(theta, alpha=0.1):
     """Computes the Tukey window for a given angle, where the windows is 1 at theta=0
     and 0 at theta=pi/2. The parameter alpha controls the fraction of the window that
     is tapered. alpha=0 corresponds to a rectangular window and alpha=1 corresponds to
@@ -817,7 +817,7 @@ def tukey(theta, alpha=0.8):
 
 
 @partial(jit, static_argnums=(2, 3))
-def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=rect):
+def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=tukey):
     """Computes the f-number mask for a pixel for all elements in the probe geometry
     with a given f-number and window function.
 

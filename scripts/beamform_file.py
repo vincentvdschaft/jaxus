@@ -12,7 +12,7 @@ from jaxus import (
     beamform_das,
     log_compress,
     plot_beamformed,
-    CartesianPixelGrid,
+    get_pixel_grid,
     find_t_peak,
     use_dark_style,
 )
@@ -152,16 +152,20 @@ for frame in frames:
 
     wavelength = data["sound_speed"] / data["center_frequency"]
     n_ax = data["raw_data"].shape[2]
-    dz_wl = 0.25
+    dx_wl = 0.125
+    dz_wl = 0.125
+    n_x = 512 * 2
     n_z = int(0.25 * n_ax / (2 * dz_wl))
 
-    pixel_grid = CartesianPixelGrid(
-        n_x=1024 + 256,
-        n_z=n_z,
-        dx_wl=0.25,
-        dz_wl=dz_wl,
-        z0=1e-3,
-        wavelength=wavelength,
+    shape = (n_x, n_z)
+    spacing = (dx_wl * wavelength, dz_wl * wavelength)
+    startpoints = (0, 1e-3)
+    center = (True, False)
+    pixel_grid = get_pixel_grid(
+        shape=shape,
+        spacing=spacing,
+        startpoints=startpoints,
+        center=center,
     )
 
     t_peak = find_t_peak(data["waveform_samples_two_way"][0][:]) * jnp.ones(1)
@@ -187,19 +191,38 @@ for frame in frames:
     )
 
     im_das = log_compress(im_das, normalize=True)
-    im_das = im_das.reshape((pixel_grid.n_rows, pixel_grid.n_cols))
+    im_das = im_das.reshape((pixel_grid.n_x, pixel_grid.n_z))
 
     use_dark_style()
 
-    fig, ax = plt.subplots()
+    fig, axes = plt.subplots(1, 2, figsize=(6, 3.5))
+    ax = axes[1]
+    ax_rf = axes[0]
+    from jaxus import plot_rf
+
     plot_beamformed(
         ax,
         im_das,
-        extent_m=pixel_grid.extent,
-        title="DAS Beamforming",
+        extent_m=pixel_grid.extent_m,
+        title="Beamformed RF data",
         probe_geometry=data["probe_geometry"],
         vmin=-60,
     )
+    plot_rf(
+        ax_rf, rf_data=data["raw_data"][0, 0, :, :, 0], aspect="auto", title="RF data"
+    )
+    plt.tight_layout()
+
+    aspect1 = ax.get_aspect()
+    xlim1 = ax.get_xlim()
+    ylim1 = ax.get_ylim()
+    dx1, dy1 = xlim1[1] - xlim1[0], ylim1[1] - ylim1[0]
+    xlim2 = ax_rf.get_xlim()
+    ylim2 = ax_rf.get_ylim()
+    dx2, dy2 = xlim2[1] - xlim2[0], ylim2[1] - ylim2[0]
+    aspect2 = aspect1 * (dy1 * dx2) / (dx1 * dy2)
+    ax_rf.set_aspect(aspect2)
+
     if args.save:
         output_path = output_dir / f"frame_{str(frame).zfill(3)}.png"
         plt.savefig(output_path, dpi=300, bbox_inches="tight")

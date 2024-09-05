@@ -135,6 +135,8 @@ def beamform_das(
     if transmits is None:
         transmits = np.arange(n_tx)
 
+    print(transmits)
+
     # ==================================================================================
     # Convert to complex IQ data if necessary
     # ==================================================================================
@@ -167,9 +169,7 @@ def beamform_das(
     # Define progress bar functions
     # ==========================================================================
     progbar_func_frames, progbar_func_transmits, progbar_func_pixels = (
-        get_progbar_functions(
-            progress_bar, n_frames, len(transmits), len(start_indices)
-        )
+        get_progbar_functions(progress_bar, n_frames, len(transmits), start_indices)
     )
 
     for tx in transmits:
@@ -869,7 +869,7 @@ def get_f_number_mask(pixel_pos, probe_geometry, f_number, window_fn=tukey):
     return mask_val
 
 
-def get_progbar_functions(enable_progress_bar, n_frames, transmits, start_indices):
+def get_progbar_functions(enable_progress_bar, n_frames, n_tx, start_indices):
     """Produces three functions that can be used to display progress bars for the
     beamforming process.
 
@@ -879,7 +879,7 @@ def get_progbar_functions(enable_progress_bar, n_frames, transmits, start_indice
         Whether to enable the progress bar. Set to false to return dummy functions.
     n_frames : int
         The length of the frames progress bar.
-    transmits : int
+    n_tx : int
         The length of the transmits progress bar.
     start_indices : int
         The length of the start_indices progress bar.
@@ -906,7 +906,7 @@ def get_progbar_functions(enable_progress_bar, n_frames, transmits, start_indice
         """Progress bar for the transmits."""
         return (
             tqdm(x, desc="Transmit", colour="yellow", leave=False)
-            if enable_progress_bar and len(transmits) > 1
+            if enable_progress_bar and n_tx > 1
             else x
         )
 

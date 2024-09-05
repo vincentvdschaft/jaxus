@@ -158,6 +158,18 @@ class PixelGrid:
         """Returns the spacing in the z-direction."""
         return (self.extent_m[-1] - self.extent_m[-2]) / self.shape[-1]
 
+    @property
+    def n_x(self):
+        return self.shape[0]
+
+    @property
+    def n_z(self):
+        return self.shape[-1]
+
+    @property
+    def n_y(self):
+        return self.shape[1]
+
 
 def get_flat_grid(shape, spacing, startpoints, center):
     """

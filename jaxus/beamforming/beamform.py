@@ -135,8 +135,6 @@ def beamform_das(
     if transmits is None:
         transmits = np.arange(n_tx)
 
-    print(transmits)
-
     # ==================================================================================
     # Convert to complex IQ data if necessary
     # ==================================================================================

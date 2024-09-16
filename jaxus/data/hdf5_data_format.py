@@ -763,6 +763,11 @@ def load_hdf5(
     frames = np.array(frames)
     transmits = np.array(transmits)
 
+    if frames.ndim == 0:
+        frames = np.array([frames])
+    if transmits.ndim == 0:
+        transmits = np.array([transmits])
+
     with h5py.File(path, "r") as dataset:
         data = {}
         raw_data = dataset["data"]["raw_data"][frames]
@@ -822,5 +827,11 @@ def load_hdf5(
 
         tx_waveform_indices = dataset["scan"]["tx_waveform_indices"][transmits]
         data["tx_waveform_indices"] = tx_waveform_indices
+
+        data["tgc_gain_curve"] = dataset["scan"]["tgc_gain_curve"][:]
+
+        data["polar_angles"] = dataset["scan"]["polar_angles"][transmits]
+        data["azimuth_angles"] = dataset["scan"]["azimuth_angles"][transmits]
+        data["focus_distances"] = dataset["scan"]["focus_distances"][transmits]
 
     return data

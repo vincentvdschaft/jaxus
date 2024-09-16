@@ -341,9 +341,7 @@ def beamform_mv(
     # Define progress bar functions
     # ==========================================================================
     progbar_func_frames, progbar_func_transmits, progbar_func_pixels = (
-        get_progbar_functions(
-            progress_bar, n_frames, len(transmits), len(start_indices)
-        )
+        get_progbar_functions(progress_bar, n_frames, len(transmits), start_indices)
     )
 
     for frame in progbar_func_frames(range(n_frames)):

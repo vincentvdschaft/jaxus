@@ -21,7 +21,8 @@ config/custom
 
 # Folders
 temp/
-data
+data/
+local/
 # Do not ignore jaxus/jaxus/data
 !jaxus/data
 

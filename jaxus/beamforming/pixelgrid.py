@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from pathlib import Path
 
 
 class PixelGrid:
@@ -14,6 +16,81 @@ class PixelGrid:
 
         assert len(extent_m) == 2 * len(shape)
         assert pixel_positions_flat.shape[0] == np.prod(shape)
+
+    def plot(
+        self,
+        output_path=None,
+    ):
+        pixel_positions = self.pixel_positions_flat
+        extent_m = self.extent_m_2d
+        num_points = pixel_positions.shape[0]
+
+        if self.n_dims == 2:
+            plt.figure(figsize=(7, 7))
+            plt.imshow(
+                np.zeros(self.shape_2d),
+                extent=[extent_m[0], extent_m[1], extent_m[2], extent_m[3]],
+                origin="lower",
+                cmap="gray",
+                alpha=0.1,
+            )
+
+            # Dynamically adjust the size of the scatter points based on the number of points
+            base_size = 2000  # Base size to scale point size
+            s = base_size / num_points  # Scale size inversely with the number of points
+
+            plt.scatter(
+                pixel_positions[:, 0],
+                pixel_positions[:, 1],
+                c="lightblue",
+                s=s,  # Dynamically computed size
+                alpha=0.75,
+            )
+
+            plt.title("2D Pixel Grid", fontsize=16)
+            plt.xlabel("X (mm)", fontsize=12)
+            plt.ylabel("Z (mm)", fontsize=12)
+
+            plt.xlim(extent_m[0], extent_m[1])
+            plt.ylim(extent_m[2], extent_m[3])
+
+            plt.grid(True, color="white", linestyle="--", linewidth=0.5)
+            plt.text(
+                0.05,
+                0.95,
+                f"dz={self.dz}",
+                transform=plt.gca().transAxes,
+                fontsize=12,
+                color="black",
+                verticalalignment="top",
+                bbox=dict(
+                    boxstyle="round,pad=0.5",
+                    edgecolor="gray",
+                    facecolor="lightyellow",
+                    alpha=0.75,
+                ),
+            )
+
+            # Set default output path if not provided
+            if output_path is None:
+                output_path = Path(
+                    f"./figures/pixelgrid_plot_{int(self._shape[0])}_{int(self._shape[1])}.png"
+                )
+
+            plt.savefig(output_path, dpi=300, bbox_inches="tight")
+            print(f"✅ Pixel grid plotted and saved to {output_path}")
+        else:
+            raise NotImplementedError("PixelGrid plotting is only supported for 2D")
+
+    def uniformly_sample_points_within_extent(self):
+        points = np.empty((self.n_points, self.n_dims))
+
+        for i in range(self.n_dims):
+            min_val = self.extent_m[2 * i]
+            max_val = self.extent_m[2 * i + 1]
+            points[:, i] = np.random.uniform(min_val, max_val, self.n_points)
+
+        return points
 
     @property
     def extent_m(self):

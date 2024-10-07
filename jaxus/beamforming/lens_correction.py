@@ -4,10 +4,11 @@
 import jax.numpy as jnp
 from jax import grad, jit, vmap
 import jax
+from functools import partial
 
 
-@jit
-def compute_xl(xe, ze, xs, zs, lens_thickness, c_lens, c_medium):
+@partial(jit, static_argnums=(7,))
+def compute_xl(xe, ze, xs, zs, lens_thickness, c_lens, c_medium, n_iter):
     """Computes the lateral point on the lens that the shortest path goes through based
     on Fermat's principle.
 
@@ -27,6 +28,8 @@ def compute_xl(xe, ze, xs, zs, lens_thickness, c_lens, c_medium):
         The speed of sound in the lens in m/s.
     c_medium : float
         The speed of sound in the medium in m/s.
+    n_iter : int
+        The number of iterations to run the Newton-Raphson method.
 
     Returns
     -------
@@ -35,7 +38,7 @@ def compute_xl(xe, ze, xs, zs, lens_thickness, c_lens, c_medium):
     """
     xl_init = lens_thickness * (xs - xe) / (zs - ze) + xe
     xl = xl_init
-    for _ in range(1):
+    for _ in range(n_iter):
         xl = xl + dxl(xe, ze, xl, xs, zs, lens_thickness, c_lens, c_medium)
 
         # Clip the lateral point to be in between the element and the pixel
@@ -96,9 +99,9 @@ def compute_travel_time(pos_a, pos_b, c):
     return jnp.linalg.norm(pos_a - pos_b) / c
 
 
-@jit
+@partial(jit, static_argnums=(5,))
 def compute_lensed_travel_time_2d(
-    element_pos, pixel_pos, lens_thickness, c_lens, c_medium
+    element_pos, pixel_pos, lens_thickness, c_lens, c_medium, n_iter=1
 ):
     """Compute the travel time through an acoustic lens.
 
@@ -114,6 +117,8 @@ def compute_lensed_travel_time_2d(
         The speed of sound in the lens in m/s.
     c_medium : float
         The speed of sound in the medium in m/s.
+    n_iter : int
+        The number of iterations to run the Newton-Raph
 
     Returns
     -------
@@ -124,7 +129,7 @@ def compute_lensed_travel_time_2d(
     xs, zs = pixel_pos
 
     # Compute the lateral point on the lens that the shortest path goes through
-    xl = compute_xl(xe, ze, xs, zs, lens_thickness, c_lens, c_medium)
+    xl = compute_xl(xe, ze, xs, zs, lens_thickness, c_lens, c_medium, n_iter)
 
     pos_lenscrossing = jnp.array([xl, lens_thickness])
 
@@ -136,7 +141,7 @@ def compute_lensed_travel_time_2d(
 
 
 def compute_lensed_travel_time_3d(
-    element_pos, pixel_pos, lens_thickness, c_lens, c_medium
+    element_pos, pixel_pos, lens_thickness, c_lens, c_medium, n_iter=1
 ):
     """Compute the travel time through an acoustic lens in 3D.
 
@@ -152,6 +157,8 @@ def compute_lensed_travel_time_3d(
         The speed of sound in the lens in m/s.
     c_medium : float
         The speed of sound in the medium in m/s.
+    n_iter : int
+        The number of iterations to run the Newton-Raphson method.
 
     Returns
     -------
@@ -165,12 +172,12 @@ def compute_lensed_travel_time_3d(
     )
 
     return compute_lensed_travel_time_2d(
-        element_pos_2d, pixel_pos_2d, lens_thickness, c_lens, c_medium
+        element_pos_2d, pixel_pos_2d, lens_thickness, c_lens, c_medium, n_iter
     )
 
 
 def compute_lensed_travel_time(
-    element_pos, pixel_pos, lens_thickness, c_lens, c_medium
+    element_pos, pixel_pos, lens_thickness, c_lens, c_medium, n_iter
 ):
     """Compute the travel time through an acoustic lens.
 
@@ -186,6 +193,8 @@ def compute_lensed_travel_time(
         The speed of sound in the lens in m/s.
     c_medium : float
         The speed of sound in the medium in m/s.
+    n_iter : int
+        The number of iterations to run the Newton-Raphson method.
 
     Returns
     -------
@@ -194,11 +203,11 @@ def compute_lensed_travel_time(
     """
     if element_pos.shape[0] == 2:
         return compute_lensed_travel_time_2d(
-            element_pos, pixel_pos, lens_thickness, c_lens, c_medium
+            element_pos, pixel_pos, lens_thickness, c_lens, c_medium, n_iter
         )
     elif element_pos.shape[0] == 3:
         return compute_lensed_travel_time_3d(
-            element_pos, pixel_pos, lens_thickness, c_lens, c_medium
+            element_pos, pixel_pos, lens_thickness, c_lens, c_medium, n_iter
         )
     else:
         raise ValueError("element_pos and pixel_pos must have shape (2,) or (3,).")

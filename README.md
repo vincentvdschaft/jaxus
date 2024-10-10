@@ -29,8 +29,9 @@ from jaxus import (
     beamform_das,
     log_compress,
     plot_beamformed,
-    CartesianPixelGrid,
+    get_pixel_grid,
 )
+
 # The number of axial samples to simulate
 n_ax = 2048
 # The number of elements in the probe
@@ -121,13 +122,17 @@ rf_data = simulate_rf_transmit(
 # ----------------------------------------
 
 # Define beamforming grid
-pixel_grid = CartesianPixelGrid(
-    n_x=512,
-    n_z=512,
-    dx_wl=0.5,
-    dz_wl=0.5,
-    z0=1e-4,
-    wavelength=sound_speed / carrier_frequency,
+shape = (1024, 1024)
+wavelength = sound_speed / carrier_frequency
+dx_wl = dz_wl = 0.25
+spacing = (dx_wl * wavelength, dz_wl * wavelength)
+startpoints = (0, 1e-3)
+center = (True, False)
+pixel_grid = get_pixel_grid(
+    shape=shape,
+    spacing=spacing,
+    startpoints=startpoints,
+    center=center,
 )
 
 # Perform DAS beamforming
@@ -165,7 +170,7 @@ plot_rf(ax_rf, rf_data)
 plot_beamformed(
     ax_bf,
     beamformed_image,
-    extent_m=pixel_grid.extent,
+    extent_m=pixel_grid.extent_m,
     probe_geometry=probe_geometry,
 )
 plt.tight_layout()

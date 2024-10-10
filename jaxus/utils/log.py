@@ -1,8 +1,9 @@
+import datetime
 import logging
+import os
 import re
 import sys
 from pathlib import Path
-import datetime
 
 # The logger to use
 logger = None
@@ -33,6 +34,35 @@ def blue(string):
 def orange(string):
     """Adds ANSI escape codes to print a string in orange around the string."""
     return "\033[38;5;214m" + str(string) + "\033[0m"
+
+
+# Check if the environment variable JAXUS_NO_COLORS is set
+if os.environ.get("JAXUS_NO_COLORS", "0") == "1":
+    print("Disabling colors for logging.")
+
+    # Disable colors
+    def red(string):
+        """Dummy function to disable colors."""
+        return string
+
+    def green(string):
+        """Dummy function to disable colors."""
+        return string
+
+    def yellow(string):
+        """Dummy function to disable colors."""
+        return string
+
+    def blue(string):
+        """Dummy function to disable colors."""
+        return string
+
+    def orange(string):
+        """Dummy function to disable colors."""
+        return string
+
+else:
+    print("Enabling colors for logging.")
 
 
 class CustomFormatter(logging.Formatter):

@@ -530,15 +530,12 @@ def tof_correct_pixel(
     """
 
     n_ax = rf_data.shape[-2]
+    n_iter = 2
 
     # Compute the distance from the pixel to each element of shape (n_el,)
-    travel_time = vmap(compute_lensed_travel_time, in_axes=(0, None, None, None, None))(
-        probe_geometry,
-        pixel_pos,
-        lens_thickness,
-        sound_speed_lens,
-        sound_speed,
-    )
+    travel_time = vmap(
+        compute_lensed_travel_time, in_axes=(0, None, None, None, None, None)
+    )(probe_geometry, pixel_pos, lens_thickness, sound_speed_lens, sound_speed, n_iter)
 
     # This would be the line without lens correction
     # dist_to_elements = jnp.linalg.norm(pixel_pos[None] - probe_geometry, axis=1)

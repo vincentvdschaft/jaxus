@@ -96,6 +96,7 @@ def plot_beamformed(
     title=None,
     xlabel_override=None,
     zlabel_override=None,
+    include_axes=True,
 ):
     """Plots a beamformed image to an axis.
 
@@ -124,12 +125,14 @@ def plot_beamformed(
         The x-axis label to use. If None, the default label is used. Defaults to None.
     zlabel_override : str, optional
         The z-axis label to use. If None, the default label is used. Defaults to None.
+    include_axes : bool, optional
+        Whether to include axes, labels, and titles. Defaults to True.
     """
 
     if axis_in_mm:
         xlabel = "x [mm]"
         zlabel = "z [mm]"
-        formatter = FuncFormatter(lambda x, _: f"{round(1000*x)}")
+        formatter = FuncFormatter(lambda x, _: f"{round(1000 * x)}")
     else:
         xlabel = "x [m]"
         zlabel = "z [m]"
@@ -147,6 +150,7 @@ def plot_beamformed(
         np.min(extent_m[-2:]),
     ]
 
+    # Plot the image
     ax.imshow(
         image.T,
         extent=extent_m,
@@ -157,26 +161,33 @@ def plot_beamformed(
         interpolation="none",
     )
 
-    # Set the formatter for the major ticker on both axes
-    ax.xaxis.set_major_formatter(formatter)
-    ax.yaxis.set_major_formatter(formatter)
+    # Include axes, labels, and titles if include_axes is True
+    if include_axes:
+        ax.xaxis.set_major_formatter(formatter)
+        ax.yaxis.set_major_formatter(formatter)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(zlabel)
 
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(zlabel)
+        if probe_geometry is not None:
+            ax.plot(
+                [probe_geometry[0, 0], probe_geometry[-1, 0]],
+                [probe_geometry[0, 1], probe_geometry[-1, 1]],
+                "-|",
+                markersize=6,
+                color="#AA0000",
+                linewidth=1,
+            )
 
-    if probe_geometry is not None:
+        if title is not None:
+            ax.set_title(title)
 
-        ax.plot(
-            [probe_geometry[0, 0], probe_geometry[-1, 0]],
-            [probe_geometry[0, 1], probe_geometry[-1, 1]],
-            "-|",
-            markersize=6,
-            color="#AA0000",
-            linewidth=1,
-        )
-
-    if title is not None:
-        ax.set_title(title)
+    else:
+        # Hide axes, ticks, and labels
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+        ax.set_title("")
 
     # Turn the axes background black
     ax.set_facecolor("black")

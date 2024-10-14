@@ -11,31 +11,6 @@ logger = None
 LOG_DIR = Path("log")
 
 
-def red(string):
-    """Adds ANSI escape codes to print a string in red around the string."""
-    return "\033[38;5;196m" + str(string) + "\033[0m"
-
-
-def green(string):
-    """Adds ANSI escape codes to print a string in green around the string."""
-    return "\033[38;5;46m" + str(string) + "\033[0m"
-
-
-def yellow(string):
-    """Adds ANSI escape codes to print a string in yellow around the string."""
-    return "\033[38;5;226m" + str(string) + "\033[0m"
-
-
-def blue(string):
-    """Adds ANSI escape codes to print a string in blue around the string."""
-    return "\033[38;5;36m" + str(string) + "\033[0m"
-
-
-def orange(string):
-    """Adds ANSI escape codes to print a string in orange around the string."""
-    return "\033[38;5;214m" + str(string) + "\033[0m"
-
-
 # Check if the environment variable JAXUS_NO_COLORS is set
 if os.environ.get("JAXUS_NO_COLORS", "0") == "1":
     print("Disabling colors for logging.")
@@ -62,7 +37,26 @@ if os.environ.get("JAXUS_NO_COLORS", "0") == "1":
         return string
 
 else:
-    print("Enabling colors for logging.")
+
+    def red(string):
+        """Adds ANSI escape codes to print a string in red around the string."""
+        return "\033[38;5;196m" + str(string) + "\033[0m"
+
+    def green(string):
+        """Adds ANSI escape codes to print a string in green around the string."""
+        return "\033[38;5;46m" + str(string) + "\033[0m"
+
+    def yellow(string):
+        """Adds ANSI escape codes to print a string in yellow around the string."""
+        return "\033[38;5;226m" + str(string) + "\033[0m"
+
+    def blue(string):
+        """Adds ANSI escape codes to print a string in blue around the string."""
+        return "\033[38;5;36m" + str(string) + "\033[0m"
+
+    def orange(string):
+        """Adds ANSI escape codes to print a string in orange around the string."""
+        return "\033[38;5;214m" + str(string) + "\033[0m"
 
 
 class CustomFormatter(logging.Formatter):

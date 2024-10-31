@@ -319,7 +319,7 @@ def beamform_hdf5(
         sound_speed=sound_speed,
         t_peak=np.zeros(n_tx),
         rx_apodization=np.ones(probe_geometry.shape[0]),
-        f_number=3.5,
+        f_number=0.5,
         iq_beamform=True,
         sound_speed_lens=1000,
         lens_thickness=1e-3,
@@ -327,8 +327,6 @@ def beamform_hdf5(
     )
 
     # Reshape the beamformed data
-    beamformed = np.reshape(
-        beamformed, (n_frames, pixel_grid.n_rows, pixel_grid.n_cols)
-    )
+    beamformed = np.reshape(beamformed, (n_frames, *pixel_grid.shape_2d))
 
     return beamformed, pixel_grid

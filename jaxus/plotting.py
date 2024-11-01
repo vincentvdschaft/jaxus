@@ -14,6 +14,7 @@ def plot_rf(
     vmax=None,
     aspect="auto",
     title=None,
+    **kwargs,
 ):
     """Plots RF data to an axis.
 
@@ -39,7 +40,7 @@ def plot_rf(
         The title of the plot. Defaults to None.
     """
     formatter = FuncFormatter(lambda x, _: f"{int(x)}")
-    kwargs = {"aspect": aspect}
+    kwargs = {"aspect": aspect, **kwargs}
     xlabel = "element [-]"
     zlabel = "sample [-]"
     extent = [0, rf_data.shape[1], start_sample + rf_data.shape[0], start_sample]

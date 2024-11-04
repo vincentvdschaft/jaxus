@@ -7,6 +7,7 @@ beamforming on RF or IQ data.
 import jax.numpy as jnp
 import numpy as np
 from jax import jit, vmap
+from functools import partial
 
 from jaxus.utils.checks import (
     check_frequency,
@@ -24,7 +25,7 @@ from .beamform import (
 )
 
 
-@jit
+@partial(jit, static_argnums=(11,))
 def _beamform_pixel(
     rf_data,
     pixel_pos,
@@ -124,7 +125,7 @@ def _beamform_pixel(
     return z
 
 
-@jit
+@partial(jit, static_argnums=(13,))
 def dmas_beamform_transmit(
     rf_data,
     pixel_positions,

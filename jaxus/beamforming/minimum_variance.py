@@ -29,6 +29,10 @@ from .beamform import (
 )
 
 
+@partial(
+    jit,
+    static_argnums=(11, 14, 16),
+)
 def mv_beamform_pixel(
     rf_data,
     pixel_pos,
@@ -385,7 +389,7 @@ def beamform_mv(
 
 @partial(
     jit,
-    static_argnums=(14, 15, 16),
+    static_argnums=(13, 14, 15, 16),
 )
 def mv_beamform_transmit(
     rf_data,

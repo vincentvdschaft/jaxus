@@ -760,15 +760,20 @@ def load_hdf5(
     dict : The loaded data.
     """
 
-    frames = np.array(frames)
-    transmits = np.array(transmits)
-
-    if frames.ndim == 0:
-        frames = np.array([frames])
-    if transmits.ndim == 0:
-        transmits = np.array([transmits])
-
     with h5py.File(path, "r") as dataset:
+
+        if isinstance(frames, str) and frames == "all":
+            frames = np.arange(dataset["data"]["raw_data"].shape[0])
+        if isinstance(transmits, str) and transmits == "all":
+            transmits = np.arange(dataset["data"]["raw_data"].shape[1])
+
+        frames = np.array(frames)
+        transmits = np.array(transmits)
+
+        if frames.ndim == 0:
+            frames = np.array([frames])
+        if transmits.ndim == 0:
+            transmits = np.array([transmits])
         data = {}
         raw_data = dataset["data"]["raw_data"][frames]
         raw_data = raw_data[:, transmits]

@@ -194,6 +194,28 @@ def plot_beamformed(
     ax.set_facecolor("black")
 
 
+def plot_beamformed_window(xlim, zlim, ax, *args, **kwargs):
+    """Plots a beamformed image with a window applied to an axis.
+
+    Parameters
+    ----------
+    xlim : list
+        The x-limits of the window.
+    zlim : list
+        The z-limits of the window.
+    args : list
+        The arguments to pass to plot_beamformed.
+    kwargs : dict
+        The keyword arguments to pass to plot_beamformed.
+    """
+    # Plot the beamformed image
+    plot_beamformed(ax, *args, **kwargs)
+
+    # Set the x-limits and z-limits
+    ax.set_xlim(xlim)
+    ax.set_ylim(zlim)
+
+
 def plot_to_darkmode(fig, axes, grid=False):
     """Turns a plot into a dark plot with a black background and white text, ticks, and
     spines

@@ -30,8 +30,10 @@ from jaxus.utils.checks import (
     check_t0_delays,
 )
 
-from .pixelgrid import PixelGrid
+from ..pfield import compute_pfield
+from ..utils import log
 from .lens_correction import compute_lensed_travel_time
+from .pixelgrid import PixelGrid
 
 
 def beamform_das(
@@ -170,42 +172,66 @@ def beamform_das(
         get_progbar_functions(progress_bar, n_frames, len(transmits), start_indices)
     )
 
+    log.info("Computing pfield for weighting")
+    pfields = []
+    for tx in transmits:
+        pfield = compute_pfield(
+            pixels=pixel_positions,
+            probe_geometry=probe_geometry,
+            t0_delays=t0_delays[tx],
+            tx_apodizations=tx_apodizations[tx],
+            center_frequency=carrier_frequency,
+            band=(carrier_frequency * 0.5, carrier_frequency * 1.5),
+            element_width=(probe_geometry[1, 0] - probe_geometry[0, 0]) * 0.9,
+            sound_speed=sound_speed,
+            n_freqs=32,
+            reduce=True,
+        )
+        pfields.append(pfield)
+    pfields = jnp.stack(pfields, axis=0)
+    mean_pfield = jnp.mean(pfields, axis=0)
+
+    normalization = 1 / mean_pfield
+    mask = mean_pfield > 1e-4
+
     for tx in transmits:
         assert 0 <= tx < n_tx, "Transmit index out of bounds"
-
+    log.info("Beamforming transmits")
     for frame in progbar_func_frames(range(n_frames)):
 
         # Beamform every transmit individually and sum the results
-        for tx in progbar_func_transmits(transmits):
+        for n, tx in tqdm(enumerate(transmits), disable=not progress_bar):
             beamformed_chunks = []
             for ind0 in progbar_func_pixels(start_indices):
                 pixel_chunk = pixel_positions[ind0 : ind0 + pixel_chunk_size]
                 # Perform beamforming
-                beamformed_chunks.append(
-                    das_beamform_transmit(
-                        input_data[frame, tx],
-                        pixel_chunk,
-                        probe_geometry,
-                        t0_delays[tx],
-                        initial_times[tx],
-                        sampling_frequency,
-                        carrier_frequency,
-                        sound_speed,
-                        sound_speed_lens,
-                        lens_thickness,
-                        t_peak[tx],
-                        tx_apodizations[tx],
-                        rx_apodization,
-                        f_number=f_number,
-                        iq_beamform=iq_beamform,
-                    )
+                beamformed_transmit = das_beamform_transmit(
+                    input_data[frame, tx],
+                    pixel_chunk,
+                    probe_geometry,
+                    t0_delays[tx],
+                    initial_times[tx],
+                    sampling_frequency,
+                    carrier_frequency,
+                    sound_speed,
+                    sound_speed_lens,
+                    lens_thickness,
+                    t_peak[tx],
+                    tx_apodizations[tx],
+                    rx_apodization,
+                    f_number=f_number,
+                    iq_beamform=iq_beamform,
                 )
+                # Apply pfield weighting
+                beamformed_transmit = beamformed_transmit * pfields[n]
+                beamformed_chunks.append(beamformed_transmit)
 
             # Concatenate the beamformed chunks
             beamformed_transmit = jnp.concatenate(beamformed_chunks)
 
             # Reshape and add to the beamformed images
             beamformed_images = beamformed_images.at[frame].add(beamformed_transmit)
+        beamformed_images *= normalization * mask
 
     return beamformed_images
 

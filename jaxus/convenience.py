@@ -7,7 +7,8 @@ import h5py
 import numpy as np
 
 import jaxus.utils.log as log
-from jaxus.beamforming import PixelGrid, beamform_das, log_compress, get_pixel_grid
+from jaxus import get_pixel_grid
+from jaxus.beamforming import PixelGrid, beamform_das, get_pixel_grid, log_compress
 from jaxus.containers import Medium, Probe, Pulse, Receive, Transmit
 from jaxus.data import generate_hdf5_dataset
 from jaxus.rf_simulator import simulate_rf_transmit
@@ -259,16 +260,24 @@ def beamform_hdf5(
     np.ndarray or PixelGrid
         The beamformed images of shape `(n_frames, n_z, n_x)` and the pixel grid.
     """
+    if isinstance(frames, (float, int)):
+        frames = [frames]
+    if isinstance(transmits, (float, int)):
+        transmits = [transmits]
+
     # Load the dataset
     with h5py.File(path, "r") as dataset:
 
-        if frames is None:
+        if frames is None or str(frames) == "all":
             frames = np.arange(dataset["data"]["raw_data"].shape[0])
         frames = np.array(frames).astype(int)
 
-        if transmits is None:
+        if transmits is None or transmits[0] < 0:
             transmits = np.arange(dataset["scan"]["t0_delays"].shape[0])
         transmits = np.array(transmits).astype(int)
+
+        print(f"frames: {frames}")
+        print(f"transmits: {transmits}")
 
         # Extract the relevant data
         raw_data = dataset["data"]["raw_data"][frames]
@@ -298,13 +307,11 @@ def beamform_hdf5(
     aperture = np.max(probe_geometry[:, 0]) - np.min(probe_geometry[:, 0])
 
     if pixel_grid is None:
-        pixel_grid = CartesianPixelGrid(
-            n_x=aperture / (wavelength * dx_wl),
-            n_z=depth_m / (wavelength * dz_wl),
-            dx_wl=dx_wl,
-            dz_wl=dz_wl,
-            wavelength=wavelength,
-            z0=1e-3,
+        pixel_grid = get_pixel_grid(
+            shape=(512, 512),
+            spacing=(dx_wl * wavelength, dz_wl * wavelength),
+            startpoints=(0, 1e-3),
+            center=(True, False),
         )
 
     # Beamform the RF data
@@ -324,6 +331,7 @@ def beamform_hdf5(
         sound_speed_lens=1000,
         lens_thickness=1e-3,
         tx_apodizations=tx_apodizations,
+        progress_bar=True,
     )
 
     # Reshape the beamformed data

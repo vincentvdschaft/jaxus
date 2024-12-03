@@ -1,6 +1,7 @@
-import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 class PixelGrid:
@@ -328,6 +329,42 @@ def get_pixel_grid(shape, spacing, startpoints, center):
         extent = tuple(extent)
 
     return PixelGrid(extent, flat_grid, shape)
+
+
+def get_pixel_grid_from_extent(extent, pixel_size):
+    """Produces a PixelGrid object from the given extent and pixel size.
+
+    Parameters
+    ----------
+    extent : tuple, list, or ndarray
+        The extent of the grid as a tuple, list, or ndarray. [x0, x1, z0, z1]
+    pixel_size : tuple or float
+        The size of the pixels in each dimension.
+
+    Returns
+    -------
+    grid : PixelGrid
+        The pixel grid object.
+    """
+
+    extent = np.array(extent)
+
+    n_dims = len(extent) // 2
+
+    if isinstance(pixel_size, (float, int)):
+        pixel_size = np.ones(n_dims) * pixel_size
+
+    extent_0 = extent[::2]
+    extent_1 = extent[1::2]
+    extent_stacked = np.stack([extent_0, extent_1], axis=0)
+    extent_0 = np.min(extent_stacked, axis=0)
+    extent_1 = np.max(extent_stacked, axis=0)
+
+    sizes = extent_1 - extent_0
+
+    shape = tuple(int(np.round(size / pixel)) for size, pixel in zip(sizes, pixel_size))
+
+    return get_pixel_grid(shape, pixel_size, extent_0, center=(False,) * n_dims)
 
 
 def get_pixel_grid_from_lims(lims, pixel_size, prioritize_limits=False):

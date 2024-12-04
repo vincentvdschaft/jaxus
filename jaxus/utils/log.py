@@ -154,6 +154,19 @@ def configure_file_logger(level="INFO"):
 
     return new_logger
 
+def color_numbers(text):
+    """
+    Colors all numbers in the given string.
+    """
+
+    # Number pattern
+    number_pattern = re.compile(
+            r"(?<!\w)"                   # Ensure not preceded by a word character
+            r"-?\b\d+(\.\d+)?(e[-+]?\d+)?\b"  # Match integers, floats, and scientific notation
+            r"(?!\w)"                    # Ensure not followed by a word character
+        )
+
+    return number_pattern.sub(lambda match: yellow(match.group(0)), text)
 
 def remove_color_escape_codes(text):
     """
@@ -192,7 +205,7 @@ def debug(message, *args, **kwargs):
 
 def info(message, *args, **kwargs):
     """Prints a message with log level info."""
-    message = str(message)
+    message = color_numbers(str(message))
     logger.info(message, *args, **kwargs)
 
 

@@ -581,8 +581,8 @@ def tof_correct_pixel(
     sample_max = jnp.ceil(sample_index).astype(jnp.int32)
 
     # Clip the sample indices to the valid range
-    sample_min_clipped = jnp.clip(sample_min, 0, n_ax - 1)
-    sample_max_clipped = jnp.clip(sample_max, 0, n_ax - 1)
+    sample_min_clipped = jnp.squeeze(jnp.clip(sample_min, 0, n_ax - 1))
+    sample_max_clipped = jnp.squeeze(jnp.clip(sample_max, 0, n_ax - 1))
 
     # Index the samples along the element axis using take_along_axis
     rf_min = jnp.take_along_axis(rf_data, sample_min_clipped[None], axis=0)[0]

@@ -154,19 +154,38 @@ def configure_file_logger(level="INFO"):
 
     return new_logger
 
+
 def color_numbers(text):
     """
-    Colors all numbers in the given string.
+    Colors all numbers in the given string, while ignoring ANSI color escape sequences.
     """
+    # Pattern to match ANSI escape codes
+    ansi_escape_pattern = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
-    # Number pattern
+    # Number pattern (ignoring ANSI sequences)
     number_pattern = re.compile(
-            r"(?<!\w)"                   # Ensure not preceded by a word character
-            r"-?\b\d+(\.\d+)?(e[-+]?\d+)?\b"  # Match integers, floats, and scientific notation
-            r"(?!\w)"                    # Ensure not followed by a word character
-        )
+        r"(?<!\w)"  # Ensure not preceded by a word character
+        r"-?\b\d+(\.\d+)?(e[-+]?\d+)?\b"  # Match integers, floats, and scientific notation
+        r"(?!\w)"  # Ensure not followed by a word character
+    )
 
-    return number_pattern.sub(lambda match: yellow(match.group(0)), text)
+    # Split the text into ANSI and non-ANSI segments
+    parts = ansi_escape_pattern.split(text)
+    matches = ansi_escape_pattern.findall(text)
+
+    # Process non-ANSI segments
+    processed_parts = [
+        number_pattern.sub(lambda match: yellow(match.group(0)), part) for part in parts
+    ]
+
+    # Reconstruct the text, preserving the ANSI sequences
+    reconstructed_text = "".join(
+        part + (matches[i] if i < len(matches) else "")
+        for i, part in enumerate(processed_parts)
+    )
+
+    return reconstructed_text
+
 
 def remove_color_escape_codes(text):
     """

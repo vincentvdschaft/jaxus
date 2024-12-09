@@ -4,6 +4,8 @@ from typing import List, Tuple, Union
 import h5py
 import numpy as np
 
+from jaxus.utils import fix_extent, log
+
 
 def _first_not_none_item(arr):
     """
@@ -840,3 +842,62 @@ def load_hdf5(
         data["focus_distances"] = dataset["scan"]["focus_distances"][transmits]
 
     return data
+
+
+def save_hdf5_image(path, image, extent, log_compressed=True):
+    """
+    Saves an image to an hdf5 file.
+
+    Parameters
+    ----------
+    path : str
+        The path to the hdf5 file.
+    image : np.ndarray
+        The image to save.
+    extent : list
+        The extent of the image (x0, x1, z0, z1).
+    log_compressed : bool
+        Whether the image is log compressed.
+    """
+
+    extent = fix_extent(extent)
+
+    path = Path(path)
+
+    if path.exists():
+        log.warning(f"Overwriting existing file {path}.")
+        path.unlink()
+    if not path.parent.exists():
+        path.parent.mkdir(parents=True)
+
+    with h5py.File(path, "w") as dataset:
+        dataset.create_dataset("image", data=image)
+        dataset.create_dataset("extent", data=extent)
+        dataset.create_dataset("log_compressed", data=log_compressed)
+
+
+def load_hdf5_image(path):
+    """
+    Loads an image from an hdf5 file.
+
+    Parameters
+    ----------
+    path : str
+        The path to the hdf5 file.
+
+    Returns
+    -------
+    image : np.ndarray
+        The image.
+    extent : np.ndarray
+        The extent of the image (x0, x1, z0, z1).
+    log_compressed : bool
+        Whether the image is log compressed.
+    """
+
+    with h5py.File(path, "r") as dataset:
+        image = dataset["image"][()]
+        extent = np.array(dataset["extent"][()])
+        log_compressed = dataset["log_compressed"][()]
+
+    return image, extent, log_compressed

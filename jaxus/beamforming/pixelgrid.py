@@ -1,7 +1,10 @@
+from math import ceil
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+from jaxus.utils import fix_extent
 
 
 class PixelGrid:
@@ -349,22 +352,28 @@ def get_pixel_grid_from_extent(extent, pixel_size):
 
     extent = np.array(extent)
 
+    print(extent)
+
     n_dims = len(extent) // 2
 
     if isinstance(pixel_size, (float, int)):
         pixel_size = np.ones(n_dims) * pixel_size
+    else:
+        pixel_size = np.array(pixel_size)
+
+    extent = fix_extent(extent)
 
     extent_0 = extent[::2]
     extent_1 = extent[1::2]
-    extent_stacked = np.stack([extent_0, extent_1], axis=0)
-    extent_0 = np.min(extent_stacked, axis=0)
-    extent_1 = np.max(extent_stacked, axis=0)
 
     sizes = extent_1 - extent_0
 
-    shape = tuple(int(np.round(size / pixel)) for size, pixel in zip(sizes, pixel_size))
+    shape = np.zeros(n_dims)
+    for dim, size in enumerate(sizes):
+        shape[dim] = ceil(size / pixel_size[dim])
+        pixel_size[dim] = size / shape[dim]
 
-    return get_pixel_grid(shape, pixel_size, extent_0, center=(False,) * n_dims)
+    return get_pixel_grid(shape, pixel_size, extent[::2], center=(False,) * n_dims)
 
 
 def get_pixel_grid_from_lims(lims, pixel_size, prioritize_limits=False):

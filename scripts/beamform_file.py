@@ -1,35 +1,42 @@
-import tkinter as tk
-from pathlib import Path
-from tkinter import filedialog, simpledialog, messagebox
 import argparse
-import matplotlib.pyplot as plt
+import tkinter as tk
 from datetime import datetime
+from pathlib import Path
+from tkinter import filedialog, messagebox, simpledialog
 
 import h5py
+import jax.numpy as jnp
+import matplotlib.pyplot as plt
+import numpy as np
 
 from jaxus import (
-    load_hdf5,
     beamform_das,
+    find_t_peak,
+    fix_extent,
+    get_pixel_grid_from_extent,
+    hdf5_get_n_frames,
+    hdf5_get_n_tx,
+    load_hdf5,
     log_compress,
     plot_beamformed,
-    get_pixel_grid,
-    find_t_peak,
+    save_hdf5_image,
     use_dark_style,
 )
-import jaxus.utils.log as log
-import jax.numpy as jnp
+from jaxus.utils import interpret_range, log
 
 # ======================================================================================
 # Parse input
 # ======================================================================================
 parser = argparse.ArgumentParser()
 parser.add_argument("file", type=Path, default=None, nargs="?")
-parser.add_argument("--frames", type=str, nargs="+", default=None)
+parser.add_argument("--frames", type=str, nargs="+", default="all")
 # Add variable number of transmits
-parser.add_argument("--transmits", type=str, nargs="+", default=None)
+parser.add_argument("--transmits", type=str, nargs="+", default="all")
 parser.add_argument("--show", action=argparse.BooleanOptionalAction)
 parser.add_argument("--fnumber", type=float, default=1.0)
-parser.add_argument("--save", action=argparse.BooleanOptionalAction, default=False)
+parser.add_argument("--dynamic-range", type=float, default=60)
+parser.add_argument("--extent", type=float, nargs=4, default=None)
+parser.add_argument("--save-path", type=Path, default=None)
 args = parser.parse_args()
 # Create a Tkinter root window
 root = tk.Tk()
@@ -48,66 +55,19 @@ else:
 
 log.info(f"Selected file: {log.yellow(selected_file)}")
 
-with h5py.File(selected_file, "r") as f:
-    try:
-        n_frames, n_tx, _, _, _ = f["data"]["raw_data"].shape
-    except KeyError:
-        log.error("The selected file does not contain the correct data.")
-        exit()
+n_frames = hdf5_get_n_frames(selected_file)
+n_tx = hdf5_get_n_tx(selected_file)
 
 
-# --------------------------------------------------------------------------------------
-# Interpret frame
-# --------------------------------------------------------------------------------------
-# Check if the frame was selected
-if args.frames is None:
-    input_frame = simpledialog.askstring(
-        "Input", f"Select a frame to beamform. 0-{n_frames-1} or 0 1 2 3 or all"
-    )
-else:
-    input_frame = " ".join(args.frames)
+input_frame = args.frames
+if isinstance(input_frame, list):
+    input_frame = " ".join(input_frame)
+input_transmit = args.transmits
+if isinstance(input_transmit, list):
+    input_transmit = " ".join(input_transmit)
 
-if input_frame is None:
-    log.error("No frame selected. Using 0.")
-    frames = [0]
-elif input_frame == "all":
-    frames = list(range(n_frames))
-elif "-" in str(input_frame):
-    start, end = input_frame.split("-")
-    frames = list(range(int(start), int(end) + 1))
-else:
-    frames = list(map(int, input_frame.split()))
-
-
-# --------------------------------------------------------------------------------------
-# Interpret transmit
-# --------------------------------------------------------------------------------------
-# Check if the transmits were selected
-if args.transmits is None:
-    input_transmit = simpledialog.askstring(
-        "Input", f"Select transmits to beamform. [0-{n_tx-1}] or [0 1 2 3]"
-    )
-else:
-    if isinstance(args.transmits, list):
-        input_transmit = " ".join(args.transmits)
-    else:
-        input_transmit = args.transmits
-
-# Parse the input if it is in the format %i-%i
-if input_transmit == "all":
-    transmits = list(range(n_tx))
-elif "-" in input_transmit:
-    print(input_transmit)
-    start, end = input_transmit.split("-")
-    transmits = list(range(int(start), int(end) + 1))
-# Parse the input if it is in the format %i %i %i
-else:
-    print(input_transmit)
-    transmits = list(map(int, input_transmit.split()))
-
-if input_transmit is None:
-    log.error("No transmits selected. Using all transmits.")
-    transmits = list(range(n_tx))
+frames = interpret_range(input_frame, n_frames)
+transmits = interpret_range(input_transmit, n_tx)
 
 
 # --------------------------------------------------------------------------------------
@@ -134,12 +94,8 @@ log.info(
     f"--transmits {input_transmit} "
     f"{'--show'if show else '--no-show'} "
     f"{'--fnumber '+str(args.fnumber) if args.fnumber != 1.0 else ''}"
-    f"{'--save' if args.save else ''}"
+    f"{'--save-path'+str(args.save_path) if args.save_path else ''}"
 )
-
-if args.save:
-    output_dir = Path("results", f"{datetime.now().strftime('%Y%m%d-%H%M%S')}")
-    output_dir.mkdir(parents=True, exist_ok=True)
 
 for frame in frames:
 
@@ -152,21 +108,21 @@ for frame in frames:
 
     wavelength = data["sound_speed"] / data["center_frequency"]
     n_ax = data["raw_data"].shape[2]
-    dx_wl = 0.125
-    dz_wl = 0.125
-    n_x = 512 * 2
-    n_z = int(0.25 * n_ax / (2 * dz_wl))
 
-    shape = (n_x, n_z)
-    spacing = (dx_wl * wavelength, dz_wl * wavelength)
-    startpoints = (0, 1e-3)
-    center = (True, False)
-    pixel_grid = get_pixel_grid(
-        shape=shape,
-        spacing=spacing,
-        startpoints=startpoints,
-        center=center,
-    )
+    if args.extent is not None:
+        extent = fix_extent([float(coord) * 1e-3 for coord in args.extent])
+    else:
+        extent = [
+            data["probe_geometry"][:, 0].min() - 2e-3,
+            data["probe_geometry"][:, 0].max() + 2e-3,
+            1e-3,
+            n_ax * wavelength / 8,
+        ]
+
+    print(f"extent: {extent}")
+    pixel_size = (wavelength / 2, wavelength / 4)
+
+    pixel_grid = get_pixel_grid_from_extent(extent=extent, pixel_size=pixel_size)
 
     t_peak = find_t_peak(data["waveform_samples_two_way"][0][:]) * jnp.ones(1)
 
@@ -190,6 +146,8 @@ for frame in frames:
         pixel_chunk_size=2**21,
     )
 
+    dynamic_range = abs(float(args.dynamic_range))
+
     im_das = log_compress(im_das, normalize=True)
     im_das = im_das.reshape((pixel_grid.n_x, pixel_grid.n_z))
 
@@ -200,13 +158,14 @@ for frame in frames:
     ax_rf = axes[0]
     from jaxus import plot_rf
 
+    print(pixel_grid.extent_m)
     plot_beamformed(
         ax,
         im_das,
         extent_m=pixel_grid.extent_m,
         title="Beamformed RF data",
         probe_geometry=data["probe_geometry"],
-        vmin=-60,
+        vmin=-dynamic_range,
     )
     plot_rf(
         ax_rf, rf_data=data["raw_data"][0, 0, :, :, 0], aspect="auto", title="RF data"
@@ -223,9 +182,26 @@ for frame in frames:
     aspect2 = aspect1 * (dy1 * dx2) / (dx1 * dy2)
     ax_rf.set_aspect(aspect2)
 
-    if args.save:
-        output_path = output_dir / f"frame_{str(frame).zfill(3)}.png"
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    if args.save_path is not None:
+        path = Path(args.save_path)
+        path_addition = f"frame_{frame:04d}"
+        path = path.with_name(path.stem + f"_{path_addition}" + path.suffix)
+        # plt.savefig(path, dpi=300, bbox_inches="tight")
+        if path.suffix == ".hdf5":
+            save_hdf5_image(
+                path,
+                im_das,
+                extent=pixel_grid.extent_m,
+                log_compressed=True,
+            )
+            log.info(f"Saved to {log.yellow(path)}")
+        elif path.suffix == ".png":
+            import cv2
+
+            im_das = np.clip((im_das.T + dynamic_range) / dynamic_range * 255, 0, 255)
+            cv2.imwrite(path, im_das)
+            log.info(f"Saved to {log.yellow(path)}")
+
     if show:
         plt.show()
     else:

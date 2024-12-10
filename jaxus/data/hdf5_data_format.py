@@ -4,7 +4,7 @@ from typing import List, Tuple, Union
 import h5py
 import numpy as np
 
-from jaxus.utils import fix_extent, log
+from jaxus.utils import fix_extent, interpret_range, log
 
 
 def _first_not_none_item(arr):
@@ -47,7 +47,7 @@ def generate_hdf5_dataset(
     tx_apodizations=None,
     bandwidth_percent=None,
     time_to_next_transmit=None,
-    waveform_indices=None,
+    tx_waveform_indices=None,
     waveform_samples_one_way=None,
     waveform_samples_two_way=None,
     lens_correction=None,
@@ -109,7 +109,7 @@ def generate_hdf5_dataset(
         The bandwidth of the transducer as a percentage of the center frequency.
     time_to_next_transmit : np.ndarray
         The time between subsequent transmit events in s.
-    waveform_indices : np.ndarray
+    tx_waveform_indices : np.ndarray
         The indices of the waveforms used for each transmit event.
     waveform_samples_one_way : list
         The samples of the waveforms used for each transmit wave of shape
@@ -132,8 +132,16 @@ def generate_hdf5_dataset(
         The example dataset.
     """
 
-    assert isinstance(probe_name, str), "The probe name must be a string."
-    assert isinstance(description, str), "The description must be a string."
+    if probe_name is None:
+        probe_name = "Unknown"
+    if description is None:
+        description = "No description was supplied"
+    assert isinstance(
+        probe_name, str
+    ), f"The probe name must be a string. Got {probe_name}."
+    assert isinstance(
+        description, str
+    ), f"The description must be a string. Got {description}."
 
     # ==================================================================================
     # Perform checks
@@ -172,9 +180,9 @@ def generate_hdf5_dataset(
         n_tx,
         n_el,
     ), "The tx_apodizations must be of shape (n_tx, n_el)."
-    assert isinstance(bandwidth_percent, (int, float)) and (
-        0 <= bandwidth_percent <= 200
-    ), "The bandwidth_percent must be between 0 and 200."
+    assert bandwidth_percent is None or (
+        isinstance(bandwidth_percent, (int, float)) and (0 <= bandwidth_percent <= 200)
+    ), f"The bandwidth_percent must be between 0 and 200. Got {bandwidth_percent}."
     if not time_to_next_transmit is None:
         assert isinstance(
             time_to_next_transmit, np.ndarray
@@ -182,10 +190,12 @@ def generate_hdf5_dataset(
             n_frames,
             n_tx,
         ), "The time_to_next_transmit must be of shape (n_frames, n_tx)."
-    if not waveform_indices is None:
-        assert isinstance(waveform_indices, np.ndarray) and waveform_indices.shape == (
+    if not tx_waveform_indices is None:
+        assert isinstance(
+            tx_waveform_indices, np.ndarray
+        ) and tx_waveform_indices.shape == (
             n_tx,
-        ), "The waveform_indices must be of shape (n_tx,)."
+        ), "The tx_waveform_indices must be of shape (n_tx,)."
     if not waveform_samples_one_way is None:
         assert isinstance(
             waveform_samples_one_way, list
@@ -482,7 +492,7 @@ def generate_hdf5_dataset(
         add_dataset(
             group=scan_group,
             name="tx_waveform_indices",
-            data=waveform_indices,
+            data=tx_waveform_indices,
             description=("The indices of the waveforms used for each transmit event."),
             unit="unitless",
         )
@@ -835,7 +845,10 @@ def load_hdf5(
         tx_waveform_indices = dataset["scan"]["tx_waveform_indices"][transmits]
         data["tx_waveform_indices"] = tx_waveform_indices
 
-        data["tgc_gain_curve"] = dataset["scan"]["tgc_gain_curve"][:]
+        if "tg_gain_curve" in dataset["scan"]:
+            data["tgc_gain_curve"] = dataset["scan"]["tgc_gain_curve"][:]
+        else:
+            data["tgc_gain_curve"] = np.ones(raw_data.shape[2])
 
         data["polar_angles"] = dataset["scan"]["polar_angles"][transmits]
         data["azimuth_angles"] = dataset["scan"]["azimuth_angles"][transmits]
@@ -901,3 +914,36 @@ def load_hdf5_image(path):
         log_compressed = dataset["log_compressed"][()]
 
     return image, extent, log_compressed
+
+
+def hdf5_get_n_frames(path):
+    with h5py.File(path) as f:
+        return int(f["data"]["raw_data"].shape[0])
+
+
+def hdf5_get_n_tx(path):
+    with h5py.File(path) as f:
+        return int(f["data"]["raw_data"].shape[1])
+
+
+def reduce_hdf5_file(path, path_out, frames="all", transmits="all"):
+    """Selects a subset of the frames and transmits from an hdf5 file."""
+    path, path_out = Path(path), Path(path_out)
+
+    if path_out.exists():
+        path_out.unlink()
+
+    if isinstance(frames, str) or frames is None:
+        n_frames = hdf5_get_n_frames(path)
+        frames = interpret_range(frames, n_frames)
+
+    if isinstance(transmits, str) or transmits is None:
+        n_tx = hdf5_get_n_tx(path)
+        transmits = interpret_range(transmits, n_tx)
+
+    data = load_hdf5(path, frames, transmits)
+
+    print(data.keys())
+
+    generate_hdf5_dataset(path_out, **data)
+    log.info(f"Reduced dataset saved to {log.yellow(path_out)}")

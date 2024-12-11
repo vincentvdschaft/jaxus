@@ -7,6 +7,12 @@ def fix_extent(extent):
     return np.array([min(e0, e1), max(e0, e1), min(e2, e3), max(e2, e3)])
 
 
+def extent_zflipped(extent):
+    extent = fix_extent(extent)
+    z0, z1 = extent[2], extent[3]
+    return np.array([extent[0], extent[1], z1, z0])
+
+
 def interpret_range(range_str, dim_size):
     """Interprets a range string"""
     if range_str is None or "all" in range_str or range_str == "-1":

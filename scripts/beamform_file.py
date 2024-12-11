@@ -8,7 +8,6 @@ import h5py
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
-
 from jaxus import (
     beamform_das,
     find_t_peak,
@@ -29,9 +28,9 @@ from jaxus.utils import interpret_range, log
 # ======================================================================================
 parser = argparse.ArgumentParser()
 parser.add_argument("file", type=Path, default=None, nargs="?")
-parser.add_argument("--frames", type=str, nargs="+", default="all")
+parser.add_argument("--frames", type=str, nargs="+", default="unspecified")
 # Add variable number of transmits
-parser.add_argument("--transmits", type=str, nargs="+", default="all")
+parser.add_argument("--transmits", type=str, nargs="+", default="unspecified")
 parser.add_argument("--show", action=argparse.BooleanOptionalAction)
 parser.add_argument("--fnumber", type=float, default=1.0)
 parser.add_argument("--dynamic-range", type=float, default=60)
@@ -39,11 +38,20 @@ parser.add_argument("--extent", type=float, nargs=4, default=None)
 parser.add_argument("--save-path", type=Path, default=None)
 args = parser.parse_args()
 # Create a Tkinter root window
-root = tk.Tk()
-root.withdraw()
+
+root = None
+
+
+def init_tk(root):
+    if root is not None:
+        return root
+    root = tk.Tk()
+    root.withdraw()
+    return root
+
 
 if args.file is None:
-
+    root = init_tk(root)
     # Prompt the user to select a directory and turn into Path object
     selected_file = filedialog.askopenfile()
     if selected_file is None:
@@ -60,9 +68,27 @@ n_tx = hdf5_get_n_tx(selected_file)
 
 
 input_frame = args.frames
+if input_frame == "unspecified":
+    root = init_tk(root)
+    input_frame = simpledialog.askstring(
+        "Frames",
+        f"Which frames do you want to beamform? [0-{n_frames-1}]\n (e.g. 0 1 2-5, or all)",
+    )
+    if input_frame == "":
+        input_frame = "all"
+
+input_transmit = args.transmits
+if input_transmit == "unspecified":
+    root = init_tk(root)
+    input_transmit = simpledialog.askstring(
+        "Transmits",
+        f"What transmits do you want to beamform? [0-{n_tx-1}]\n (e.g. 0 1 2-5, or all)",
+    )
+    if input_transmit == "":
+        input_transmit = "all"
+
 if isinstance(input_frame, list):
     input_frame = " ".join(input_frame)
-input_transmit = args.transmits
 if isinstance(input_transmit, list):
     input_transmit = " ".join(input_transmit)
 
@@ -96,6 +122,8 @@ log.info(
     f"{'--fnumber '+str(args.fnumber) if args.fnumber != 1.0 else ''}"
     f"{'--save-path'+str(args.save_path) if args.save_path else ''}"
 )
+
+normalization_factor = None
 
 for frame in frames:
 
@@ -136,7 +164,7 @@ for frame in frames:
         carrier_frequency=data["center_frequency"],
         sound_speed=data["sound_speed"],
         sound_speed_lens=1000,
-        lens_thickness=1.5e-3,
+        lens_thickness=0.7e-3,
         tx_apodizations=data["tx_apodizations"],
         rx_apodization=jnp.ones(data["tx_apodizations"].shape[1]),
         f_number=args.fnumber,
@@ -148,8 +176,13 @@ for frame in frames:
 
     dynamic_range = abs(float(args.dynamic_range))
 
-    im_das = log_compress(im_das, normalize=True)
+    im_das = log_compress(im_das, normalize=False)
     im_das = im_das.reshape((pixel_grid.n_x, pixel_grid.n_z))
+
+    if normalization_factor is None:
+        normalization_factor = np.max(im_das)
+
+    im_das = im_das - normalization_factor
 
     use_dark_style()
 
@@ -184,8 +217,12 @@ for frame in frames:
 
     if args.save_path is not None:
         path = Path(args.save_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
         path_addition = f"frame_{frame:04d}"
         path = path.with_name(path.stem + f"_{path_addition}" + path.suffix)
+
+        if not path.suffix in [".hdf5", ".png"]:
+            path = path.with_suffix(".png")
         # plt.savefig(path, dpi=300, bbox_inches="tight")
         if path.suffix == ".hdf5":
             save_hdf5_image(
@@ -196,11 +233,12 @@ for frame in frames:
             )
             log.info(f"Saved to {log.yellow(path)}")
         elif path.suffix == ".png":
-            import cv2
+            # import cv2
 
-            im_das = np.clip((im_das.T + dynamic_range) / dynamic_range * 255, 0, 255)
-            cv2.imwrite(path, im_das)
-            log.info(f"Saved to {log.yellow(path)}")
+            # im_das = np.clip((im_das.T + dynamic_range) / dynamic_range * 255, 0, 255)
+            # cv2.imwrite(path, im_das)
+            # log.info(f"Saved to {log.yellow(path)}")
+            fig.savefig(path, dpi=300, bbox_inches="tight")
 
     if show:
         plt.show()

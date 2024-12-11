@@ -3,7 +3,6 @@ from typing import List, Tuple, Union
 
 import h5py
 import numpy as np
-
 from jaxus.utils import fix_extent, interpret_range, log
 
 
@@ -882,6 +881,14 @@ def save_hdf5_image(path, image, extent, log_compressed=True):
         path.unlink()
     if not path.parent.exists():
         path.parent.mkdir(parents=True)
+
+    if image.ndim > 2:
+        image = np.squeeze(image)
+        if image.ndim > 2:
+            raise ValueError(
+                f"Image must be 2D, but has shape {image.shape}. "
+                f"Try using np.squeeze to remove extra dimensions."
+            )
 
     with h5py.File(path, "w") as dataset:
         dataset.create_dataset("image", data=image)

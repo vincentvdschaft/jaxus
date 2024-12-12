@@ -8,6 +8,7 @@ import h5py
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
+
 from jaxus import (
     beamform_das,
     find_t_peak,
@@ -36,6 +37,8 @@ parser.add_argument("--fnumber", type=float, default=1.0)
 parser.add_argument("--dynamic-range", type=float, default=60)
 parser.add_argument("--extent", type=float, nargs=4, default=None)
 parser.add_argument("--save-path", type=Path, default=None)
+parser.add_argument("--lens-thickness", type=float, default=1.0)
+parser.add_argument("--lens-sound-speed", type=float, default=1000.0)
 args = parser.parse_args()
 # Create a Tkinter root window
 
@@ -163,8 +166,8 @@ for frame in frames:
         sampling_frequency=data["sampling_frequency"],
         carrier_frequency=data["center_frequency"],
         sound_speed=data["sound_speed"],
-        sound_speed_lens=1000,
-        lens_thickness=0.7e-3,
+        sound_speed_lens=args.lens_sound_speed,
+        lens_thickness=args.lens_thickness * 1e-3,
         tx_apodizations=data["tx_apodizations"],
         rx_apodization=jnp.ones(data["tx_apodizations"].shape[1]),
         f_number=args.fnumber,

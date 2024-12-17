@@ -223,7 +223,7 @@ def beamform_das(
                     iq_beamform=iq_beamform,
                 )
                 # Apply pfield weighting
-                beamformed_transmit = beamformed_transmit * pfields[n]
+                beamformed_transmit = beamformed_transmit  # * pfields[n]
                 beamformed_chunks.append(beamformed_transmit)
 
             # Concatenate the beamformed chunks
@@ -231,7 +231,7 @@ def beamform_das(
 
             # Reshape and add to the beamformed images
             beamformed_images = beamformed_images.at[frame].add(beamformed_transmit)
-        beamformed_images *= normalization * mask
+        # beamformed_images *= normalization * mask
 
     return beamformed_images
 

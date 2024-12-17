@@ -146,6 +146,7 @@ def generate_hdf5_dataset(
     # Perform checks
     # ==================================================================================
     n_frames, n_tx, n_ax, n_el, n_ch = raw_data.shape
+    probe_geometry = extend_probe_geometry_to_3d(probe_geometry)
     assert (probe_geometry.ndim == 2) and probe_geometry.shape == (
         n_el,
         3,
@@ -954,3 +955,14 @@ def reduce_hdf5_file(path, path_out, frames="all", transmits="all"):
 
     generate_hdf5_dataset(path_out, **data)
     log.info(f"Reduced dataset saved to {log.yellow(path_out)}")
+
+
+def extend_probe_geometry_to_3d(probe_geometry):
+    """Extends a 2D probe geometry to 3D by adding a y-coordinate of 0."""
+    if probe_geometry.shape[1] == 3:
+        return probe_geometry
+
+    return np.stack(
+        [probe_geometry[:, 0], np.zeros(probe_geometry.shape[0]), probe_geometry[:, 1]],
+        axis=1,
+    )

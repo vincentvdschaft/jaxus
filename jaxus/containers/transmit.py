@@ -1,6 +1,7 @@
 import numpy as np
 
 import jaxus.utils.log as log
+from jaxus.beamforming.delays import compute_t0_delays_from_vsource
 from jaxus.containers.waveform import Waveform
 
 
@@ -20,7 +21,12 @@ class Transmit:
     """
 
     def __init__(
-        self, t0_delays: np.ndarray, tx_apodization: np.ndarray, waveform: Waveform
+        self,
+        t0_delays: np.ndarray,
+        tx_apodization: np.ndarray,
+        waveform: Waveform,
+        focus_distance=0.0,
+        focus_angle=0.0,
     ):
         """Initializes the Transmit object.
 
@@ -40,6 +46,8 @@ class Transmit:
         self._t0_delays = t0_delays.astype(np.float32)
         self._tx_apodization = tx_apodization.astype(np.float32)
         self._waveform = waveform
+        self._focus_distance = focus_distance
+        self._focus_angle = focus_angle
 
     @property
     def t0_delays(self):
@@ -81,6 +89,16 @@ class Transmit:
 
     def __repr__(self) -> str:
         return f"Transmit({self._waveform})"
+
+    @property
+    def focus_distance(self):
+        """The distance of the focus."""
+        return self._focus_distance
+
+    @property
+    def focus_angle(self):
+        """The angle of the focus."""
+        return self._focus_angle
 
     @staticmethod
     def _validate_input(t0_delays, tx_apodization, waveform):

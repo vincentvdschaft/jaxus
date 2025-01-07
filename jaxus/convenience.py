@@ -145,10 +145,10 @@ def simulate_to_hdf5(
 
     depth_m = receive.n_ax / receive.sampling_frequency * medium.sound_speed / 2
 
-    n_x = (probe.aperture / (wavelength * dx_wl),)
-    n_z = (depth_m / (wavelength * dz_wl),)
-    dx = (dx_wl * wavelength,)
-    dz = (dz_wl * wavelength,)
+    n_x = int(probe.aperture / (wavelength * dx_wl))
+    n_z = int(depth_m / (wavelength * dz_wl))
+    dx = dx_wl * wavelength
+    dz = dz_wl * wavelength
     pixel_grid = get_pixel_grid(
         shape=(n_x, n_z),
         spacing=(dx, dz),
@@ -169,6 +169,8 @@ def simulate_to_hdf5(
     initial_times = np.stack([receive.initial_time for _ in transmit], axis=0)
     t_peak = np.stack([tx.waveform.t_peak for tx in transmit], axis=0)
     tx_apodization = np.stack([tx.tx_apodization for tx in transmit], axis=0)
+    focus_angles = np.array([t.focus_angle for t in transmit])
+    focus_distances = np.array([t.focus_distance for t in transmit])
 
     beamformed = beamform_das(
         rf_data,
@@ -185,11 +187,13 @@ def simulate_to_hdf5(
         rx_apodization=np.ones(probe.n_el),
         tx_apodizations=tx_apodization,
         f_number=1.5,
+        angles=focus_angles,
+        focus_distances=focus_distances,
         iq_beamform=True,
     )
 
     beamformed = np.reshape(
-        beamformed, (beamformed.shape[0], pixel_grid.n_rows, pixel_grid.n_cols)
+        beamformed, (beamformed.shape[0], pixel_grid.n_x, pixel_grid.n_z)
     )
 
     beamformed = log_compress(beamformed, normalize=True)
@@ -224,8 +228,8 @@ def simulate_to_hdf5(
         initial_times=initial_times,
         tx_apodizations=tx_apodization,
         probe_name="custom",
-        focus_distances=np.zeros(len(transmit)),
-        polar_angles=np.zeros(len(transmit)),
+        focus_distances=focus_distances,
+        polar_angles=focus_angles,
         bandwidth_percent=200,
         element_width=probe.element_width,
         lens_correction=0.0,
@@ -235,11 +239,11 @@ def simulate_to_hdf5(
         tgc_gain_curve=np.ones(receive.n_ax),
         waveform_samples_one_way=waveforms,
         waveform_samples_two_way=waveforms,
-        waveform_indices=tx_waveform_indices,
+        tx_waveform_indices=tx_waveform_indices,
         bandwidth=probe.bandwidth,
     )
 
-    return beamformed
+    return beamformed, pixel_grid.extent_m
 
 
 def beamform_hdf5(

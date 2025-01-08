@@ -1,6 +1,6 @@
 import numpy as np
 
-import jaxus.utils.log as log
+from jaxus.utils import log
 
 
 class Receive:

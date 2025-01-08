@@ -6,12 +6,12 @@ from typing import Union
 import h5py
 import numpy as np
 
-import jaxus.utils.log as log
 from jaxus import get_pixel_grid
 from jaxus.beamforming import PixelGrid, beamform_das, get_pixel_grid, log_compress
 from jaxus.containers import Medium, Probe, Pulse, Receive, Transmit
 from jaxus.data import generate_hdf5_dataset
 from jaxus.rf_simulator import simulate_rf_transmit
+from jaxus.utils import log
 
 
 def simulate_rf(

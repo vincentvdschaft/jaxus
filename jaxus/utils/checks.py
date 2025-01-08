@@ -11,7 +11,7 @@ from pathlib import Path
 import jax.numpy as jnp
 import numpy as np
 
-import jaxus.utils.log as log
+from jaxus.utils import log
 
 
 def check_n_ax(n_ax):

@@ -24,7 +24,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-import jaxus.utils.log as log
+from jaxus.utils import log
 
 from .hdf5_data_format import generate_hdf5_dataset
 

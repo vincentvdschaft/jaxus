@@ -12,7 +12,7 @@ from PIL import Image
 # pylint: disable=C0413
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-import jaxus.utils.log as log
+from jaxus.utils import log
 
 # Parse command line arguments
 # --------------------------------------------------------------------------------------

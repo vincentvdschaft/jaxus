@@ -45,7 +45,7 @@ def compute_pfield(
     freqs = jnp.linspace(band[0], band[1], n_freqs)
     delta_freq = freqs[1] - freqs[0]
 
-    arg = 2 * jnp.pi * (delay - t0_delays[:, None])
+    arg = 2 * jnp.pi * (delay + t0_delays[:, None])
     phase = jnp.mod(arg * freqs[0], 2 * jnp.pi)
     delta_phase = jnp.exp(1j * arg * delta_freq)
     phase = jnp.exp(1j * phase - 100 * 0.5 * distances)

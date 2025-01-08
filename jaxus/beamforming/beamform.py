@@ -52,6 +52,8 @@ def beamform_das(
     rx_apodization: jnp.ndarray,
     f_number: float,
     iq_beamform: bool,
+    focus_distances: jnp.ndarray = None,
+    angles: jnp.ndarray = None,
     transmits: jnp.ndarray = None,
     pixel_chunk_size: int = 1048576,
     progress_bar: bool = False,
@@ -120,6 +122,12 @@ def beamform_das(
     check_sound_speed(sound_speed)
     check_pos_array(probe_geometry, name="probe_geometry")
     check_t0_delays(t0_delays, transmit_dim=True)
+
+    n_tx = rf_data.shape[1]
+    if focus_distances is None:
+        focus_distances = jnp.zeros(n_tx)
+    if angles is None:
+        angles = jnp.zeros(n_tx)
     n_tx = rf_data.shape[1]
     n_pixels = pixel_positions.shape[0]
 
@@ -219,11 +227,13 @@ def beamform_das(
                     t_peak[tx],
                     tx_apodizations[tx],
                     rx_apodization,
+                    focus_distance=focus_distances[tx],
+                    angle=angles[tx],
                     f_number=f_number,
                     iq_beamform=iq_beamform,
                 )
                 # Apply pfield weighting
-                beamformed_transmit = beamformed_transmit  # * pfields[n]
+                beamformed_transmit = beamformed_transmit * pfields[n]
                 beamformed_chunks.append(beamformed_transmit)
 
             # Concatenate the beamformed chunks
@@ -510,6 +520,8 @@ def tof_correct_pixel(
     carrier_frequency,
     sampling_frequency,
     tx_apodization,
+    focus_distance,
+    angle,
     iq_beamform=False,
 ):
     """Performs time-of-flight correction for a single pixel. The RF data is indexed
@@ -568,8 +580,19 @@ def tof_correct_pixel(
 
     offset = jnp.where(tx_apodization > 0.0, 0.0, 10.0)
 
-    # Compute the transmit and receive times of flight (TOF) of shape (n_el,)
-    tof_tx = jnp.min(t0_delays + travel_time + offset)
+    vsource = jnp.array([jnp.sin(angle), jnp.cos(angle)]) * focus_distance
+
+    tof_tx_min = t0_delays + travel_time + offset
+    tof_tx_max = t0_delays + travel_time - offset
+
+    pixels_relative_to_vsource = pixel_pos - vsource
+    jnp.sign(focus_distance)
+    tof_tx = jnp.where(
+        jnp.sign(focus_distance) * pixels_relative_to_vsource[1] > 0.0,
+        jnp.max(tof_tx_max),
+        jnp.min(tof_tx_min),
+    )
+
     tof_rx = travel_time
 
     # Compute the float sample index of the TOF of shape (n_el,)
@@ -613,7 +636,7 @@ def tof_correct_pixel(
     jit,
     static_argnums=(
         11,
-        14,
+        16,
     ),
 )
 def _beamform_pixel(
@@ -631,6 +654,8 @@ def _beamform_pixel(
     f_number,
     tx_apodization,
     rx_apodization,
+    focus_distance,
+    angle,
     iq_beamform=False,
 ):
     """Beamforms a single pixel of a single frame and single transmit. Further
@@ -691,6 +716,8 @@ def _beamform_pixel(
         carrier_frequency=carrier_frequency,
         sampling_frequency=sampling_frequency,
         tx_apodization=tx_apodization,
+        focus_distance=focus_distance,
+        angle=angle,
         iq_beamform=iq_beamform,
     )
 
@@ -703,8 +730,8 @@ def _beamform_pixel(
 @partial(
     jit,
     static_argnums=(
-        13,
-        14,
+        15,
+        16,
     ),
 )
 def das_beamform_transmit(
@@ -721,6 +748,8 @@ def das_beamform_transmit(
     t_peak,
     tx_apodization,
     rx_apodization,
+    focus_distance,
+    angle,
     f_number,
     iq_beamform,
 ):
@@ -791,6 +820,8 @@ def das_beamform_transmit(
             None,
             None,
             None,
+            None,
+            None,
         ),
     )(
         rf_data,
@@ -807,6 +838,8 @@ def das_beamform_transmit(
         f_number,
         tx_apodization,
         rx_apodization,
+        focus_distance,
+        angle,
         iq_beamform,
     )
 

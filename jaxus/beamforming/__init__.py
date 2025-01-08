@@ -7,6 +7,7 @@ from .beamform import (
     rf2iq,
 )
 from .delay_multiply_and_sum import beamform_dmas
+from .delays import *
+from .lens_correction import *
 from .minimum_variance import beamform_mv
 from .pixelgrid import *
-from .lens_correction import *

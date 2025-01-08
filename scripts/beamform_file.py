@@ -172,6 +172,8 @@ for frame in frames:
         rx_apodization=jnp.ones(data["tx_apodizations"].shape[1]),
         f_number=args.fnumber,
         t_peak=t_peak,
+        angles=data["polar_angles"],
+        focus_distances=data["focus_distances"],
         iq_beamform=True,
         progress_bar=True,
         pixel_chunk_size=2**21,

@@ -582,15 +582,14 @@ def tof_correct_pixel(
 
     vsource = jnp.array([jnp.sin(angle), jnp.cos(angle)]) * focus_distance
 
-    tof_tx_min = t0_delays + travel_time + offset
-    tof_tx_max = t0_delays + travel_time - offset
+    tof_tx = t0_delays + travel_time
 
     pixels_relative_to_vsource = pixel_pos - vsource
     jnp.sign(focus_distance)
     tof_tx = jnp.where(
         jnp.sign(focus_distance) * pixels_relative_to_vsource[1] > 0.0,
-        jnp.max(tof_tx_max),
-        jnp.min(tof_tx_min),
+        jnp.max(tof_tx - offset),
+        jnp.min(tof_tx + offset),
     )
 
     tof_rx = travel_time

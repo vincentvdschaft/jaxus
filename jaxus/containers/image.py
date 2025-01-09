@@ -75,6 +75,7 @@ class Image:
             image=self.data,
             extent=self.extent,
             log_compressed=self.log_compressed,
+            metadata=self.metadata,
         )
 
     @classmethod

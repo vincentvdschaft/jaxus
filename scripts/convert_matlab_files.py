@@ -10,8 +10,8 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, messagebox
 
-import jaxus.utils.log as log
 from jaxus.data import hdf5_from_matlab_raw
+from jaxus.utils import log
 
 # Create a Tkinter root window
 root = tk.Tk()

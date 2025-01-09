@@ -30,10 +30,10 @@ image = Image(data=data, extent=extent, log_compressed=False, metadata={})
 
 image_measure_gcnr_disk_annulus(
     image=image,
-    disk_center=(0, 18),
-    disk_radius=disk_radius,
-    annulus_radius0=disk_radius + 1,
-    annulus_radius1=disk_radius + 3,
+    disk_center=disk_pos,
+    disk_r=disk_radius,
+    annulus_offset=2,
+    annulus_width=4,
 )
 image.save("test_image.hdf5")
 
@@ -45,11 +45,12 @@ fig, ax = plt.subplots()
 plot_beamformed(ax, image_loaded.data, np.array(image_loaded.extent), vmin=0, vmax=1)
 gcnr_plot_disk_annulus(
     ax,
-    disk_center=(0, 18),
+    disk_center=disk_pos,
     disk_r=disk_radius - 1,
-    annul_r0=disk_radius + 1,
-    annul_r1=disk_radius + 3,
+    annulus_offset=2,
+    annulus_width=4,
 )
 
 plt.tight_layout()
 plt.savefig("image.png", bbox_inches="tight")
+plt.show()

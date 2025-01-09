@@ -990,6 +990,7 @@ def save_dict_to_hdf5(hdf5_file, data_dict, parent_group="/"):
     parent_group : h5py.Group
         Current group path in HDF5 file (default is root "/").
     """
+    data_dict = lists_to_numbered_dict(data_dict)
     for key, value in data_dict.items():
         group_path = f"{parent_group}/{key}"
         if isinstance(value, dict):
@@ -999,6 +1000,16 @@ def save_dict_to_hdf5(hdf5_file, data_dict, parent_group="/"):
         else:
             # Convert leaf items into datasets
             hdf5_file[group_path] = value
+
+
+def lists_to_numbered_dict(data_dict):
+    """Transforms all lists in a dictionary to dictionaries with numbered keys."""
+    for key, value in data_dict.items():
+        if isinstance(value, list):
+            data_dict[key] = {str(i): v for i, v in enumerate(value)}
+        elif isinstance(value, dict):
+            data_dict[key] = lists_to_numbered_dict(value)
+    return data_dict
 
 
 def load_hdf5_to_dict(hdf5_file, parent_group="/"):

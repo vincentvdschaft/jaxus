@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 256):
+def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 100):
     """Computes the Generalized Contrast-to-Noise Ratio (GCNR) between two sets of pixel
     intensities. The two input arrays are flattened and the GCNR is computed based on
     the histogram of the pixel intensities with the specified number of bins.
@@ -44,15 +44,14 @@ def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 256):
     return 1 - np.sum(np.minimum(hist_region_1, hist_region_2))
 
 
-def gcnr_compute_disk(
+def gcnr_disk_annulus(
     image: np.ndarray,
-    xlims_m: tuple,
-    zlims_m: tuple,
-    disk_pos_m: tuple,
-    inner_radius_m: float,
-    outer_radius_start_m: float,
-    outer_radius_end_m: float,
-    num_bins: int = 256,
+    extent: np.ndarray,
+    disk_center: tuple,
+    disk_r: float,
+    annul_r0: float,
+    annul_r1: float,
+    num_bins: int = 128,
 ):
     """Computes the GCNR between a circle and a surrounding annulus.
 
@@ -60,18 +59,16 @@ def gcnr_compute_disk(
     ----------
     image : np.ndarray
         The image to compute the GCNR on.
-    xlims_m : tuple
-        The limits of the image in the x-direction in meters.
-    zlims_m : tuple
-        The limits of the image in the z-direction in meters.
-    disk_pos_m : tuple
-        The position of the disk in meters.
-    inner_radius_m : float
-        The inner radius of the disk in meters.
-    outer_radius_start_m : float
-        The start radius of the annulus in meters.
-    outer_radius_end_m : float
-        The end radius of the annulus in meters.
+    extent : np.ndarray
+        The extent of the image.
+    disk_center : tuple
+        The position of the disk.
+    disk_r : float
+        The radius of the disk.
+    annul_r0 : float
+        The start radius of the annulus.
+    annul_r1 : float
+        The end radius of the annulus.
     num_bins : int
         The number of bins to use for the histogram.
 
@@ -82,18 +79,18 @@ def gcnr_compute_disk(
     """
 
     # Create meshgrid of locations for the pixels
-    x_m = np.linspace(xlims_m[0], xlims_m[1], image.shape[1])
-    z_m = np.linspace(zlims_m[0], zlims_m[1], image.shape[0])
-    X, Z = np.meshgrid(x_m, z_m)
+    x = np.linspace(extent[0], extent[1], image.shape[0])
+    z = np.linspace(extent[2], extent[3], image.shape[1])
+    x_grid, z_grid = np.meshgrid(x, z, indexing="ij")
 
     # Compute the distance from the center of the circle
-    r = np.sqrt((X - disk_pos_m[0]) ** 2 + (Z - disk_pos_m[1]) ** 2)
+    r = np.sqrt((x_grid - disk_center[0]) ** 2 + (z_grid - disk_center[1]) ** 2)
 
     # Create a mask for the disk
-    mask_disk = r < inner_radius_m
+    mask_disk = r < disk_r
 
     # Create a mask for the annulus
-    mask_annulus = (r > outer_radius_start_m) & (r < outer_radius_end_m)
+    mask_annulus = (r > annul_r0) & (r < annul_r1)
 
     # Extract the pixels from the two regions
     pixels_disk = image[mask_disk]
@@ -107,10 +104,10 @@ def gcnr_compute_disk(
 
 def gcnr_plot_disk_annulus(
     ax: plt.Axes,
-    pos_m: tuple,
-    inner_radius_m: float,
-    outer_radius_start_m: float,
-    outer_radius_end_m: float,
+    disk_center: tuple,
+    disk_r: float,
+    annul_r0: float,
+    annul_r1: float,
     opacity: float = 0.5,
     linewidth: float = 0.5,
 ):
@@ -120,13 +117,13 @@ def gcnr_plot_disk_annulus(
     ----------
         ax : plt.Axes
             The axis to plot the disk and annulus on.
-        disk_pos_m : tuple
+        disk_center : tuple
             The position of the disk in meters.
-        inner_radius_m : float
+        disk_r : float
             The inner radius of the disk in meters.
-        outer_radius_start_m : float
+        annul_r0 : float
             The start radius of the annulus in meters.
-        outer_radius_end_m : float
+        annul_r1 : float
             The end radius of the annulus in meters.
         opacity : float
             The opacity of the disk and annulus. Should be between 0 and 1. Defaults to
@@ -139,8 +136,8 @@ def gcnr_plot_disk_annulus(
 
     # Plot the inner circle
     circle = plt.Circle(
-        pos_m,
-        inner_radius_m,
+        disk_center,
+        disk_r,
         color=color_cycle[0],
         fill=False,
         linestyle="--",
@@ -151,8 +148,8 @@ def gcnr_plot_disk_annulus(
 
     # Draw the annulus
     circle = plt.Circle(
-        pos_m,
-        outer_radius_start_m,
+        disk_center,
+        annul_r0,
         color=color_cycle[1],
         fill=False,
         linestyle="--",
@@ -161,8 +158,8 @@ def gcnr_plot_disk_annulus(
     )
     ax.add_artist(circle)
     circle = plt.Circle(
-        pos_m,
-        outer_radius_end_m,
+        disk_center,
+        annul_r1,
         color=color_cycle[1],
         fill=False,
         linestyle="--",

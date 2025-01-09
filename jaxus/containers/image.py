@@ -114,6 +114,12 @@ class Image:
         """Return metadata of image."""
         return self._metadata
 
+    @metadata.setter
+    def metadata(self, value):
+        """Set metadata of image."""
+        assert isinstance(value, dict), "Metadata must be a dictionary."
+        self._metadata = value
+
     def add_metadata(self, key, value):
         """Add metadata to image."""
         self.metadata[key] = value
@@ -121,3 +127,17 @@ class Image:
     def update_metadata(self, metadata):
         """Update metadata of image."""
         self.metadata.update(metadata)
+
+    def append_metadata(self, key, value):
+        """Add metadata assuming the key is a list."""
+
+        if key not in self.metadata:
+            self.metadata[key] = []
+        elif not isinstance(self.metadata[key], list):
+            raise ValueError(f"Metadata key {key} is not a list.")
+
+        self.metadata[key].append(value)
+
+    def clear_metadata(self):
+        """Clear metadata of image."""
+        self.metadata = {}

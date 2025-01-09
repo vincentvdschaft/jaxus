@@ -3,7 +3,8 @@ from typing import List, Tuple, Union
 
 import h5py
 import numpy as np
-from jaxus.utils import fix_extent, interpret_range, log
+from jaxus.utils.utils import fix_extent, interpret_range
+from jaxus.utils import log
 
 
 def _first_not_none_item(arr):

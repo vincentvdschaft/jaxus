@@ -18,6 +18,7 @@ from scipy.signal import butter, filtfilt, hilbert
 from scipy.signal.windows import hamming
 from tqdm import tqdm
 
+from jaxus.utils import log_compress
 from jaxus.utils.checks import (
     check_frequency,
     check_initial_times,
@@ -420,34 +421,6 @@ def detect_envelope_beamformed(bf_data, dz_wl):
         padding=512,
     )
     return np.abs(iq_data)[:, 0, :, :]
-
-
-def log_compress(beamformed: jnp.ndarray, normalize: bool = False):
-    """Log-compresses the beamformed image.
-
-    Parameters
-    ----------
-    beamformed : jnp.ndarray
-        The beamformed image to log-compress of any shape.
-    normalize : bool, default=False
-        Whether to normalize the beamformed image.
-
-    Returns
-    -------
-    beamformed : jnp.ndarray
-        The log-compressed image of the same shape as the input in dB.
-    """
-    if not isinstance(beamformed, (jnp.ndarray, np.ndarray)):
-        raise TypeError(f"beamformed must be a ndarray. Got {type(beamformed)}.")
-    if not isinstance(normalize, bool):
-        raise TypeError(f"normalize must be a bool. Got {type(normalize)}.")
-
-    beamformed = jnp.abs(beamformed)
-    if normalize:
-        beamformed = beamformed / jnp.clip(jnp.max(beamformed), 1e-12)
-    beamformed = 20 * jnp.log10(beamformed + 1e-12)
-
-    return beamformed
 
 
 def hilbert_get_analytical_signal(x: jnp.ndarray, axis=-1) -> jnp.ndarray:

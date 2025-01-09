@@ -2,8 +2,8 @@
 
 import numpy as np
 
-from jaxus import load_hdf5_image, log_compress, save_hdf5_image, sort_extent
-from jaxus.utils import log
+from jaxus.data import load_hdf5_image, save_hdf5_image
+from jaxus.utils import log, log_compress, fix_extent
 
 
 class Image:
@@ -53,7 +53,17 @@ class Image:
     def extent(self, value):
         """Set extent of image."""
         extent = np.array([value[0], value[1], value[2], value[3]])
-        self._extent = sort_extent(extent)
+        self._extent = fix_extent(extent)
+
+    @property
+    def log_compressed(self):
+        """Return whether image data is log-compressed."""
+        return self._log_compressed
+
+    @log_compressed.setter
+    def log_compressed(self, value):
+        """Set whether image data is log-compressed."""
+        self._log_compressed = bool(value)
 
     def save(self, path):
         """Save image to HDF5 file."""

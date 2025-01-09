@@ -9,7 +9,7 @@ from jaxus.utils import log, log_compress, fix_extent
 class Image:
     """Container for image data. Contains a 2D numpy array and metadata."""
 
-    def __init__(self, data, extent, log_compressed):
+    def __init__(self, data, extent, log_compressed, metadata=None):
         """Initialilze Image object.
 
         Parameters
@@ -24,6 +24,9 @@ class Image:
         self.data = data
         self.extent = extent
         self.log_compressed = log_compressed
+        self._metadata = {}
+        if metadata is not None:
+            self.update_metadata(metadata)
 
     @property
     def shape(self):
@@ -77,8 +80,8 @@ class Image:
     @classmethod
     def load(cls, path):
         """Load image from HDF5 file."""
-        data, extent, log_compressed = load_hdf5_image(path)
-        return cls(data, extent, log_compressed)
+        data, extent, log_compressed, metadata = load_hdf5_image(path)
+        return cls(data, extent, log_compressed, metadata)
 
     def log_compress(self):
         """Log-compress image data."""
@@ -104,3 +107,16 @@ class Image:
         return (
             f"Image(({shape[0], shape[1]}), extent={self.extent}{log_compressed_str})"
         )
+
+    @property
+    def metadata(self):
+        """Return metadata of image."""
+        return self._metadata
+
+    def add_metadata(self, key, value):
+        """Add metadata to image."""
+        self.metadata[key] = value
+
+    def update_metadata(self, metadata):
+        """Update metadata of image."""
+        self.metadata.update(metadata)

@@ -858,7 +858,7 @@ def load_hdf5(
     return data
 
 
-def save_hdf5_image(path, image, extent, log_compressed=True):
+def save_hdf5_image(path, image, extent, log_compressed=True, metadata=None):
     """
     Saves an image to an hdf5 file.
 
@@ -872,6 +872,8 @@ def save_hdf5_image(path, image, extent, log_compressed=True):
         The extent of the image (x0, x1, z0, z1).
     log_compressed : bool
         Whether the image is log compressed.
+    metadata : dict
+        Additional metadata to save.
     """
 
     extent = fix_extent(extent)
@@ -894,8 +896,10 @@ def save_hdf5_image(path, image, extent, log_compressed=True):
 
     with h5py.File(path, "w") as dataset:
         dataset.create_dataset("image", data=image)
-        dataset.create_dataset("extent", data=extent)
-        dataset.create_dataset("log_compressed", data=log_compressed)
+        dataset["image"].attrs["extent"] = extent
+        dataset["image"].attrs["log_compressed"] = log_compressed
+        if metadata is not None:
+            save_dict_to_hdf5(dataset, metadata)
 
 
 def load_hdf5_image(path):
@@ -919,18 +923,22 @@ def load_hdf5_image(path):
 
     with h5py.File(path, "r") as dataset:
         image = dataset["image"][()]
-        extent = np.array(dataset["extent"][()])
-        log_compressed = dataset["log_compressed"][()]
+        extent = dataset["image"].attrs["extent"]
+        log_compressed = dataset["image"].attrs["log_compressed"]
+        metadata = load_hdf5_to_dict(dataset)
+        metadata.pop("image", None)
 
-    return image, extent, log_compressed
+    return image, extent, log_compressed, metadata
 
 
 def hdf5_get_n_frames(path):
+    """Reads the number of frames in an hdf5 file."""
     with h5py.File(path) as f:
         return int(f["data"]["raw_data"].shape[0])
 
 
 def hdf5_get_n_tx(path):
+    """Reads the number of transmits in an hdf5 file."""
     with h5py.File(path) as f:
         return int(f["data"]["raw_data"].shape[1])
 
@@ -967,3 +975,48 @@ def extend_probe_geometry_to_3d(probe_geometry):
         [probe_geometry[:, 0], np.zeros(probe_geometry.shape[0]), probe_geometry[:, 1]],
         axis=1,
     )
+
+
+def save_dict_to_hdf5(hdf5_file, data_dict, parent_group="/"):
+    """
+    Recursively saves a nested dictionary to an HDF5 file.
+
+    Parameters
+    ----------
+    hdf5_file : h5py.File
+        Opened h5py.File object.
+    data_dict : dict
+        (Nested) dictionary to save.
+    parent_group : h5py.Group
+        Current group path in HDF5 file (default is root "/").
+    """
+    for key, value in data_dict.items():
+        group_path = f"{parent_group}/{key}"
+        if isinstance(value, dict):
+            # Create a new group for nested dictionary
+            hdf5_file.require_group(group_path)
+            save_dict_to_hdf5(hdf5_file, value, parent_group=group_path)
+        else:
+            # Convert leaf items into datasets
+            hdf5_file[group_path] = value
+
+
+def load_hdf5_to_dict(hdf5_file, parent_group="/"):
+    """
+    Recursively reads an HDF5 file into a nested dictionary.
+
+    Args:
+        hdf5_file: Opened h5py.File object.
+        parent_group: Current group path in HDF5 file (default is root "/").
+
+    Returns:
+        Nested dictionary representing the HDF5 file structure.
+    """
+    data_dict = {}
+    for key in hdf5_file[parent_group]:
+        item_path = f"{parent_group}/{key}"
+        if isinstance(hdf5_file[item_path], h5py.Group):
+            data_dict[key] = load_hdf5_to_dict(hdf5_file, parent_group=item_path)
+        else:
+            data_dict[key] = hdf5_file[item_path][()]
+    return data_dict

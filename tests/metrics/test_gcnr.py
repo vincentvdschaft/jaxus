@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jaxus import gcnr, gcnr_compute_disk, gcnr_plot_disk_annulus
+from jaxus import gcnr, gcnr_plot_disk_annulus, gcnr_disk_annulus
+from jaxus.containers.image import Image
 
 
 def test_gcnr():
@@ -14,41 +15,33 @@ def test_gcnr():
 
 
 def test_gcnr_compute_disk():
-    image = np.random.randn(100, 100)
-    xlims_m = (-0.1, 0.1)
-    zlims_m = (-0.1, 0.1)
-    disk_pos_m = (0, 0)
-    inner_radius_m = 0.01
-    outer_radius_start_m = 0.02
-    outer_radius_end_m = 0.03
-    num_bins = 256
+    extent = np.array([-20, 20, -20, 20]) * 1e-3
+    image = Image(data=np.random.randn(100, 100), extent=extent, log_compressed=False)
 
-    gcnr_value = gcnr_compute_disk(
+    gcnr_disk_annulus(
         image=image,
-        xlims_m=xlims_m,
-        zlims_m=zlims_m,
-        disk_pos_m=disk_pos_m,
-        inner_radius_m=inner_radius_m,
-        outer_radius_start_m=outer_radius_start_m,
-        outer_radius_end_m=outer_radius_end_m,
-        num_bins=num_bins,
+        disk_center=(0, 0),
+        disk_r=10e-3,
+        annulus_offset=1e-3,
+        annulus_width=2e-3,
     )
 
 
 def test_gcnr_plot_disk_annulus():
     fig, ax = plt.subplots()
     pos_m = (0, 0)
-    inner_radius_m = 0.01
-    outer_radius_start_m = 0.02
-    outer_radius_end_m = 0.03
+    disk_r = 10e-3
+    annulus_offset = 1e-3
+    annulus_width = 2e-3
     opacity = 0.5
 
     gcnr_plot_disk_annulus(
         ax=ax,
-        pos_m=pos_m,
-        inner_radius_m=inner_radius_m,
-        outer_radius_start_m=outer_radius_start_m,
-        outer_radius_end_m=outer_radius_end_m,
+        disk_center=pos_m,
+        disk_r=disk_r,
+        annulus_offset=annulus_offset,
+        annulus_width=annulus_width,
         opacity=opacity,
     )
+
     plt.close(fig)

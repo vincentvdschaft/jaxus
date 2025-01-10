@@ -4,8 +4,11 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from jaxus.utils import log
+from jaxus.containers import Image
 
-def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 256):
+
+def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 100):
     """Computes the Generalized Contrast-to-Noise Ratio (GCNR) between two sets of pixel
     intensities. The two input arrays are flattened and the GCNR is computed based on
     the histogram of the pixel intensities with the specified number of bins.
@@ -24,6 +27,12 @@ def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 256):
     float
         The GCNR value.
     """
+
+    if bins != 100:
+        log.warning(
+            "The number of bins is not 100 as suggested by the authors. "
+            "gCNR values may not be comparable to other values."
+        )
 
     # Flatten arrays of pixels
     region1 = region1.flatten()
@@ -44,15 +53,13 @@ def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 256):
     return 1 - np.sum(np.minimum(hist_region_1, hist_region_2))
 
 
-def gcnr_compute_disk(
-    image: np.ndarray,
-    xlims_m: tuple,
-    zlims_m: tuple,
-    disk_pos_m: tuple,
-    inner_radius_m: float,
-    outer_radius_start_m: float,
-    outer_radius_end_m: float,
-    num_bins: int = 256,
+def gcnr_disk_annulus(
+    image: Image,
+    disk_center: tuple,
+    disk_r: float,
+    annulus_offset: float,
+    annulus_width: float,
+    num_bins: int = 100,
 ):
     """Computes the GCNR between a circle and a surrounding annulus.
 
@@ -60,18 +67,16 @@ def gcnr_compute_disk(
     ----------
     image : np.ndarray
         The image to compute the GCNR on.
-    xlims_m : tuple
-        The limits of the image in the x-direction in meters.
-    zlims_m : tuple
-        The limits of the image in the z-direction in meters.
-    disk_pos_m : tuple
-        The position of the disk in meters.
-    inner_radius_m : float
-        The inner radius of the disk in meters.
-    outer_radius_start_m : float
-        The start radius of the annulus in meters.
-    outer_radius_end_m : float
-        The end radius of the annulus in meters.
+    extent : np.ndarray
+        The extent of the image.
+    disk_center : tuple
+        The position of the disk.
+    disk_r : float
+        The radius of the disk.
+    annulus_offset : float
+        The space between disk and annulus.
+    annulus_width : float
+        The width of the annulus.
     num_bins : int
         The number of bins to use for the histogram.
 
@@ -82,22 +87,25 @@ def gcnr_compute_disk(
     """
 
     # Create meshgrid of locations for the pixels
-    x_m = np.linspace(xlims_m[0], xlims_m[1], image.shape[1])
-    z_m = np.linspace(zlims_m[0], zlims_m[1], image.shape[0])
-    X, Z = np.meshgrid(x_m, z_m)
+    x_grid, z_grid = image.grid
 
     # Compute the distance from the center of the circle
-    r = np.sqrt((X - disk_pos_m[0]) ** 2 + (Z - disk_pos_m[1]) ** 2)
+    r = np.sqrt((x_grid - disk_center[0]) ** 2 + (z_grid - disk_center[1]) ** 2)
 
     # Create a mask for the disk
-    mask_disk = r < inner_radius_m
+    mask_disk = r < disk_r
+
+    annulus_r0, annulus_r1 = (
+        disk_r + annulus_offset,
+        disk_r + annulus_offset + annulus_width,
+    )
 
     # Create a mask for the annulus
-    mask_annulus = (r > outer_radius_start_m) & (r < outer_radius_end_m)
+    mask_annulus = (r > annulus_r0) & (r < annulus_r1)
 
     # Extract the pixels from the two regions
-    pixels_disk = image[mask_disk]
-    pixels_annulus = image[mask_annulus]
+    pixels_disk = image.data[mask_disk]
+    pixels_annulus = image.data[mask_annulus]
 
     # Compute the GCNR
     gcnr_value = gcnr(pixels_disk, pixels_annulus, bins=num_bins)
@@ -107,10 +115,10 @@ def gcnr_compute_disk(
 
 def gcnr_plot_disk_annulus(
     ax: plt.Axes,
-    pos_m: tuple,
-    inner_radius_m: float,
-    outer_radius_start_m: float,
-    outer_radius_end_m: float,
+    disk_center: tuple,
+    disk_r: float,
+    annulus_offset: float,
+    annulus_width: float,
     opacity: float = 0.5,
     linewidth: float = 0.5,
 ):
@@ -120,14 +128,14 @@ def gcnr_plot_disk_annulus(
     ----------
         ax : plt.Axes
             The axis to plot the disk and annulus on.
-        disk_pos_m : tuple
+        disk_center : tuple
             The position of the disk in meters.
-        inner_radius_m : float
+        disk_r : float
             The inner radius of the disk in meters.
-        outer_radius_start_m : float
-            The start radius of the annulus in meters.
-        outer_radius_end_m : float
-            The end radius of the annulus in meters.
+        annulus_offset : float
+            The space between disk and annulus.
+        annulus_width : float
+            The width of the annulus.
         opacity : float
             The opacity of the disk and annulus. Should be between 0 and 1. Defaults to
             0.5.
@@ -138,35 +146,37 @@ def gcnr_plot_disk_annulus(
     color_cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
     # Plot the inner circle
-    circle = plt.Circle(
-        pos_m,
-        inner_radius_m,
+    disk = plt.Circle(
+        disk_center,
+        disk_r,
         color=color_cycle[0],
         fill=False,
         linestyle="--",
         linewidth=linewidth,
         alpha=opacity,
     )
-    ax.add_artist(circle)
+    ax.add_artist(disk)
 
     # Draw the annulus
-    circle = plt.Circle(
-        pos_m,
-        outer_radius_start_m,
+    annul0 = plt.Circle(
+        disk_center,
+        disk_r + annulus_offset,
         color=color_cycle[1],
         fill=False,
         linestyle="--",
         linewidth=linewidth,
         alpha=opacity,
     )
-    ax.add_artist(circle)
-    circle = plt.Circle(
-        pos_m,
-        outer_radius_end_m,
+    ax.add_artist(annul0)
+    annul1 = plt.Circle(
+        disk_center,
+        disk_r + annulus_offset + annulus_width,
         color=color_cycle[1],
         fill=False,
         linestyle="--",
         linewidth=linewidth,
         alpha=opacity,
     )
-    ax.add_artist(circle)
+    ax.add_artist(annul1)
+
+    return disk, annul0, annul1

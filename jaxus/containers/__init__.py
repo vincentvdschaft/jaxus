@@ -1,3 +1,4 @@
+from .image import Image
 from .medium import Medium
 from .probe import Probe
 from .receive import Receive

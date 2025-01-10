@@ -82,12 +82,18 @@ def update_plot(scat_pos):
         result_axial, required_repeats=3, log_scale=image_loaded.log_compressed
     )
     print(idx_peak, idx_left, idx_right)
-    dist_axial = (positions_axial - scat_pos) @ vec
-    dist_lateral = (positions_lateral - scat_pos) @ vec_orth
-    print(dist_axial[idx_left])
-    vline_left_axial.set_xdata([dist_axial[idx_left]])
-    vline_right_axial.set_xdata([dist_axial[idx_right]])
-    vline_peak_axial.set_xdata([dist_axial[idx_peak]])
+    dist_vals = np.linspace(-max_offset, max_offset, n_samples)
+
+    vline_left_axial.set_xdata([dist_vals[idx_left]])
+    vline_right_axial.set_xdata([dist_vals[idx_right]])
+    vline_peak_axial.set_xdata([dist_vals[idx_peak]])
+
+    idx_peak, idx_left, idx_right = find_fwhm_indices(
+        result_lateral, required_repeats=3, log_scale=image_loaded.log_compressed
+    )
+    vline_left_lateral.set_xdata([dist_vals[idx_left]])
+    vline_right_lateral.set_xdata([dist_vals[idx_right]])
+    vline_peak_lateral.set_xdata([dist_vals[idx_peak]])
 
     plt.draw()
 
@@ -100,7 +106,7 @@ def on_click(event):
         return
     if event.button == 1:
         scat_pos = np.array([event.xdata, event.ydata])
-        scat_pos = correct_fwhm_point(image_loaded, scat_pos, max_diff=0.5e-3)
+        scat_pos = correct_fwhm_point(image_loaded, scat_pos, max_diff=1.0e-3)
     elif event.button == 3:
         disk_pos = np.array([event.xdata, event.ydata])
     else:
@@ -135,7 +141,7 @@ def on_key(event):
 fig_w, fig_h = 8, 11
 margin_left, margin_right = 1.0, 0.3
 margin = margin_left + margin_right
-spacing = 0.5
+spacing = 0.7
 grid_spacing = 0.2
 
 y_line = margin_right
@@ -187,9 +193,19 @@ mm_formatter_ax(ax_line_axial, x=True, y=False)
 mm_formatter_ax(ax_line_lateral, x=True, y=False)
 
 
-(vline_left_axial,) = ax_line_axial.plot([0, 0], [-60, 0], color="C2", linestyle="--")
-(vline_peak_axial,) = ax_line_axial.plot([0, 0], [-60, 0], color="C3", linestyle="--")
+(vline_left_axial,) = ax_line_axial.plot([0, 0], [-60, 0], color="gray", linestyle="--")
+(vline_peak_axial,) = ax_line_axial.plot([0, 0], [-60, 0], color="gray", linestyle="--")
 (vline_right_axial,) = ax_line_axial.plot(
+    [0, 0], [-60, 0], color="gray", linestyle="--"
+)
+
+(vline_left_lateral,) = ax_line_lateral.plot(
+    [0, 0], [-60, 0], color="gray", linestyle="--"
+)
+(vline_peak_lateral,) = ax_line_lateral.plot(
+    [0, 0], [-60, 0], color="gray", linestyle="--"
+)
+(vline_right_lateral,) = ax_line_lateral.plot(
     [0, 0], [-60, 0], color="gray", linestyle="--"
 )
 
@@ -205,7 +221,7 @@ plot_beamformed(ax_im, image_loaded.data, np.array(image_loaded.extent))
 
 update_plot(scat_pos)
 
-cid = fig.fig.canvas.mpl_connect("button_press_event", on_click)
+cid = fig.fig.canvas.mpl_connect("button_release_event", on_click)
 cid_key = fig.fig.canvas.mpl_connect("key_press_event", on_key)
 
 

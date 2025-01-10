@@ -87,18 +87,22 @@ def fwhm(curve, width, required_repeats=3, log_scale=False):
 
 
 def find_fwhm_indices(curve, required_repeats=3, log_scale=False):
+    """Finds the peak and the left and right indices of the FWHM."""
     # Find the half maximum
+
     if log_scale:
-        half_max = np.max(curve) - 10
+        curve = curve - np.max(curve)
+        half_max = np.max(curve) - 20 * np.log10(2)
     else:
+        curve = curve / np.max(curve)
         half_max = np.max(curve) / 2
 
     idx_peak = np.argmax(curve)
 
     right = curve[idx_peak:]
-    left = curve[:idx_peak]
+    left = curve[: idx_peak + 1]
     idx_right = idx_peak + _find_crossing(right, half_max, required_repeats)
-    idx_left = _find_crossing(left[::-1], half_max, required_repeats)
+    idx_left = idx_peak - _find_crossing(left[::-1], half_max, required_repeats)
 
     return idx_peak, idx_left, idx_right
 
@@ -114,7 +118,7 @@ def _find_crossing(curve, value, required_repeats):
     value : float
         The value to find the crossings with.
     required_repeats : int
-        The number of times the curve should cross the value.
+        The number of consecutive samples that should be below the value.
 
     Returns
     -------
@@ -127,7 +131,7 @@ def _find_crossing(curve, value, required_repeats):
     for index, sample in enumerate(curve):
         if sample <= value:
             repeats += 1
-            if repeats == required_repeats:
+            if repeats >= required_repeats:
                 found = True
                 break
         else:
@@ -135,7 +139,7 @@ def _find_crossing(curve, value, required_repeats):
         index += 1
 
     if found:
-        return index - repeats
+        return index - (repeats - 1)
     else:
         print("No crossing found")
         return curve.size - 1
@@ -160,21 +164,31 @@ def fwhm_image(image: Image, position, direction, max_offset, required_repeats=3
 
 
 def correct_fwhm_point(image: Image, position, max_diff=0.6e-3):
+    """Find the point with the maximum intensity within a certain distance of a given point.
 
-    # 2D interpolation over the entire image
-    pixel_coords = (image.x_vals, image.y_vals)
-    interpolator = RegularGridInterpolator(
-        pixel_coords, image.data, bounds_error=False, fill_value=0
-    )
-    x_vals = np.linspace(position[0] - max_diff, position[0] + max_diff, 128)
-    y_vals = np.linspace(position[1] - max_diff, position[1] + max_diff, 128)
+    Parameters
+    ----------
+    image : Image
+        The image to search in.
+    position : np.array
+        The position to search around.
+    max_diff : float
+        The maximum distance from the position to search.
 
-    xx, yy = np.meshgrid(x_vals, y_vals, indexing="ij")
+    Returns
+    -------
+    new_position : np.array
+        The corrected position which is at most `max_diff` away from the original
+        position.
+    """
 
-    im = interpolator((xx, yy))
+    position = np.array(position)
+    distances = np.linalg.norm(image.flatgrid - position, axis=1)
 
-    row, col = np.unravel_index(np.argmax(im), im.shape)
+    mask = distances <= max_diff
+    candidate_intensities = image.data.flatten()[mask]
+    candidate_points = image.flatgrid[mask]
 
-    x = x_vals[row]
-    y = y_vals[col]
-    return np.array([x, y])
+    idx = np.argmax(candidate_intensities)
+
+    return candidate_points[idx]

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from jaxus.utils import log
+from jaxus.containers import Image
 
 
 def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 100):
@@ -53,13 +54,12 @@ def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 100):
 
 
 def gcnr_disk_annulus(
-    image: np.ndarray,
-    extent: np.ndarray,
+    image: Image,
     disk_center: tuple,
     disk_r: float,
     annulus_offset: float,
     annulus_width: float,
-    num_bins: int = 128,
+    num_bins: int = 100,
 ):
     """Computes the GCNR between a circle and a surrounding annulus.
 
@@ -87,9 +87,7 @@ def gcnr_disk_annulus(
     """
 
     # Create meshgrid of locations for the pixels
-    x = np.linspace(extent[0], extent[1], image.shape[0])
-    z = np.linspace(extent[2], extent[3], image.shape[1])
-    x_grid, z_grid = np.meshgrid(x, z, indexing="ij")
+    x_grid, z_grid = image.grid
 
     # Compute the distance from the center of the circle
     r = np.sqrt((x_grid - disk_center[0]) ** 2 + (z_grid - disk_center[1]) ** 2)
@@ -106,8 +104,8 @@ def gcnr_disk_annulus(
     mask_annulus = (r > annulus_r0) & (r < annulus_r1)
 
     # Extract the pixels from the two regions
-    pixels_disk = image[mask_disk]
-    pixels_annulus = image[mask_annulus]
+    pixels_disk = image.data[mask_disk]
+    pixels_annulus = image.data[mask_annulus]
 
     # Compute the GCNR
     gcnr_value = gcnr(pixels_disk, pixels_annulus, bins=num_bins)
@@ -148,7 +146,7 @@ def gcnr_plot_disk_annulus(
     color_cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
     # Plot the inner circle
-    circle = plt.Circle(
+    disk = plt.Circle(
         disk_center,
         disk_r,
         color=color_cycle[0],
@@ -157,10 +155,10 @@ def gcnr_plot_disk_annulus(
         linewidth=linewidth,
         alpha=opacity,
     )
-    ax.add_artist(circle)
+    ax.add_artist(disk)
 
     # Draw the annulus
-    circle = plt.Circle(
+    annul0 = plt.Circle(
         disk_center,
         disk_r + annulus_offset,
         color=color_cycle[1],
@@ -169,8 +167,8 @@ def gcnr_plot_disk_annulus(
         linewidth=linewidth,
         alpha=opacity,
     )
-    ax.add_artist(circle)
-    circle = plt.Circle(
+    ax.add_artist(annul0)
+    annul1 = plt.Circle(
         disk_center,
         disk_r + annulus_offset + annulus_width,
         color=color_cycle[1],
@@ -179,4 +177,6 @@ def gcnr_plot_disk_annulus(
         linewidth=linewidth,
         alpha=opacity,
     )
-    ax.add_artist(circle)
+    ax.add_artist(annul1)
+
+    return disk, annul0, annul1

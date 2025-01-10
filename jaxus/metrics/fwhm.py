@@ -7,59 +7,6 @@ from scipy.optimize import curve_fit
 from jaxus.containers import Image
 
 
-def _sample_line(image, extent, position, vec, max_offset, n_samples):
-    """
-    Sample a line in the image.
-
-    Parameters
-    ----------
-    image : np.array
-        The image to sample.
-    position : tuple of floats
-        The position of the line.
-    vec : tuple of floats
-        The direction of the line.
-    max_offset : float
-        The maximum offset from the position.
-    n_samples : int
-        The number of samples to take.
-
-    Returns
-    -------
-    samples : np.array
-        The samples along the line.
-    positions : np.array
-        The positions of the samples. Can be used to plot the line in the image.
-    """
-    # Normalize the vector
-    vec = np.array(vec)
-    vec = vec / np.linalg.norm(vec)
-
-    im_width = extent[1] - extent[0]
-    im_height = extent[3] - extent[2]
-
-    x = np.linspace(
-        position[0] - max_offset * vec[0],
-        position[0] + max_offset * vec[0],
-        n_samples,
-    )
-    y = np.linspace(
-        position[1] - max_offset * vec[1],
-        position[1] + max_offset * vec[1],
-        n_samples,
-    )
-
-    x_idx = np.round((x - extent[0]) / im_width * image.shape[0]).astype(int)
-    y_idx = np.round((y - extent[2]) / im_height * image.shape[1]).astype(int)
-
-    x_idx = np.clip(x_idx, 0, image.shape[0] - 1)
-    y_idx = np.clip(y_idx, 0, image.shape[1] - 1)
-
-    fwhm(image[x_idx, y_idx], 1.0, 3, log_scale=True)
-
-    return image[x_idx, y_idx], np.stack((x, y), axis=1)
-
-
 def fwhm(curve, width, required_repeats=3, log_scale=False):
     """
     Compute the full width at half maximum of a curve.
@@ -146,8 +93,30 @@ def _find_crossing(curve, value, required_repeats):
 
 
 def fwhm_image(image: Image, position, direction, max_offset, required_repeats=3):
+    """Computes the FWHM of a line profile in the image.
 
-    curve, positions = _sample_line(
+    Parameters
+    ----------
+    image : Image
+        The image to compute the FWHM on.
+    position : np.array
+        The position of the line profile of shape (2,).
+    direction : np.array
+        The direction of the line profile of shape (2,).
+    max_offset : float
+        The maximum offset from the position to sample the line profile. The line
+        profile will have a length of 2 * max_offset.
+    required_repeats : int
+        The number of consecutive samples that should be below the value for it to
+        count to reject noise.
+
+    Returns
+    -------
+    fwhm_value : float
+        The FWHM value of the line profile
+    """
+
+    curve, _ = _sample_line(
         image=image.data,
         extent=image.extent,
         position=position,
@@ -192,3 +161,56 @@ def correct_fwhm_point(image: Image, position, max_diff=0.6e-3):
     idx = np.argmax(candidate_intensities)
 
     return candidate_points[idx]
+
+
+def _sample_line(image, extent, position, vec, max_offset, n_samples):
+    """
+    Sample a line in the image.
+
+    Parameters
+    ----------
+    image : np.array
+        The image to sample.
+    position : tuple of floats
+        The position of the line.
+    vec : tuple of floats
+        The direction of the line.
+    max_offset : float
+        The maximum offset from the position.
+    n_samples : int
+        The number of samples to take.
+
+    Returns
+    -------
+    samples : np.array
+        The samples along the line.
+    positions : np.array
+        The positions of the samples. Can be used to plot the line in the image.
+    """
+    # Normalize the vector
+    vec = np.array(vec)
+    vec = vec / np.linalg.norm(vec)
+
+    im_width = extent[1] - extent[0]
+    im_height = extent[3] - extent[2]
+
+    x = np.linspace(
+        position[0] - max_offset * vec[0],
+        position[0] + max_offset * vec[0],
+        n_samples,
+    )
+    y = np.linspace(
+        position[1] - max_offset * vec[1],
+        position[1] + max_offset * vec[1],
+        n_samples,
+    )
+
+    x_idx = np.round((x - extent[0]) / im_width * image.shape[0]).astype(int)
+    y_idx = np.round((y - extent[2]) / im_height * image.shape[1]).astype(int)
+
+    x_idx = np.clip(x_idx, 0, image.shape[0] - 1)
+    y_idx = np.clip(y_idx, 0, image.shape[1] - 1)
+
+    fwhm(image[x_idx, y_idx], 1.0, 3, log_scale=True)
+
+    return image[x_idx, y_idx], np.stack((x, y), axis=1)

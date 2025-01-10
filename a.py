@@ -2,6 +2,7 @@ from jaxus import (
     Image,
     plot_beamformed,
     image_measure_gcnr_disk_annulus,
+    image_measure_fwhm,
     gcnr_plot_disk_annulus,
     fwhm,
     correct_fwhm_point,
@@ -24,7 +25,7 @@ extent = [
 disk_pos = np.array((0, 15)) * 1e-3
 disk_radius = 7
 
-scat_pos = np.array([-0.0265, 0.0425])
+scat_pos = np.array([4.062e-3, 7.286e-2])
 vsource = np.array((0, -15)) * 1e-3
 
 max_offset = 4e-3
@@ -94,6 +95,15 @@ def update_plot(scat_pos):
     vline_left_lateral.set_xdata([dist_vals[idx_left]])
     vline_right_lateral.set_xdata([dist_vals[idx_right]])
     vline_peak_lateral.set_xdata([dist_vals[idx_peak]])
+
+    image_measure_fwhm(
+        image_loaded,
+        scat_pos,
+        vec,
+        max_offset=max_offset,
+        correct_position=True,
+        max_correction_distance=1.0e-3,
+    )
 
     plt.draw()
 
@@ -228,3 +238,5 @@ cid_key = fig.fig.canvas.mpl_connect("key_press_event", on_key)
 # plt.tight_layout()
 plt.savefig("image.png", bbox_inches="tight")
 plt.show()
+
+image_loaded.save("image_frame_0000_measured.hdf5")

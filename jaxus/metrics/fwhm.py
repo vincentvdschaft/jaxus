@@ -125,9 +125,7 @@ def fwhm_image(image: Image, position, direction, max_offset, required_repeats=3
         n_samples=128,
     )
 
-    fwhm_value = fwhm(
-        curve, max_offset * 2, required_repeats, log_scale=image.log_compressed
-    )
+    fwhm_value = fwhm(curve, max_offset * 2, required_repeats, log_scale=image.in_db)
 
     return fwhm_value
 

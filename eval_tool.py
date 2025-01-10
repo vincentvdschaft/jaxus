@@ -14,6 +14,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from myplotlib import *
 from jaxus.metrics.fwhm import _sample_line, find_fwhm_indices
+from matplotlib.widgets import Button
 
 use_style(STYLE_DARK)
 
@@ -32,7 +33,9 @@ n_samples = 100
 TARGET_FWHM, TARGET_GCNR = 0, 1
 arrow_target = TARGET_FWHM
 
-image_loaded = Image.load("image_frame_0000.hdf5")
+image_loaded = Image.load(
+    "/home/vincent/1-projects/infer/images/paper/carotid/das_SA1.hdf5"
+)
 
 
 def update_plot():
@@ -74,7 +77,7 @@ def update_plot():
     print(f"FWHM: {fwhm_axial*1e3:.1f} mm, {fwhm_lateral*1e3:.1f} mm")
 
     idx_peak, idx_left, idx_right = find_fwhm_indices(
-        result_axial, required_repeats=3, log_scale=image_loaded.log_compressed
+        result_axial, required_repeats=3, log_scale=image_loaded.in_db
     )
     dist_vals = np.linspace(-max_offset, max_offset, n_samples)
 
@@ -83,7 +86,7 @@ def update_plot():
     vline_peak_axial.set_xdata([dist_vals[idx_peak]])
 
     idx_peak, idx_left, idx_right = find_fwhm_indices(
-        result_lateral, required_repeats=3, log_scale=image_loaded.log_compressed
+        result_lateral, required_repeats=3, log_scale=image_loaded.in_db
     )
     vline_left_lateral.set_xdata([dist_vals[idx_left]])
     vline_right_lateral.set_xdata([dist_vals[idx_right]])
@@ -130,8 +133,9 @@ def on_click(event):
 
 
 def on_key(event):
-    global scat_pos, disk_pos
+    global scat_pos, disk_pos, disk_radius, annulus_offset, annulus_width
     step = 0.1e-3
+    delta = np.zeros(2)
     if event.key == "right":
         delta = np.array([1, 0]) * step
     elif event.key == "left":
@@ -152,6 +156,14 @@ def on_key(event):
             image_loaded, scat_pos, scat_pos - vsource, max_offset=max_offset
         )
         return
+    elif event.key == "o":
+        annulus_offset = np.clip(annulus_offset - step, 2e-4, None)
+    elif event.key == "p":
+        annulus_offset = np.clip(annulus_offset + step, 2e-4, None)
+    elif event.key == "u":
+        annulus_width = np.clip(annulus_width - step, 2e-4, None)
+    elif event.key == "i":
+        annulus_width = np.clip(annulus_width + step, 2e-4, None)
     else:
         return
 
@@ -273,6 +285,7 @@ plot_beamformed(ax_im, image_loaded.data, np.array(image_loaded.extent))
 )
 
 update_plot()
+
 
 cid = fig.fig.canvas.mpl_connect("button_release_event", on_click)
 cid_key = fig.fig.canvas.mpl_connect("key_press_event", on_key)

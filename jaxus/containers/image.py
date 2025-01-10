@@ -47,7 +47,10 @@ class Image:
     @data.setter
     def data(self, value):
         """Set image data."""
-        data = np.array(value, dtype=float)
+        if np.iscomplexobj(value):
+            log.warning("Image data is complex. Taking magnitude.")
+            value = np.abs(value)
+        data = np.array(value, dtype=np.float32)
         if data.ndim != 2:
             raise ValueError("Data must be 2D.")
 
@@ -98,10 +101,12 @@ class Image:
         """Log-compress image data."""
         if self.scale == SCALE_DB:
             log.warning("Image data is already log-compressed. Skipping.")
-            return
+            return self
 
         self.data = log_compress(self.data)
         self.scale = SCALE_DB
+
+        return self
 
     def normalize(self):
         """Normalize image data to max 1 when not log-compressed or 0 when log-compressed."""
@@ -110,6 +115,8 @@ class Image:
             self.data -= self.data.max()
         else:
             self.data /= self.data.max()
+
+        return self
 
     def __repr__(self):
         """Return string representation of Image object."""

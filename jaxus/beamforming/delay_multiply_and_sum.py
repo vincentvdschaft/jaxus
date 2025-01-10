@@ -8,7 +8,7 @@ import jax.numpy as jnp
 import numpy as np
 from jax import jit, vmap
 from functools import partial
-
+from jaxus.pfield import compute_pfield
 from jaxus.utils.checks import (
     check_frequency,
     check_pos_array,
@@ -23,6 +23,8 @@ from .beamform import (
     tof_correct_pixel,
     get_progbar_functions,
 )
+from jaxus.utils import log
+from tqdm import tqdm
 
 
 @partial(jit, static_argnums=(11,))
@@ -41,6 +43,8 @@ def _beamform_pixel(
     f_number,
     tx_apodization,
     rx_apodization,
+    focus_distance: jnp.ndarray = None,
+    angle: jnp.ndarray = None,
 ):
     """Beamforms a single pixel of a single frame and single transmit. Further
     processing such as log-compression and envelope detection are not performed.
@@ -96,6 +100,8 @@ def _beamform_pixel(
         carrier_frequency=carrier_frequency,
         sampling_frequency=sampling_frequency,
         tx_apodization=tx_apodization,
+        focus_distance=focus_distance,
+        angle=angle,
         iq_beamform=True,
     )
     # Traditional f-number mask
@@ -141,6 +147,8 @@ def dmas_beamform_transmit(
     tx_apodization,
     rx_apodization,
     f_number,
+    focus_distance,
+    angle,
 ):
     """Beamforms a single transmit using the given parameters. The input data must be IQ data. The beamforming can be performed on all transmits or
     a subset of transmits. The beamforming is performed using the Delay-And-Sum (DAS)
@@ -201,6 +209,8 @@ def dmas_beamform_transmit(
             None,
             None,
             None,
+            None,
+            None,
         ),
     )(
         rf_data,
@@ -217,6 +227,8 @@ def dmas_beamform_transmit(
         f_number,
         tx_apodization,
         rx_apodization,
+        focus_distance,
+        angle,
     )
 
 
@@ -236,6 +248,8 @@ def beamform_dmas(
     rx_apodization: jnp.ndarray,
     f_number: float,
     transmits: jnp.ndarray = None,
+    focus_distances: jnp.ndarray = None,
+    angles: jnp.ndarray = None,
     pixel_chunk_size: int = 1048576,
     progress_bar: bool = False,
 ):
@@ -284,12 +298,17 @@ def beamform_dmas(
     """
     # Perform input error checking
     rf_data = check_standard_rf_or_iq_data(rf_data)
-
     check_frequency(carrier_frequency)
     check_frequency(sampling_frequency)
     check_sound_speed(sound_speed)
     check_pos_array(probe_geometry, name="probe_geometry")
     check_t0_delays(t0_delays, transmit_dim=True)
+
+    n_tx = rf_data.shape[1]
+    if focus_distances is None:
+        focus_distances = jnp.zeros(n_tx)
+    if angles is None:
+        angles = jnp.zeros(n_tx)
     n_tx = rf_data.shape[1]
     n_pixels = pixel_positions.shape[0]
 
@@ -316,9 +335,6 @@ def beamform_dmas(
     # Initialize the beamformed images to zeros
     beamformed_images = jnp.zeros((n_frames, n_pixels), dtype=beamformed_dtype)
 
-    for tx in transmits:
-        assert 0 <= tx < n_tx, "Transmit index out of bounds"
-
     # ==================================================================================
     # Define pixel chunks
     # ==================================================================================
@@ -333,37 +349,66 @@ def beamform_dmas(
         get_progbar_functions(progress_bar, n_frames, len(transmits), start_indices)
     )
 
+    log.info("Computing pfield for weighting")
+    pfields = []
+    for tx in transmits:
+        pfield = compute_pfield(
+            pixels=pixel_positions,
+            probe_geometry=probe_geometry,
+            t0_delays=t0_delays[tx],
+            tx_apodizations=tx_apodizations[tx],
+            center_frequency=carrier_frequency,
+            band=(carrier_frequency * 0.5, carrier_frequency * 1.5),
+            element_width=(probe_geometry[1, 0] - probe_geometry[0, 0]) * 0.9,
+            sound_speed=sound_speed,
+            n_freqs=32,
+            reduce=True,
+        )
+        pfields.append(pfield)
+    pfields = jnp.stack(pfields, axis=0)
+    mean_pfield = jnp.mean(pfields, axis=0)
+
+    normalization = 1 / mean_pfield
+    mask = mean_pfield > 1e-4
+
+    for tx in transmits:
+        assert 0 <= tx < n_tx, "Transmit index out of bounds"
+    log.info("Beamforming transmits")
     for frame in progbar_func_frames(range(n_frames)):
 
         # Beamform every transmit individually and sum the results
-        for tx in progbar_func_transmits(transmits):
+        for n, tx in tqdm(enumerate(transmits), disable=not progress_bar):
             beamformed_chunks = []
             for ind0 in progbar_func_pixels(start_indices):
                 pixel_chunk = pixel_positions[ind0 : ind0 + pixel_chunk_size]
                 # Perform beamforming
-                beamformed_chunks.append(
-                    dmas_beamform_transmit(
-                        input_data[frame, tx],
-                        pixel_chunk,
-                        probe_geometry,
-                        t0_delays[tx],
-                        initial_times[tx],
-                        sampling_frequency,
-                        carrier_frequency,
-                        sound_speed,
-                        sound_speed_lens,
-                        lens_thickness,
-                        t_peak[tx],
-                        tx_apodizations[tx],
-                        rx_apodization,
-                        f_number=f_number,
-                    )
+                beamformed_transmit = dmas_beamform_transmit(
+                    input_data[frame, tx],
+                    pixel_chunk,
+                    probe_geometry,
+                    t0_delays[tx],
+                    initial_times[tx],
+                    sampling_frequency,
+                    carrier_frequency,
+                    sound_speed,
+                    sound_speed_lens,
+                    lens_thickness,
+                    t_peak[tx],
+                    tx_apodizations[tx],
+                    rx_apodization,
+                    focus_distance=focus_distances[tx],
+                    angle=angles[tx],
+                    f_number=f_number,
                 )
+                # Apply pfield weighting
+                beamformed_transmit = beamformed_transmit * pfields[n]
+                beamformed_chunks.append(beamformed_transmit)
 
             # Concatenate the beamformed chunks
             beamformed_transmit = jnp.concatenate(beamformed_chunks)
 
             # Reshape and add to the beamformed images
             beamformed_images = beamformed_images.at[frame].add(beamformed_transmit)
+        beamformed_images *= normalization * mask
 
     return beamformed_images

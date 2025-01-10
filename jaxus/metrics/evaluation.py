@@ -28,11 +28,8 @@ def image_measure_gcnr_disk_annulus(
     image : Image
         The image with the gCNR value added to the metadata.
     """
-    data = image.data
-    extent = image.extent
     gcnr = gcnr_disk_annulus(
-        data,
-        extent=extent,
+        image=image,
         disk_center=disk_center,
         disk_r=disk_r,
         annulus_offset=annulus_offset,

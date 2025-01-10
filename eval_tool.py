@@ -9,6 +9,7 @@ from jaxus import (
     correct_fwhm_point,
     fwhm_image,
 )
+from jaxus.utils import log
 import numpy as np
 import matplotlib.pyplot as plt
 from myplotlib import *
@@ -35,7 +36,7 @@ image_loaded = Image.load("image_frame_0000.hdf5")
 
 
 def update_plot():
-    global scat_pos, disk_pos, disk_radius, annulus_offset, annulus_width
+    # global scat_pos, disk_pos, disk_radius, annulus_offset, annulus_width
     vec = scat_pos - vsource
     vec_orth = np.array((-vec[1], vec[0]))
     result_axial, positions_axial = _sample_line(
@@ -105,15 +106,6 @@ def update_plot():
     )
     print(f"gCNR: {gcnr_value:.2f}")
 
-    image_measure_fwhm(
-        image_loaded,
-        scat_pos,
-        vec,
-        max_offset=max_offset,
-        correct_position=True,
-        max_correction_distance=1.0e-3,
-    )
-
     plt.draw()
 
 
@@ -148,6 +140,18 @@ def on_key(event):
         delta = np.array([0, -1]) * step
     elif event.key == "down":
         delta = np.array([0, 1]) * step
+    elif event.key == "a":
+        log.info("Adding gCNR measurement")
+        image_measure_gcnr_disk_annulus(
+            image_loaded, disk_pos, disk_radius, annulus_offset, annulus_width
+        )
+        return
+    elif event.key == "d":
+        log.info("Adding FWHM measurement")
+        image_measure_fwhm(
+            image_loaded, scat_pos, scat_pos - vsource, max_offset=max_offset
+        )
+        return
     else:
         return
 

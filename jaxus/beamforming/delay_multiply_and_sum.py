@@ -252,6 +252,7 @@ def beamform_dmas(
     angles: jnp.ndarray = None,
     pixel_chunk_size: int = 1048576,
     progress_bar: bool = False,
+    **kwargs,
 ):
     """Beamforms RF data using the given parameters. The input data can be
     either RF or IQ data. The beamforming can be performed on all transmits or a

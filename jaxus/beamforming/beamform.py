@@ -58,6 +58,7 @@ def beamform_das(
     transmits: jnp.ndarray = None,
     pixel_chunk_size: int = 1048576,
     progress_bar: bool = False,
+    **kwargs,
 ):
     """Beamforms RF data using the given parameters. The input data can be
     either RF or IQ data. The beamforming can be performed on all transmits or a
@@ -630,6 +631,7 @@ def _beamform_pixel(
     focus_distance,
     angle,
     iq_beamform=False,
+    **kwargs,
 ):
     """Beamforms a single pixel of a single frame and single transmit. Further
     processing such as log-compression and envelope detection are not performed.

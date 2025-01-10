@@ -219,6 +219,7 @@ def beamform_mv(
     transmits: jnp.ndarray = None,
     pixel_chunk_size: int = 1048576,
     progress_bar: bool = False,
+    **kwargs,
 ):
     """Beamforms a single transmit using the given parameters using minimum variance
     beamforming with spatial smoothing. The input data can be either RF or IQ data. The

@@ -181,10 +181,10 @@ class Image:
         """Return y values of image."""
         return np.linspace(self.extent[2], self.extent[3], self.shape[1])
 
-    def histogram_match(self, other):
+    def match_histogram(self, other):
         """Match the histogram of the image to another image."""
 
-        self.data = match_histograms(self.data, other.data, multichannel=False)
+        self.data = match_histograms(self.data, other.data)
 
     @staticmethod
     def _parse_scale(val):

@@ -141,3 +141,25 @@ class Image:
     def clear_metadata(self):
         """Clear metadata of image."""
         self.metadata = {}
+
+    @property
+    def grid(self):
+        """Return grid of image."""
+
+        x_grid, y_grid = np.meshgrid(self.x_vals, self.y_vals, indexing="ij")
+        return x_grid, y_grid
+
+    @property
+    def flatgrid(self):
+        """Return flat grid of image."""
+        return np.stack(self.grid, axis=-1).reshape(-1, 2)
+
+    @property
+    def x_vals(self):
+        """Return x values of image."""
+        return np.linspace(self.extent[0], self.extent[1], self.shape[0])
+
+    @property
+    def y_vals(self):
+        """Return y values of image."""
+        return np.linspace(self.extent[2], self.extent[3], self.shape[1])

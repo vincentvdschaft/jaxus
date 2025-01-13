@@ -320,7 +320,7 @@ class EvalTool:
             + self.button_width
             + self.margin_right
         )
-        im_height = image.aspect * self.im_width
+        im_height = self.im_width / image.aspect
         self.fig_h = (
             self.margin_top
             + 2 * self.lineplot_h
@@ -491,8 +491,35 @@ class EvalTool:
             callback=lambda x: self.update_gcnr(annulus_width=x),
         )
 
-        self.load_image(image)
+        self.vsource_textbox = self.fig.add_textbox(
+            x=self.margin_left + self.im_width + self.spacing,
+            y=self.margin_top + 6 * self.button_height + 6 * self.spacing,
+            width=self.button_width,
+            height=self.button_height,
+            label="Vsource",
+            color="black",
+            hovercolor="#444444",
+        )
+        self.vsource_textbox.on_submit(self.update_vsource)
+
+        self.load_measurements_from_image(image)
         plt.show()
+
+    def update_vsource(self, text):
+        if "none" in text.lower():
+            self.vsource = None
+            return
+
+        text = text.replace(" ", ",")
+        text_parts = text.split(",")
+        if len(text_parts) != 2:
+            return
+        x, y = text_parts
+        self.vsource = np.array([float(x), float(y)]) * 1e-3
+        if self.active_fwhm_marker is not None:
+            self.update_fwhm(position=self.active_fwhm_marker.position)
+
+        print(f"Vsource: {self.vsource}")
 
     def on_click(self, event):
 
@@ -538,9 +565,13 @@ class EvalTool:
 
     def update_fwhm(self, position):
 
-        direction = position
-        if self.vsource is None:
+        direction = np.copy(position)
+        if self.vsource is not None:
             direction -= self.vsource
+
+        print(self.vsource)
+
+        print(f"Position: {position}")
 
         result, positions_axial = _sample_line(
             image=self.image.data,
@@ -594,6 +625,8 @@ class EvalTool:
         self.fwhm_lineplot_lateral.vline_left.set_xdata([offsets[idx_left]])
         self.fwhm_lineplot_lateral.vline_right.set_xdata([offsets[idx_right]])
         self.fwhm_lineplot_lateral.vline_peak.set_xdata([offsets[idx_peak]])
+
+        plt.draw()
 
     def update_gcnr(
         self, disk_pos=None, disk_radius=None, annulus_offset=None, annulus_width=None
@@ -686,7 +719,7 @@ class EvalTool:
 
         self.image.save("image_frame_0000_measured.hdf5")
 
-    def load_image(self, image):
+    def load_measurements_from_image(self, image):
         self.image = image
         metadata = image.metadata
 

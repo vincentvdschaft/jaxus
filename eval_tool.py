@@ -20,10 +20,13 @@ from dataclasses import dataclass
 
 parser = argparse.ArgumentParser()
 parser.add_argument("file", type=Path, default="image_frame_0000.hdf5", nargs="?")
+parser.add_argument("metrics_file", type=Path, default=None, nargs="?")
+parser.add_argument("--clear-metadata", action="store_true")
 args = parser.parse_args()
 
 path = Path(args.file)
 image_loaded = Image.load(path)
+image_loaded_metrics = Image.load(args.metrics_file) if args.metrics_file else None
 use_style(STYLE_DARK)
 
 
@@ -291,7 +294,7 @@ class IncrementWidget:
 class EvalTool:
     TARGET_FWHM, TARGET_GCNR = 0, 1
 
-    def __init__(self, image):
+    def __init__(self, image, metrics_image=None):
         self.image = image
         self.spacing = 0.7
         self.margin_left = 1.0
@@ -502,7 +505,10 @@ class EvalTool:
         )
         self.vsource_textbox.on_submit(self.update_vsource)
 
-        self.load_measurements_from_image(image)
+        if metrics_image is not None:
+            self.load_measurements_from_image(metrics_image)
+        else:
+            self.load_measurements_from_image(image)
         plt.show()
 
     def update_vsource(self, text):
@@ -685,6 +691,10 @@ class EvalTool:
         gcnr = measured_image.metadata["gcnr"][-1]["gcnr_value"]
         print(f"gCNR: {gcnr}")
 
+        print(
+            f"disk_center={self.active_gcnr_marker.disk_pos}, disk_r={self.active_gcnr_marker.disk_radius}, annulus_offset={self.active_gcnr_marker.annulus_offset}, annulus_width={self.active_gcnr_marker.annulus_width}"
+        )
+
         self.active_gcnr_marker.deactivate()
         self.frozen_gcnr_markers.append(self.active_gcnr_marker)
         self.active_gcnr_marker = None
@@ -725,6 +735,7 @@ class EvalTool:
 
         if "fwhm" in metadata:
             for fwhm_data in metadata["fwhm"]:
+                print("Loading FWHM")
                 position = fwhm_data["position"]
                 direction = fwhm_data["axial_direction"]
                 self.active_fwhm_marker = FWHMMarker(
@@ -740,6 +751,7 @@ class EvalTool:
 
         if "gcnr" in metadata:
             for gcnr_data in metadata["gcnr"]:
+                print("Loading gCNR")
                 disk_pos = gcnr_data["disk_center"]
                 disk_radius = gcnr_data["disk_r"]
                 annulus_offset = gcnr_data["annulus_offset"]
@@ -758,4 +770,7 @@ class EvalTool:
         plt.draw()
 
 
-tool = EvalTool(image_loaded)
+if args.clear_metadata:
+    image_loaded.clear_metadata()
+
+tool = EvalTool(image_loaded, image_loaded_metrics)

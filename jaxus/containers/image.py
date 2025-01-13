@@ -140,10 +140,12 @@ class Image:
     def add_metadata(self, key, value):
         """Add metadata to image."""
         self.metadata[key] = value
+        return self
 
     def update_metadata(self, metadata):
         """Update metadata of image."""
         self.metadata.update(metadata)
+        return self
 
     def append_metadata(self, key, value):
         """Add metadata assuming the key is a list."""
@@ -154,6 +156,7 @@ class Image:
             raise ValueError(f"Metadata key {key} is not a list.")
 
         self.metadata[key].append(value)
+        return self
 
     def clear_metadata(self):
         """Clear metadata of image."""

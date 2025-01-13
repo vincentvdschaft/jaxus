@@ -124,10 +124,7 @@ def image_measure_fwhm(
     )
 
     fwhm_value_lateral = fwhm_image(
-        image,
-        position,
-        lateral_direction,
-        max_offset=max_offset,
+        image, position, lateral_direction, max_offset=max_offset, required_repeats=6
     )
     values_lateral, positions_lateral = _sample_line(
         image=image.data,

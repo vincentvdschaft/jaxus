@@ -12,6 +12,7 @@ def image_measure_gcnr_disk_annulus(
     annulus_offset,
     annulus_width,
     return_copy=False,
+    name=None,
 ):
     """Computes the gCNR between a disk and a surrounding annulus and adds the result
     to the image metadata.
@@ -52,6 +53,7 @@ def image_measure_gcnr_disk_annulus(
         "disk_radius": disk_radius,
         "annulus_offset": annulus_offset,
         "annulus_width": annulus_width,
+        "name": "" if name is None else str(name),
     }
     image.append_metadata(key="gcnr", value=gcnr_metadata)
 
@@ -66,6 +68,7 @@ def image_measure_fwhm(
     correct_position=False,
     max_correction_distance=1e-3,
     n_samples=100,
+    name=None,
     return_copy=False,
 ):
     """Computes the FWHM of a line profile in the image and adds the result to the image metadata.
@@ -146,6 +149,7 @@ def image_measure_fwhm(
         "values_axial": values_axial,
         "positions_lateral": positions_lateral,
         "values_lateral": values_lateral,
+        "name": "" if name is None else str(name),
     }
     image.append_metadata(key="fwhm", value=fwhm_metadata)
 

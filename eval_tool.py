@@ -529,7 +529,7 @@ class EvalTool:
             color="black",
             hovercolor="#444444",
         )
-        self.vsource_textbox.on_submit(self.update_vsource)
+        self.vsource_textbox.on_submit(lambda text: self.update_vsource(text))
 
         self.save_to_yaml_button = self.fig.add_button(
             "Save Metrics",
@@ -546,6 +546,7 @@ class EvalTool:
         if metrics_image is not None:
             self.load_measurements_from_image(metrics_image)
         else:
+            print("No metrics image provided")
             self.load_measurements_from_image(image)
         plt.show()
 
@@ -558,11 +559,12 @@ class EvalTool:
             yaml.dump(yaml_dict, f)
 
     def update_vsource(self, text):
+
         if "none" in text.lower():
             self.vsource = None
             return
 
-        text = text.replace(" ", ",")
+        text = text.replace(" ", "")
         text_parts = text.split(",")
         if len(text_parts) != 2:
             return
@@ -802,6 +804,10 @@ class EvalTool:
                 disk_radius = gcnr_data["disk_radius"]
                 annulus_offset = gcnr_data["annulus_offset"]
                 annulus_width = gcnr_data["annulus_width"]
+
+                print(
+                    f"disk_pos={disk_pos}, disk_radius={disk_radius}, annulus_offset={annulus_offset}, annulus_width={annulus_width}"
+                )
                 self.frozen_gcnr_markers.append(
                     GCNRDiskAnnulusMarker(
                         self.ax_im,
@@ -813,6 +819,7 @@ class EvalTool:
                     )
                 )
 
+        print(self.frozen_gcnr_markers)
         plt.draw()
 
 

@@ -17,6 +17,7 @@ from jaxus.metrics.fwhm import _sample_line, find_fwhm_indices
 from matplotlib.widgets import Button
 import argparse
 from dataclasses import dataclass
+import yaml
 
 parser = argparse.ArgumentParser()
 parser.add_argument("file", type=Path, default="image_frame_0000.hdf5", nargs="?")
@@ -88,6 +89,18 @@ class FWHMMarker:
             self.position, self.direction, self.positions_axial, self.positions_lateral
         )
 
+    def as_dict(self):
+        return {
+            "position": [float(self.position[0]), float(self.position[1])],
+            "direction": [float(self.direction[0]), float(self.direction[1])],
+            "max_offset": float(self.max_offset),
+            "n_samples": int(self.n_samples),
+        }
+
+    @classmethod
+    def from_dict(cls, data, ax):
+        return cls(ax, **data)
+
     def draw(self):
         if self.positions_axial is None:
             return
@@ -147,12 +160,24 @@ class GCNRDiskAnnulusMarker:
         self.disk, self.annul0, self.annul1 = gcnr_plot_disk_annulus(
             ax,
             disk_center=disk_pos,
-            disk_r=disk_radius,
+            disk_radius=disk_radius,
             annulus_offset=annulus_offset,
             annulus_width=annulus_width,
             opacity=1.0,
         )
         self.update()
+
+    def as_dict(self):
+        return {
+            "disk_pos": [float(self.disk_pos[0]), float(self.disk_pos[1])],
+            "disk_radius": float(self.disk_radius),
+            "annulus_offset": float(self.annulus_offset),
+            "annulus_width": float(self.annulus_width),
+        }
+
+    @classmethod
+    def from_dict(cls, data, ax):
+        return cls(ax, **data)
 
     def update(
         self, disk_pos=None, disk_radius=None, annulus_offset=None, annulus_width=None
@@ -297,6 +322,7 @@ class EvalTool:
     def __init__(self, image, metrics_image=None):
         self.image = image
         self.spacing = 0.7
+        self.button_spacing = 0.1
         self.margin_left = 1.0
         self.margin_right = self.spacing
         self.margin_top = 0.3
@@ -425,7 +451,7 @@ class EvalTool:
         self.freeze_gcnr_button = self.fig.add_button(
             "Freeze gCNR",
             x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + self.button_height + self.spacing,
+            y=self.margin_top + self.button_height + self.button_spacing,
             width=self.button_width,
             height=self.button_height,
             color="black",
@@ -436,7 +462,7 @@ class EvalTool:
         self.save_image_button = self.fig.add_button(
             "Save Image",
             x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + 2 * self.button_height + 2 * self.spacing,
+            y=self.margin_top + 2 * self.button_height + 2 * self.button_spacing,
             width=self.button_width,
             height=self.button_height,
             color="black",
@@ -455,7 +481,7 @@ class EvalTool:
         self.radius_widget = IncrementWidget(
             fig=self.fig,
             x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + 3 * self.button_height + 3 * self.spacing,
+            y=self.margin_top + 3 * self.button_height + 3 * self.button_spacing,
             width=self.button_width,
             height=self.button_height,
             value=5e-3,
@@ -469,7 +495,7 @@ class EvalTool:
         self.offset_widget = IncrementWidget(
             fig=self.fig,
             x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + 4 * self.button_height + 4 * self.spacing,
+            y=self.margin_top + 4 * self.button_height + 4 * self.button_spacing,
             width=self.button_width,
             height=self.button_height,
             value=1e-3,
@@ -483,7 +509,7 @@ class EvalTool:
         self.width_widget = IncrementWidget(
             fig=self.fig,
             x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + 5 * self.button_height + 5 * self.spacing,
+            y=self.margin_top + 5 * self.button_height + 5 * self.button_spacing,
             width=self.button_width,
             height=self.button_height,
             value=1e-3,
@@ -496,7 +522,7 @@ class EvalTool:
 
         self.vsource_textbox = self.fig.add_textbox(
             x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + 6 * self.button_height + 6 * self.spacing,
+            y=self.margin_top + 6 * self.button_height + 6 * self.button_spacing,
             width=self.button_width,
             height=self.button_height,
             label="Vsource",
@@ -505,11 +531,31 @@ class EvalTool:
         )
         self.vsource_textbox.on_submit(self.update_vsource)
 
+        self.save_to_yaml_button = self.fig.add_button(
+            "Save Metrics",
+            x=self.margin_left + self.im_width + self.spacing,
+            y=self.margin_top + 7 * self.button_height + 7 * self.button_spacing,
+            width=self.button_width,
+            height=self.button_height,
+            color="black",
+            hovercolor="#444444",
+        )
+
+        self.save_to_yaml_button.on_clicked(lambda event: self.save_metrics_to_yaml())
+
         if metrics_image is not None:
             self.load_measurements_from_image(metrics_image)
         else:
             self.load_measurements_from_image(image)
         plt.show()
+
+    def save_metrics_to_yaml(self):
+        yaml_dict = {
+            "fwhm": [fwhm_marker.as_dict() for fwhm_marker in self.frozen_fwhm_markers],
+            "gcnr": [gcnr_marker.as_dict() for gcnr_marker in self.frozen_gcnr_markers],
+        }
+        with open("metrics.yaml", "w") as f:
+            yaml.dump(yaml_dict, f)
 
     def update_vsource(self, text):
         if "none" in text.lower():
@@ -692,7 +738,7 @@ class EvalTool:
         print(f"gCNR: {gcnr}")
 
         print(
-            f"disk_center={self.active_gcnr_marker.disk_pos}, disk_r={self.active_gcnr_marker.disk_radius}, annulus_offset={self.active_gcnr_marker.annulus_offset}, annulus_width={self.active_gcnr_marker.annulus_width}"
+            f"disk_center={self.active_gcnr_marker.disk_pos}, disk_radius={self.active_gcnr_marker.disk_radius}, annulus_offset={self.active_gcnr_marker.annulus_offset}, annulus_width={self.active_gcnr_marker.annulus_width}"
         )
 
         self.active_gcnr_marker.deactivate()
@@ -722,7 +768,7 @@ class EvalTool:
             self.image = image_measure_gcnr_disk_annulus(
                 image=self.image,
                 disk_center=gcnr_marker.disk_pos,
-                disk_r=gcnr_marker.disk_radius,
+                disk_radius=gcnr_marker.disk_radius,
                 annulus_offset=gcnr_marker.annulus_offset,
                 annulus_width=gcnr_marker.annulus_width,
             )
@@ -753,7 +799,7 @@ class EvalTool:
             for gcnr_data in metadata["gcnr"]:
                 print("Loading gCNR")
                 disk_pos = gcnr_data["disk_center"]
-                disk_radius = gcnr_data["disk_r"]
+                disk_radius = gcnr_data["disk_radius"]
                 annulus_offset = gcnr_data["annulus_offset"]
                 annulus_width = gcnr_data["annulus_width"]
                 self.frozen_gcnr_markers.append(

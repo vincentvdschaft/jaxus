@@ -56,7 +56,7 @@ def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 100):
 def gcnr_disk_annulus(
     image: Image,
     disk_center: tuple,
-    disk_r: float,
+    disk_radius: float,
     annulus_offset: float,
     annulus_width: float,
     num_bins: int = 100,
@@ -71,7 +71,7 @@ def gcnr_disk_annulus(
         The extent of the image.
     disk_center : tuple
         The position of the disk.
-    disk_r : float
+    disk_radius : float
         The radius of the disk.
     annulus_offset : float
         The space between disk and annulus.
@@ -93,11 +93,11 @@ def gcnr_disk_annulus(
     r = np.sqrt((x_grid - disk_center[0]) ** 2 + (z_grid - disk_center[1]) ** 2)
 
     # Create a mask for the disk
-    mask_disk = r < disk_r
+    mask_disk = r < disk_radius
 
     annulus_r0, annulus_r1 = (
-        disk_r + annulus_offset,
-        disk_r + annulus_offset + annulus_width,
+        disk_radius + annulus_offset,
+        disk_radius + annulus_offset + annulus_width,
     )
 
     # Create a mask for the annulus
@@ -116,7 +116,7 @@ def gcnr_disk_annulus(
 def gcnr_plot_disk_annulus(
     ax: plt.Axes,
     disk_center: tuple,
-    disk_r: float,
+    disk_radius: float,
     annulus_offset: float,
     annulus_width: float,
     opacity: float = 0.5,
@@ -130,7 +130,7 @@ def gcnr_plot_disk_annulus(
             The axis to plot the disk and annulus on.
         disk_center : tuple
             The position of the disk in meters.
-        disk_r : float
+        disk_radius : float
             The inner radius of the disk in meters.
         annulus_offset : float
             The space between disk and annulus.
@@ -148,7 +148,7 @@ def gcnr_plot_disk_annulus(
     # Plot the inner circle
     disk = plt.Circle(
         disk_center,
-        disk_r,
+        disk_radius,
         color=color_cycle[0],
         fill=False,
         linestyle="--",
@@ -160,7 +160,7 @@ def gcnr_plot_disk_annulus(
     # Draw the annulus
     annul0 = plt.Circle(
         disk_center,
-        disk_r + annulus_offset,
+        disk_radius + annulus_offset,
         color=color_cycle[1],
         fill=False,
         linestyle="--",
@@ -170,7 +170,7 @@ def gcnr_plot_disk_annulus(
     ax.add_artist(annul0)
     annul1 = plt.Circle(
         disk_center,
-        disk_r + annulus_offset + annulus_width,
+        disk_radius + annulus_offset + annulus_width,
         color=color_cycle[1],
         fill=False,
         linestyle="--",

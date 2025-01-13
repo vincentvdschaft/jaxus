@@ -6,7 +6,12 @@ from copy import deepcopy
 
 
 def image_measure_gcnr_disk_annulus(
-    image: Image, disk_center, disk_r, annulus_offset, annulus_width, return_copy=False
+    image: Image,
+    disk_center,
+    disk_radius,
+    annulus_offset,
+    annulus_width,
+    return_copy=False,
 ):
     """Computes the gCNR between a disk and a surrounding annulus and adds the result
     to the image metadata.
@@ -17,7 +22,7 @@ def image_measure_gcnr_disk_annulus(
         The image to compute the GCNR on.
     disk_center : tuple
         The position of the disk.
-    disk_r : float
+    disk_radius : float
         The radius of the disk.
     annulus_offset : float
         The space between disk and annulus.
@@ -35,7 +40,7 @@ def image_measure_gcnr_disk_annulus(
     gcnr = gcnr_disk_annulus(
         image=image,
         disk_center=disk_center,
-        disk_r=disk_r,
+        disk_radius=disk_radius,
         annulus_offset=annulus_offset,
         annulus_width=annulus_width,
     )
@@ -44,7 +49,7 @@ def image_measure_gcnr_disk_annulus(
         "gcnr_type": "disk_annulus",
         "gcnr_value": gcnr,
         "disk_center": disk_center,
-        "disk_r": disk_r,
+        "disk_radius": disk_radius,
         "annulus_offset": annulus_offset,
         "annulus_width": annulus_width,
     }

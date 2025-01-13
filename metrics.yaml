@@ -1,0 +1,16 @@
+fwhm:
+- direction:
+  - 0.004307692307692304
+  - 0.05770769230769231
+  max_offset: 0.004
+  n_samples: 100
+  position:
+  - 0.004307692307692304
+  - 0.04270769230769231
+gcnr:
+- annulus_offset: 0.001
+  annulus_width: 0.001
+  disk_pos:
+  - 0.020171026261873698
+  - 0.046875244681626405
+  disk_radius: 0.004

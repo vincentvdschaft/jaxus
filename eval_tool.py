@@ -101,7 +101,21 @@ class FWHMMarker:
 
         plt.draw()
 
-    def update(self, position, direction, positions_axial, positions_lateral):
+    def update(
+        self,
+        position=None,
+        direction=None,
+        positions_axial=None,
+        positions_lateral=None,
+    ):
+        if position is None:
+            position = self.position
+        if direction is None:
+            direction = self.direction
+        if positions_axial is None:
+            direction = self.direction
+        if positions_lateral is None:
+            positions_lateral = self.positions_lateral
         self.position = position
         self.direction = direction
         self.positions_axial = positions_axial
@@ -114,7 +128,66 @@ class FWHMMarker:
 
 
 class GCNRDiskAnnulusMarker:
-    pass
+    def __init__(
+        self, ax, disk_pos, disk_radius, annulus_offset, annulus_width, active=True
+    ):
+        self.ax = ax
+        self.disk_pos = disk_pos
+        self.disk_radius = disk_radius
+        self.annulus_offset = annulus_offset
+        self.annulus_width = annulus_width
+        self.active = active
+
+        self.disk, self.annul0, self.annul1 = gcnr_plot_disk_annulus(
+            ax,
+            disk_center=disk_pos,
+            disk_r=disk_radius,
+            annulus_offset=annulus_offset,
+            annulus_width=annulus_width,
+            opacity=1.0,
+        )
+        self.update()
+
+    def update(
+        self, disk_pos=None, disk_radius=None, annulus_offset=None, annulus_width=None
+    ):
+
+        if disk_pos is None:
+            disk_pos = self.disk_pos
+        if disk_radius is None:
+            disk_radius = self.disk_radius
+        if annulus_offset is None:
+            annulus_offset = self.annulus_offset
+        if annulus_width is None:
+            annulus_width = self.annulus_width
+
+        self.disk_pos = disk_pos
+        self.disk_radius = disk_radius
+        self.annulus_offset = annulus_offset
+        self.annulus_width = annulus_width
+
+        self.disk.center = disk_pos
+        self.annul0.center = disk_pos
+        self.annul1.center = disk_pos
+
+        self.disk.radius = disk_radius
+        self.annul0.radius = disk_radius + annulus_offset
+        self.annul1.radius = disk_radius + annulus_offset + annulus_width
+
+        if self.active:
+            self.disk.set_edgecolor("C0")
+            self.annul0.set_edgecolor("C1")
+            self.annul1.set_edgecolor("C1")
+        else:
+            self.disk.set_edgecolor("white")
+            self.annul0.set_edgecolor("white")
+            self.annul1.set_edgecolor("white")
+
+        plt.draw()
+
+    def deactivate(self):
+        self.active = False
+        self.update()
 
 
 class EvalTool:
@@ -131,7 +204,13 @@ class EvalTool:
         self.margin = 0.3
         self.grid_spacing = 0.2
         self.button_width = 2
+        self.button_height = 0.5
         self.arrow_target = EvalTool.TARGET_FWHM
+
+        self.active_fwhm_marker = None
+        self.active_gcnr_marker = None
+        self.frozen_fwhm_markers = []
+        self.frozen_gcnr_markers = []
 
         self.y_line = self.margin_top
         self.lineplot_h = 1
@@ -230,8 +309,8 @@ class EvalTool:
             )[0],
         )
 
-        self.save_fwhm_button = self.fig.add_button(
-            "Save FWHM",
+        self.freeze_fwhm_button = self.fig.add_button(
+            "Freeze FWHM",
             x=self.margin_left + self.im_width + self.spacing,
             y=self.margin_top,
             width=self.button_width,
@@ -240,9 +319,29 @@ class EvalTool:
             hovercolor="#444444",
         )
         # Attach events
-        self.save_fwhm_button.on_clicked(lambda x: self.save_fwhm())
+        self.freeze_fwhm_button.on_clicked(lambda x: self.freeze_fwhm())
 
-        self.active_fwhm_marker = None
+        self.freeze_gcnr_button = self.fig.add_button(
+            "Freeze gCNR",
+            x=self.margin_left + self.im_width + self.spacing,
+            y=self.margin_top + self.button_height + self.spacing,
+            width=self.button_width,
+            height=self.button_height,
+            color="black",
+            hovercolor="#444444",
+        )
+        self.freeze_gcnr_button.on_clicked(lambda x: self.freeze_gcnr())
+
+        self.save_image_button = self.fig.add_button(
+            "Save Image",
+            x=self.margin_left + self.im_width + self.spacing,
+            y=self.margin_top + 2 * self.button_height + 2 * self.spacing,
+            width=self.button_width,
+            height=self.button_height,
+            color="black",
+            hovercolor="#444444",
+        )
+        self.save_image_button.on_clicked(lambda x: self.save_image())
 
         plot_beamformed(self.ax_im, image_loaded.data, np.array(image_loaded.extent))
 
@@ -252,7 +351,7 @@ class EvalTool:
         )
         self.cid_key = self.fig.fig.canvas.mpl_connect("key_press_event", self.on_key)
 
-        self.update_plot()
+        self.load_image(image)
 
     def on_click(self, event):
 
@@ -269,21 +368,32 @@ class EvalTool:
             self.update_fwhm(position)
 
             self.arrow_target = EvalTool.TARGET_FWHM
-        # elif event.button == 3:
-        #     disk_pos = np.array([event.xdata, event.ydata])
-        #     arrow_target = TARGET_GCNR
+        elif event.button == 3:
+            disk_pos = np.array([event.xdata, event.ydata])
+            arrow_target = EvalTool.TARGET_GCNR
+            self.update_gcnr(disk_pos)
 
         else:
             return
 
-        self.update_plot()
-
     def on_key(self, event):
-        if event.key == "d":
-            print("Adding FWHM measurement")
-            self.active_fwhm_marker.deactivate()
-            self.active_fwhm_marker = None
+        vector = _arrow_key_to_vector(event.key)
+        if vector is None:
             return
+
+        if (
+            self.arrow_target == EvalTool.TARGET_FWHM
+            and self.active_fwhm_marker is not None
+        ):
+            self.active_fwhm_marker.position += vector
+            self.update_fwhm(self.active_fwhm_marker.position)
+
+        elif (
+            self.arrow_target == EvalTool.TARGET_GCNR
+            and self.active_gcnr_marker is not None
+        ):
+            self.active_gcnr_marker.disk_pos += vector
+            self.update_gcnr(self.active_gcnr_marker.disk_pos)
 
     def update_fwhm(self, position):
 
@@ -344,341 +454,133 @@ class EvalTool:
         self.fwhm_lineplot_lateral.vline_right.set_xdata([offsets[idx_right]])
         self.fwhm_lineplot_lateral.vline_peak.set_xdata([offsets[idx_peak]])
 
-    def save_fwhm(self):
+    def update_gcnr(self, disk_pos):
+        if self.active_gcnr_marker is None:
+            self.active_gcnr_marker = GCNRDiskAnnulusMarker(
+                ax=self.ax_im,
+                disk_pos=disk_pos,
+                disk_radius=10e-3,
+                annulus_offset=1e-3,
+                annulus_width=3e-3,
+            )
+
+        self.active_gcnr_marker.update(disk_pos=disk_pos)
+
+    def freeze_fwhm(self):
         if self.active_fwhm_marker is None:
             return
 
-        self.image = image_measure_fwhm(
+        measured_image = image_measure_fwhm(
             self.image,
             self.active_fwhm_marker.position,
             self.active_fwhm_marker.direction,
             max_offset=self.max_offset,
+            return_copy=True,
         )
 
+        fwhm_axial = measured_image.metadata["fwhm"][-1]["fwhm_value_axial"]
+        fwhm_lateral = measured_image.metadata["fwhm"][-1]["fwhm_value_lateral"]
+
+        print(f"FWHM axial: {fwhm_axial*1e-3:.2f}mm")
+        print(f"FWHM lateral: {fwhm_lateral*1e-3:.2f}mm")
+
         self.active_fwhm_marker.deactivate()
+        self.frozen_fwhm_markers.append(self.active_fwhm_marker)
         self.active_fwhm_marker = None
 
-    def update_plot(self):
-        # self.active_fwhm_marker.update()
-        # plt.draw()
-        pass
+    def freeze_gcnr(self):
+        if self.active_gcnr_marker is None:
+            return
 
-        # ------------------------------------------------------------------------------
-        # Plotting
-        # ------------------------------------------------------------------------------
-        # (line_axial,) = ax_line_axial.plot(
-        #     np.linspace(-max_offset, max_offset, n_samples), np.zeros(n_samples)
-        # )
-        # (line_lateral,) = ax_line_lateral.plot(
-        #     np.linspace(-max_offset, max_offset, n_samples),
-        #     np.zeros(n_samples),
-        #     "C1",
-        # )
-        # ax_line_axial.set_ylim(-60, 0)
-        # ax_line_lateral.set_ylim(-60, 0)
-        # mm_formatter_ax(ax_line_axial, x=True, y=False)
-        # mm_formatter_ax(ax_line_lateral, x=True, y=False)
+        measured_image = image_measure_gcnr_disk_annulus(
+            self.image,
+            self.active_gcnr_marker.disk_pos,
+            self.active_gcnr_marker.disk_radius,
+            self.active_gcnr_marker.annulus_offset,
+            self.active_gcnr_marker.annulus_width,
+            return_copy=True,
+        )
 
-        # (vline_left_axial,) = ax_line_axial.plot(
-        #     [0, 0], [-60, 0], color="gray", linestyle="--"
-        # )
-        # (vline_peak_axial,) = ax_line_axial.plot(
-        #     [0, 0], [-60, 0], color="gray", linestyle="--"
-        # )
-        # (vline_right_axial,) = ax_line_axial.plot(
-        #     [0, 0], [-60, 0], color="gray", linestyle="--"
-        # )
+        gcnr = measured_image.metadata["gcnr"][-1]["gcnr_value"]
+        print(f"gCNR: {gcnr}")
 
-        # (vline_left_lateral,) = ax_line_lateral.plot(
-        #     [0, 0], [-60, 0], color="gray", linestyle="--"
-        # )
-        # (vline_peak_lateral,) = ax_line_lateral.plot(
-        #     [0, 0], [-60, 0], color="gray", linestyle="--"
-        # )
-        # (vline_right_lateral,) = ax_line_lateral.plot(
-        #     [0, 0], [-60, 0], color="gray", linestyle="--"
-        # )
+        self.active_gcnr_marker.deactivate()
+        self.frozen_gcnr_markers.append(self.active_gcnr_marker)
+        self.active_gcnr_marker = None
 
-        # disk, annul0, annul1 = gcnr_plot_disk_annulus(
-        #     ax_im,
-        #     disk_center=disk_pos,
-        #     disk_r=disk_radius,
-        #     annulus_offset=1e-3,
-        #     annulus_width=3e-3,
-        #     opacity=1.0,
-        # )
+    def save_image(self):
+        """Performs all measurements and saves the image."""
+        if self.active_fwhm_marker is not None:
+            self.freeze_fwhm()
 
+        if self.active_gcnr_marker is not None:
+            self.freeze_gcnr()
 
-# disk_pos = np.array((0, 15)) * 1e-3
-# disk_radius = 4e-3
-# annulus_offset = 1e-3
-# annulus_width = 3e-3
+        for n, fwhm_marker in enumerate(self.frozen_fwhm_markers):
+            print(f"Measuring FWHM {n}")
+            self.image = image_measure_fwhm(
+                image=self.image,
+                position=fwhm_marker.position,
+                axial_direction=fwhm_marker.direction,
+                max_offset=self.max_offset,
+                correct_position=False,
+            )
 
-# scat_pos = np.array([4.062e-3, 7.286e-2])
-# vsource = np.array((0, -15)) * 1e-3
+        for n, gcnr_marker in enumerate(self.frozen_gcnr_markers):
+            print(f"Measuring gCNR {n}")
+            self.image = image_measure_gcnr_disk_annulus(
+                image=self.image,
+                disk_center=gcnr_marker.disk_pos,
+                disk_r=gcnr_marker.disk_radius,
+                annulus_offset=gcnr_marker.annulus_offset,
+                annulus_width=gcnr_marker.annulus_width,
+            )
 
-# max_offset = 4e-3
-# n_samples = 100
+        self.image.save("image_frame_0000_measured.hdf5")
 
+    def load_image(self, image):
+        self.image = image
+        metadata = image.metadata
 
-# def update_plot():
-#     # global scat_pos, disk_pos, disk_radius, annulus_offset, annulus_width
-#     vec = scat_pos - vsource
-#     vec_orth = np.array((-vec[1], vec[0]))
-#     result_axial, positions_axial = _sample_line(
-#         image_loaded.data,
-#         image_loaded.extent,
-#         scat_pos,
-#         vec,
-#         max_offset,
-#         n_samples,
-#     )
+        if "fwhm" in metadata:
+            for fwhm_data in metadata["fwhm"]:
+                position = fwhm_data["position"]
+                direction = fwhm_data["axial_direction"]
+                self.active_fwhm_marker = FWHMMarker(
+                    self.ax_im,
+                    position,
+                    direction,
+                    max_offset=self.max_offset,
+                    n_samples=self.n_samples,
+                    active=True,
+                )
+                self.update_fwhm(position)
+                self.freeze_fwhm()
 
-#     result_lateral, positions_lateral = _sample_line(
-#         image_loaded.data,
-#         image_loaded.extent,
-#         scat_pos,
-#         vec_orth,
-#         max_offset,
-#         n_samples,
-#     )
-#     plot_beamformed(ax_im, image_loaded.data, np.array(image_loaded.extent))
-#     # scat_indicator.set_data(scat_pos[0][None], scat_pos[1][None])
-#     scat_line_axial_indicator.set_data(positions_axial[:, 0], positions_axial[:, 1])
-#     scat_line_lateral_indicator.set_data(
-#         positions_lateral[:, 0], positions_lateral[:, 1]
-#     )
-#     line_axial.set_ydata(result_axial)
-#     line_lateral.set_ydata(result_lateral)
+        if "gcnr" in metadata:
+            for gcnr_data in metadata["gcnr"]:
+                disk_pos = gcnr_data["disk_center"]
+                disk_radius = gcnr_data["disk_r"]
+                annulus_offset = gcnr_data["annulus_offset"]
+                annulus_width = gcnr_data["annulus_width"]
+                self.frozen_gcnr_markers.append(
+                    GCNRDiskAnnulusMarker(
+                        self.ax_im,
+                        disk_pos,
+                        disk_radius,
+                        annulus_offset,
+                        annulus_width,
+                        active=False,
+                    )
+                )
 
-#     fwhm_axial = fwhm_image(
-#         image=image_loaded, position=scat_pos, direction=vec, max_offset=max_offset
-#     )
-#     fwhm_lateral = fwhm_image(
-#         image=image_loaded, position=scat_pos, direction=vec_orth, max_offset=max_offset
-#     )
-#     print(f"FWHM: {fwhm_axial*1e3:.1f} mm, {fwhm_lateral*1e3:.1f} mm")
-
-#     idx_peak, idx_left, idx_right = find_fwhm_indices(
-#         result_axial, required_repeats=3, log_scale=image_loaded.in_db
-#     )
-#     dist_vals = np.linspace(-max_offset, max_offset, n_samples)
-
-#     vline_left_axial.set_xdata([dist_vals[idx_left]])
-#     vline_right_axial.set_xdata([dist_vals[idx_right]])
-#     vline_peak_axial.set_xdata([dist_vals[idx_peak]])
-
-#     idx_peak, idx_left, idx_right = find_fwhm_indices(
-#         result_lateral, required_repeats=3, log_scale=image_loaded.in_db
-#     )
-#     vline_left_lateral.set_xdata([dist_vals[idx_left]])
-#     vline_right_lateral.set_xdata([dist_vals[idx_right]])
-#     vline_peak_lateral.set_xdata([dist_vals[idx_peak]])
-
-#     disk.center = disk_pos
-#     annul0.center = disk_pos
-#     annul1.center = disk_pos
-
-#     disk.radius = disk_radius
-#     annul0.radius = disk_radius + annulus_offset
-#     annul1.radius = disk_radius + annulus_offset + annulus_width
-
-#     gcnr_value = gcnr_disk_annulus(
-#         image_loaded,
-#         disk_center=disk_pos,
-#         disk_r=disk_radius,
-#         annulus_offset=annulus_offset,
-#         annulus_width=annulus_width,
-#     )
-#     print(f"gCNR: {gcnr_value:.2f}")
-
-#     plt.draw()
-
-
-# def on_click(event):
-
-#     global scat_pos, disk_pos, arrow_target
-#     # Check if mouse click
-#     if event.xdata is None or event.ydata is None:
-#         return
-#     if event.button == 1:
-#         scat_pos = np.array([event.xdata, event.ydata])
-#         scat_pos = correct_fwhm_point(image_loaded, scat_pos, max_diff=1.0e-3)
-#         arrow_target = TARGET_FWHM
-#     elif event.button == 3:
-#         disk_pos = np.array([event.xdata, event.ydata])
-#         arrow_target = TARGET_GCNR
-
-#     else:
-#         return
-
-#     update_plot()
-
-
-# def on_key(event):
-#     global scat_pos, disk_pos, disk_radius, annulus_offset, annulus_width
-#     step = 0.1e-3
-#     delta = np.zeros(2)
-#     if event.key == "right":
-#         delta = np.array([1, 0]) * step
-#     elif event.key == "left":
-#         delta = np.array([-1, 0]) * step
-#     elif event.key == "up":
-#         delta = np.array([0, -1]) * step
-#     elif event.key == "down":
-#         delta = np.array([0, 1]) * step
-#     elif event.key == "a":
-#         log.info("Adding gCNR measurement")
-#         image_measure_gcnr_disk_annulus(
-#             image_loaded, disk_pos, disk_radius, annulus_offset, annulus_width
-#         )
-#         return
-#     elif event.key == "d":
-#         log.info("Adding FWHM measurement")
-#         image_measure_fwhm(
-#             image_loaded, scat_pos, scat_pos - vsource, max_offset=max_offset
-#         )
-#         return
-#     elif event.key == "o":
-#         annulus_offset = np.clip(annulus_offset - step, 2e-4, None)
-#     elif event.key == "p":
-#         annulus_offset = np.clip(annulus_offset + step, 2e-4, None)
-#     elif event.key == "u":
-#         annulus_width = np.clip(annulus_width - step, 2e-4, None)
-#     elif event.key == "i":
-#         annulus_width = np.clip(annulus_width + step, 2e-4, None)
-#     else:
-#         return
-
-#     if arrow_target == TARGET_FWHM:
-#         scat_pos += delta
-#     elif arrow_target == TARGET_GCNR:
-#         disk_pos += delta
-
-#     update_plot()
-
-
-# def on_scroll(event):
-#     global disk_radius
-#     step = 0.1e-3
-#     if event.button == "up":
-#         disk_radius += step
-#     elif event.button == "down":
-#         disk_radius -= step
-#     else:
-#         return
-
-#     update_plot()
+        plt.draw()
 
 
 tool = EvalTool(image_loaded)
-
-# ==============================================================================
-# Initialize the figure
-# ==============================================================================
-# ------------------------------------------------------------------------------
-# Parameters
-# # ------------------------------------------------------------------------------
-# fig_w, fig_h = 8, 11
-# margin_left, margin_right = 1.0, 0.3
-# margin = margin_left + margin_right
-# spacing = 0.7
-# grid_spacing = 0.2
-
-# y_line = margin_right
-# lineplot_h = 1
-
-# # ------------------------------------------------------------------------------
-# # Create figure and axes
-# # ------------------------------------------------------------------------------
-# fig = MPLFigure(figsize=(fig_w, fig_h))
-# axes = fig.add_axes_grid(
-#     n_rows=2,
-#     n_cols=1,
-#     x=margin_left,
-#     y=margin_right,
-#     width=fig_w - margin,
-#     height=lineplot_h,
-#     spacing=grid_spacing,
-# )
-# ax_line_axial, ax_line_lateral = axes[:, 0]
-# remove_internal_ticks_labels(axes)
-
-# ax_line_lateral.set_xlabel("Lateral distance [mm]")
-# for ax in [ax_line_axial, ax_line_lateral]:
-#     ax.set_ylabel("[dB]")
-# ax_line_axial.set_title("Profile")
-
-# ax_im = fig.add_ax(
-#     x=margin_left,
-#     y=margin_right + 2 * lineplot_h + spacing + grid_spacing,
-#     width=fig_w - margin,
-#     aspect=image_loaded.extent,
-# )
-
-
-# # ------------------------------------------------------------------------------
-# # Plotting
-# # ------------------------------------------------------------------------------
-# (line_axial,) = ax_line_axial.plot(
-#     np.linspace(-max_offset, max_offset, n_samples), np.zeros(n_samples)
-# )
-# (line_lateral,) = ax_line_lateral.plot(
-#     np.linspace(-max_offset, max_offset, n_samples),
-#     np.zeros(n_samples),
-#     "C1",
-# )
-# ax_line_axial.set_ylim(-60, 0)
-# ax_line_lateral.set_ylim(-60, 0)
-# mm_formatter_ax(ax_line_axial, x=True, y=False)
-# mm_formatter_ax(ax_line_lateral, x=True, y=False)
-
-
-# (vline_left_axial,) = ax_line_axial.plot([0, 0], [-60, 0], color="gray", linestyle="--")
-# (vline_peak_axial,) = ax_line_axial.plot([0, 0], [-60, 0], color="gray", linestyle="--")
-# (vline_right_axial,) = ax_line_axial.plot(
-#     [0, 0], [-60, 0], color="gray", linestyle="--"
-# )
-
-# (vline_left_lateral,) = ax_line_lateral.plot(
-#     [0, 0], [-60, 0], color="gray", linestyle="--"
-# )
-# (vline_peak_lateral,) = ax_line_lateral.plot(
-#     [0, 0], [-60, 0], color="gray", linestyle="--"
-# )
-# (vline_right_lateral,) = ax_line_lateral.plot(
-#     [0, 0], [-60, 0], color="gray", linestyle="--"
-# )
-
-# disk, annul0, annul1 = gcnr_plot_disk_annulus(
-#     ax_im,
-#     disk_center=disk_pos,
-#     disk_r=disk_radius,
-#     annulus_offset=1e-3,
-#     annulus_width=3e-3,
-#     opacity=1.0,
-# )
-
-
-# plot_beamformed(ax_im, image_loaded.data, np.array(image_loaded.extent))
-
-# (scat_line_axial_indicator,) = ax_im.plot(
-#     np.zeros(n_samples), np.zeros(n_samples), "C0--", linewidth=0.5
-# )
-# (scat_line_lateral_indicator,) = ax_im.plot(
-#     np.zeros(n_samples), np.zeros(n_samples), "C1--", linewidth=0.5
-# )
-
-# update_plot()
-
-
-# cid = fig.fig.canvas.mpl_connect("button_release_event", on_click)
-# cid_key = fig.fig.canvas.mpl_connect("key_press_event", on_key)
-# cid_scroll = fig.fig.canvas.mpl_connect("scroll_event", on_scroll)
-
 
 # plt.tight_layout()
 plt.savefig("image.png", bbox_inches="tight")
 plt.show()
 
-image_loaded.save("image_frame_0000_measured.hdf5")
+# image_loaded.save("image_frame_0000_measured.hdf5")

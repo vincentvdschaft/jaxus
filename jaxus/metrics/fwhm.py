@@ -209,6 +209,4 @@ def _sample_line(image, extent, position, vec, max_offset, n_samples):
     x_idx = np.clip(x_idx, 0, image.shape[0] - 1)
     y_idx = np.clip(y_idx, 0, image.shape[1] - 1)
 
-    fwhm(image[x_idx, y_idx], 1.0, 3, log_scale=True)
-
     return image[x_idx, y_idx], np.stack((x, y), axis=1)

@@ -316,6 +316,17 @@ def lists_to_numbered_dict(data_dict):
     return data_dict
 
 
+def numbered_dicts_to_list(data_dict):
+    """Transforms all dictionaries with numbered keys to lists."""
+    for key, value in data_dict.items():
+        if isinstance(value, dict):
+            if all(k.isdigit() for k in value.keys()):
+                data_dict[key] = [value[k] for k in sorted(value.keys(), key=int)]
+            else:
+                data_dict[key] = numbered_dicts_to_list(value)
+    return data_dict
+
+
 def load_hdf5_to_dict(hdf5_file, parent_group="/"):
     """
     Recursively reads an HDF5 file into a nested dictionary.
@@ -334,4 +345,5 @@ def load_hdf5_to_dict(hdf5_file, parent_group="/"):
             data_dict[key] = load_hdf5_to_dict(hdf5_file, parent_group=item_path)
         else:
             data_dict[key] = hdf5_file[item_path][()]
-    return data_dict
+
+    return numbered_dicts_to_list(data_dict)

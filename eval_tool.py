@@ -57,19 +57,13 @@ class FWHMLinePlot:
 
 class FWHMMarker:
 
-    def __init__(
-        self,
-        ax,
-        position,
-        direction,
-        max_offset,
-        n_samples,
-    ):
+    def __init__(self, ax, position, direction, max_offset, n_samples, active=True):
         self.ax = ax
         self.position = position
         self.direction = direction
         self.max_offset = max_offset
         self.n_samples = n_samples
+        self.active = active
 
         self.positions_axial = None
         self.positions_lateral = None
@@ -97,6 +91,14 @@ class FWHMMarker:
             self.positions_lateral[:, 1],
         )
 
+        if self.active:
+            # Set the color of the line
+            self.scat_line_axial_indicator.set_color("C0")
+            self.scat_line_lateral_indicator.set_color("C1")
+        else:
+            self.scat_line_axial_indicator.set_color("white")
+            self.scat_line_lateral_indicator.set_color("white")
+
         plt.draw()
 
     def update(self, position, direction, positions_axial, positions_lateral):
@@ -104,6 +106,10 @@ class FWHMMarker:
         self.direction = direction
         self.positions_axial = positions_axial
         self.positions_lateral = positions_lateral
+        self.draw()
+
+    def deactivate(self):
+        self.active = False
         self.draw()
 
 
@@ -116,16 +122,36 @@ class EvalTool:
 
     def __init__(self, image):
         self.image = image
-        self.fig_w, self.fig_h = 8, 11
-        self.margin_left = 1.0
-        self.margin_right = 0.3
-        self.margin = self.margin_left + self.margin_right
         self.spacing = 0.7
+        self.margin_left = 1.0
+        self.margin_right = self.spacing
+        self.margin_top = 0.3
+        self.margin_bottom = 0.6
+        self.im_width = 8
+        self.margin = 0.3
         self.grid_spacing = 0.2
+        self.button_width = 2
         self.arrow_target = EvalTool.TARGET_FWHM
 
-        self.y_line = self.margin_right
+        self.y_line = self.margin_top
         self.lineplot_h = 1
+
+        self.fig_w = (
+            self.margin_left
+            + self.im_width
+            + self.spacing
+            + self.button_width
+            + self.margin_right
+        )
+        im_height = image.aspect * self.im_width
+        self.fig_h = (
+            self.margin_top
+            + 2 * self.lineplot_h
+            + self.spacing
+            + self.grid_spacing
+            + im_height
+            + self.margin_bottom
+        )
 
         self.fig = MPLFigure(figsize=(self.fig_w, self.fig_h))
 
@@ -149,8 +175,8 @@ class EvalTool:
             n_rows=2,
             n_cols=1,
             x=self.margin_left,
-            y=self.margin_right,
-            width=self.fig_w - self.margin,
+            y=self.margin_top,
+            width=self.im_width,
             height=self.lineplot_h,
             spacing=self.grid_spacing,
         )
@@ -164,11 +190,8 @@ class EvalTool:
 
         self.ax_im = self.fig.add_ax(
             x=self.margin_left,
-            y=self.margin_right
-            + 2 * self.lineplot_h
-            + self.spacing
-            + self.grid_spacing,
-            width=self.fig_w - self.margin,
+            y=self.margin_top + 2 * self.lineplot_h + self.spacing + self.grid_spacing,
+            width=self.im_width,
             aspect=self.image.extent,
         )
 
@@ -207,13 +230,19 @@ class EvalTool:
             )[0],
         )
 
-        self.active_fwhm_marker = FWHMMarker(
-            ax=self.ax_im,
-            position=np.array([0, 15]) * 1e-3,
-            direction=np.array((0, 15)) * 1e-3,
-            max_offset=self.max_offset,
-            n_samples=self.n_samples,
+        self.save_fwhm_button = self.fig.add_button(
+            "Save FWHM",
+            x=self.margin_left + self.im_width + self.spacing,
+            y=self.margin_top,
+            width=self.button_width,
+            height=0.5,
+            color="black",
+            hovercolor="#444444",
         )
+        # Attach events
+        self.save_fwhm_button.on_clicked(lambda x: self.save_fwhm())
+
+        self.active_fwhm_marker = None
 
         plot_beamformed(self.ax_im, image_loaded.data, np.array(image_loaded.extent))
 
@@ -221,14 +250,20 @@ class EvalTool:
         self.cid_click = self.fig.fig.canvas.mpl_connect(
             "button_release_event", self.on_click
         )
+        self.cid_key = self.fig.fig.canvas.mpl_connect("key_press_event", self.on_key)
 
         self.update_plot()
 
     def on_click(self, event):
+
+        if not event.inaxes == self.ax_im:
+            return
+
         # Check if mouse click
         if event.xdata is None or event.ydata is None:
             return
         if event.button == 1:
+            print("click")
             position = np.array([event.xdata, event.ydata])
             position = correct_fwhm_point(image_loaded, position, max_diff=1.0e-3)
             self.update_fwhm(position)
@@ -242,6 +277,13 @@ class EvalTool:
             return
 
         self.update_plot()
+
+    def on_key(self, event):
+        if event.key == "d":
+            print("Adding FWHM measurement")
+            self.active_fwhm_marker.deactivate()
+            self.active_fwhm_marker = None
+            return
 
     def update_fwhm(self, position):
 
@@ -271,6 +313,14 @@ class EvalTool:
         )
         self.curve_lateral = FWHMCurve(positions_lateral, result)
 
+        if self.active_fwhm_marker is None:
+            self.active_fwhm_marker = FWHMMarker(
+                ax=self.ax_im,
+                position=position,
+                direction=direction,
+                max_offset=self.max_offset,
+                n_samples=self.n_samples,
+            )
         self.active_fwhm_marker.update(
             position, direction, positions_axial, positions_lateral
         )
@@ -293,6 +343,20 @@ class EvalTool:
         self.fwhm_lineplot_lateral.vline_left.set_xdata([offsets[idx_left]])
         self.fwhm_lineplot_lateral.vline_right.set_xdata([offsets[idx_right]])
         self.fwhm_lineplot_lateral.vline_peak.set_xdata([offsets[idx_peak]])
+
+    def save_fwhm(self):
+        if self.active_fwhm_marker is None:
+            return
+
+        self.image = image_measure_fwhm(
+            self.image,
+            self.active_fwhm_marker.position,
+            self.active_fwhm_marker.direction,
+            max_offset=self.max_offset,
+        )
+
+        self.active_fwhm_marker.deactivate()
+        self.active_fwhm_marker = None
 
     def update_plot(self):
         # self.active_fwhm_marker.update()

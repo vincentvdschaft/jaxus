@@ -181,6 +181,11 @@ class Image:
         """Return y values of image."""
         return np.linspace(self.extent[2], self.extent[3], self.shape[1])
 
+    @property
+    def aspect(self):
+        """Return aspect ratio of image."""
+        return (self.extent[1] - self.extent[0]) / (self.extent[3] - self.extent[2])
+
     def match_histogram(self, other):
         """Match the histogram of the image to another image."""
 

@@ -230,12 +230,7 @@ for frame in frames:
             path = path.with_suffix(".png")
         # plt.savefig(path, dpi=300, bbox_inches="tight")
         if path.suffix == ".hdf5":
-            save_hdf5_image(
-                path,
-                im_das,
-                extent=pixel_grid.extent_m,
-                log_compressed=True,
-            )
+            save_hdf5_image(path, im_das, extent=pixel_grid.extent_m, scale="db")
             log.info(f"Saved to {log.yellow(path)}")
         elif path.suffix == ".png":
             # import cv2

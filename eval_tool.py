@@ -55,6 +55,12 @@ class FWHMLinePlot:
     vline_right: matplotlib.lines.Line2D
 
 
+def _replace_none(value, replacement):
+    if value is None:
+        return replacement
+    return value
+
+
 class FWHMMarker:
 
     def __init__(self, ax, position, direction, max_offset, n_samples, active=True):
@@ -108,14 +114,11 @@ class FWHMMarker:
         positions_axial=None,
         positions_lateral=None,
     ):
-        if position is None:
-            position = self.position
-        if direction is None:
-            direction = self.direction
-        if positions_axial is None:
-            direction = self.direction
-        if positions_lateral is None:
-            positions_lateral = self.positions_lateral
+        position = _replace_none(position, self.position)
+        direction = _replace_none(direction, self.direction)
+        positions_axial = _replace_none(positions_axial, self.positions_axial)
+        positions_lateral = _replace_none(positions_lateral, self.positions_lateral)
+
         self.position = position
         self.direction = direction
         self.positions_axial = positions_axial
@@ -152,14 +155,10 @@ class GCNRDiskAnnulusMarker:
         self, disk_pos=None, disk_radius=None, annulus_offset=None, annulus_width=None
     ):
 
-        if disk_pos is None:
-            disk_pos = self.disk_pos
-        if disk_radius is None:
-            disk_radius = self.disk_radius
-        if annulus_offset is None:
-            annulus_offset = self.annulus_offset
-        if annulus_width is None:
-            annulus_width = self.annulus_width
+        disk_pos = _replace_none(disk_pos, self.disk_pos)
+        disk_radius = _replace_none(disk_radius, self.disk_radius)
+        annulus_offset = _replace_none(annulus_offset, self.annulus_offset)
+        annulus_width = _replace_none(annulus_width, self.annulus_width)
 
         self.disk_pos = disk_pos
         self.disk_radius = disk_radius
@@ -188,6 +187,105 @@ class GCNRDiskAnnulusMarker:
     def deactivate(self):
         self.active = False
         self.update()
+
+
+class IncrementWidget:
+    def __init__(
+        self,
+        fig,
+        x,
+        y,
+        width,
+        height,
+        value,
+        label,
+        step=0.1e-3,
+        minval=0.0,
+        maxval=1.0,
+        callback=None,
+    ):
+        self.fig = fig
+        self.step = step
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.button_height = height / 2
+        self.button_y = y + height / 2
+        self.value = value
+        self.minval = minval
+        self.maxval = maxval
+        self.callback = callback
+
+        self.button_width = self.width / 4
+        self.button_decrement = fig.add_button(
+            x=x + self.button_width,
+            y=self.button_y,
+            width=self.button_width,
+            height=self.button_height,
+            label="<",
+            color="black",
+            hovercolor="#444444",
+        )
+        self.button_decrement_large = fig.add_button(
+            x=x,
+            y=self.button_y,
+            width=self.button_width,
+            height=self.button_height,
+            label="<<",
+            color="black",
+            hovercolor="#444444",
+        )
+        self.button_increment = fig.add_button(
+            x=x + self.width - 2 * self.button_width,
+            y=self.button_y,
+            width=self.button_width,
+            height=self.button_height,
+            label=">",
+            color="black",
+            hovercolor="#444444",
+        )
+        self.button_increment_large = fig.add_button(
+            x=x + self.width - self.button_width,
+            y=self.button_y,
+            width=self.button_width,
+            height=self.button_height,
+            label=">>",
+            color="black",
+            hovercolor="#444444",
+        )
+        self.button_decrement.on_clicked(self.decrement)
+        self.button_increment.on_clicked(self.increment)
+        self.button_decrement_large.on_clicked(self.decrement_large)
+        self.button_increment_large.on_clicked(self.increment_large)
+
+        self.label = self.fig.add_text(
+            x=x + self.width / 2,
+            y=y,
+            text=label,
+            va="top",
+            ha="center",
+        )
+
+    def increment(self, event):
+        self.value = min(self.value + self.step, self.maxval)
+        if self.callback is not None:
+            self.callback(self.value)
+
+    def decrement(self, event):
+        self.value = max(self.value - self.step, self.minval)
+        if self.callback is not None:
+            self.callback(self.value)
+
+    def increment_large(self, event):
+        self.value = min(self.value + self.step * 10, self.maxval)
+        if self.callback is not None:
+            self.callback(self.value)
+
+    def decrement_large(self, event):
+        self.value = max(self.value - self.step * 10, self.minval)
+        if self.callback is not None:
+            self.callback(self.value)
 
 
 class EvalTool:
@@ -351,7 +449,50 @@ class EvalTool:
         )
         self.cid_key = self.fig.fig.canvas.mpl_connect("key_press_event", self.on_key)
 
+        self.radius_widget = IncrementWidget(
+            fig=self.fig,
+            x=self.margin_left + self.im_width + self.spacing,
+            y=self.margin_top + 3 * self.button_height + 3 * self.spacing,
+            width=self.button_width,
+            height=self.button_height,
+            value=5e-3,
+            step=0.1e-3,
+            minval=0.0,
+            maxval=100e-3,
+            label="Disk radius",
+            callback=lambda x: self.update_gcnr(disk_radius=x),
+        )
+
+        self.offset_widget = IncrementWidget(
+            fig=self.fig,
+            x=self.margin_left + self.im_width + self.spacing,
+            y=self.margin_top + 4 * self.button_height + 4 * self.spacing,
+            width=self.button_width,
+            height=self.button_height,
+            value=1e-3,
+            step=0.1e-3,
+            minval=0.0,
+            maxval=100e-3,
+            label="Annulus offset",
+            callback=lambda x: self.update_gcnr(annulus_offset=x),
+        )
+
+        self.width_widget = IncrementWidget(
+            fig=self.fig,
+            x=self.margin_left + self.im_width + self.spacing,
+            y=self.margin_top + 5 * self.button_height + 5 * self.spacing,
+            width=self.button_width,
+            height=self.button_height,
+            value=1e-3,
+            step=0.1e-3,
+            minval=0.0,
+            maxval=100e-3,
+            label="Annulus width",
+            callback=lambda x: self.update_gcnr(annulus_width=x),
+        )
+
         self.load_image(image)
+        plt.show()
 
     def on_click(self, event):
 
@@ -370,7 +511,7 @@ class EvalTool:
             self.arrow_target = EvalTool.TARGET_FWHM
         elif event.button == 3:
             disk_pos = np.array([event.xdata, event.ydata])
-            arrow_target = EvalTool.TARGET_GCNR
+            self.arrow_target = EvalTool.TARGET_GCNR
             self.update_gcnr(disk_pos)
 
         else:
@@ -454,17 +595,24 @@ class EvalTool:
         self.fwhm_lineplot_lateral.vline_right.set_xdata([offsets[idx_right]])
         self.fwhm_lineplot_lateral.vline_peak.set_xdata([offsets[idx_peak]])
 
-    def update_gcnr(self, disk_pos):
+    def update_gcnr(
+        self, disk_pos=None, disk_radius=None, annulus_offset=None, annulus_width=None
+    ):
         if self.active_gcnr_marker is None:
             self.active_gcnr_marker = GCNRDiskAnnulusMarker(
                 ax=self.ax_im,
-                disk_pos=disk_pos,
-                disk_radius=10e-3,
-                annulus_offset=1e-3,
-                annulus_width=3e-3,
+                disk_pos=_replace_none(disk_pos, np.array([0, 15e-3])),
+                disk_radius=_replace_none(disk_radius, 4e-3),
+                annulus_offset=_replace_none(annulus_offset, 1e-3),
+                annulus_width=_replace_none(annulus_width, 1e-3),
             )
 
-        self.active_gcnr_marker.update(disk_pos=disk_pos)
+        self.active_gcnr_marker.update(
+            disk_pos=disk_pos,
+            disk_radius=disk_radius,
+            annulus_offset=annulus_offset,
+            annulus_width=annulus_width,
+        )
 
     def freeze_fwhm(self):
         if self.active_fwhm_marker is None:
@@ -578,9 +726,3 @@ class EvalTool:
 
 
 tool = EvalTool(image_loaded)
-
-# plt.tight_layout()
-plt.savefig("image.png", bbox_inches="tight")
-plt.show()
-
-# image_loaded.save("image_frame_0000_measured.hdf5")

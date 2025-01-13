@@ -310,17 +310,26 @@ def lists_to_numbered_dict(data_dict):
     """Transforms all lists in a dictionary to dictionaries with numbered keys."""
     for key, value in data_dict.items():
         if isinstance(value, list):
-            data_dict[key] = {str(i): v for i, v in enumerate(value)}
+            data_dict[key] = {str(i).zfill(3): v for i, v in enumerate(value)}
         elif isinstance(value, dict):
             data_dict[key] = lists_to_numbered_dict(value)
     return data_dict
+
+
+def _is_numbered_dict(data_dict):
+    keys = data_dict.keys()
+    try:
+        keys = [int(k) for k in keys]
+    except ValueError:
+        return False
+    return set(keys) == set(range(len(keys)))
 
 
 def numbered_dicts_to_list(data_dict):
     """Transforms all dictionaries with numbered keys to lists."""
     for key, value in data_dict.items():
         if isinstance(value, dict):
-            if all(k.isdigit() for k in value.keys()):
+            if _is_numbered_dict(value):
                 data_dict[key] = [value[k] for k in sorted(value.keys(), key=int)]
             else:
                 data_dict[key] = numbered_dicts_to_list(value)

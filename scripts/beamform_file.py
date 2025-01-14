@@ -144,14 +144,14 @@ for frame in frames:
         extent = fix_extent([float(coord) * 1e-3 for coord in args.extent])
     else:
         extent = [
-            data["probe_geometry"][:, 0].min() - 2e-3,
-            data["probe_geometry"][:, 0].max() + 2e-3,
+            min(data["probe_geometry"][:, 0].min() - 2e-3, -20e-3),
+            max(data["probe_geometry"][:, 0].max() + 2e-3, 20e-3),
             1e-3,
             n_ax * wavelength / 8,
         ]
 
     print(f"extent: {extent}")
-    pixel_size = (wavelength / 2, wavelength / 4)
+    pixel_size = (wavelength / 4, wavelength / 4)
 
     pixel_grid = get_pixel_grid_from_extent(extent=extent, pixel_size=pixel_size)
 
@@ -223,8 +223,7 @@ for frame in frames:
     if args.save_path is not None:
         path = Path(args.save_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path_addition = f"frame_{frame:04d}"
-        path = path.with_name(path.stem + f"_{path_addition}" + path.suffix)
+        path = path.with_name(path.stem + path.suffix)
 
         if not path.suffix in [".hdf5", ".png"]:
             path = path.with_suffix(".png")

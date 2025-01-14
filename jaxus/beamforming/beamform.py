@@ -200,9 +200,11 @@ def beamform_das(
         pfields.append(pfield)
     pfields = jnp.stack(pfields, axis=0)
     mean_pfield = jnp.mean(pfields, axis=0)
+    mean_pfield /= jnp.max(mean_pfield)
 
-    normalization = 1 / mean_pfield
-    mask = mean_pfield > 1e-4
+    normalization = jnp.zeros_like(mean_pfield)
+    indices = mean_pfield > 1e-1
+    normalization = normalization.at[indices].set(1 / mean_pfield[indices])
 
     for tx in transmits:
         assert 0 <= tx < n_tx, "Transmit index out of bounds"
@@ -235,7 +237,7 @@ def beamform_das(
                     iq_beamform=iq_beamform,
                 )
                 # Apply pfield weighting
-                beamformed_transmit = beamformed_transmit * pfields[n]
+                # beamformed_transmit = beamformed_transmit * pfields[n]
                 beamformed_chunks.append(beamformed_transmit)
 
             # Concatenate the beamformed chunks
@@ -243,7 +245,7 @@ def beamform_das(
 
             # Reshape and add to the beamformed images
             beamformed_images = beamformed_images.at[frame].add(beamformed_transmit)
-        beamformed_images *= normalization * mask
+        # beamformed_images *= normalization
 
     return beamformed_images
 

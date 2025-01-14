@@ -108,13 +108,16 @@ class Image:
 
         return self
 
-    def normalize(self):
+    def normalize(self, normval=None):
         """Normalize image data to max 1 when not log-compressed or 0 when log-compressed."""
 
+        if normval is None:
+            normval = self.data.max()
+
         if self.scale == SCALE_DB:
-            self.data -= self.data.max()
+            self.data -= normval
         else:
-            self.data /= self.data.max()
+            self.data /= normval
 
         return self
 
@@ -209,6 +212,109 @@ class Image:
 
         val = bool(val)
         return SCALE_DB if val else SCALE_LINEAR
+
+    def max(self):
+        """Find the maximum value in the image data."""
+        return np.max(self.data)
+
+    def min(self):
+        """Find the minimum value in the image data."""
+        return np.min(self.data)
+
+
+class ImageSequence:
+    """Container class to hold a sequence of images."""
+
+    def __init__(self, images):
+        self.images = images
+
+    @property
+    def images(self):
+        """Get the list of images."""
+        return self._images
+
+    @images.setter
+    def images(self, value):
+        assert all(isinstance(obj, Image) for obj in value)
+        self._images = list(value)
+
+    @property
+    def extent(self):
+        """Get the extent."""
+        return self.images[0].extent
+
+    @property
+    def scale(self):
+        """Get the scale (SCALE_LINEAR or SCALE_DB)."""
+        return self.images[0].scale
+
+    def __getitem__(self, idx):
+        """Get image from list."""
+        return self.images[idx]
+
+    def append(self, im):
+        """Append image to list."""
+        assert isinstance(im, Image)
+        self.images.append(im)
+
+    def save(self, path, name):
+        for n, im in enumerate(self.images):
+            im.save(Path(path) / f"{name}_{str(n).zfill(3)}.hdf5")
+
+    @staticmethod
+    def load(paths):
+        """Load image sequence from disk.
+
+        Parameters
+        ----------
+        paths : Path or [Path]
+            The path of a directory to load all images from or a list of specific paths.
+
+        """
+        if isinstance(paths, (Path, str)):
+            paths = Path(paths)
+            paths = list(paths.glob("*.hdf5"))
+            paths.sort()
+            paths = [Path(p) for p in paths]
+
+        assert isinstance(paths, list)
+
+        images = []
+        for path in paths:
+            images.append(Image.load(path))
+
+        return ImageSequence(images)
+
+    @staticmethod
+    def from_numpy(data, extent, scale=SCALE_LINEAR):
+        assert data.ndim == 3
+        n_frames = data.shape[0]
+        images = []
+        for n in range(n_frames):
+            images.append(Image(data[n], extent=extent, scale=scale))
+
+        return ImageSequence(images)
+
+    def log_compress(self):
+        list(map(Image.log_compress, self.images))
+        return self
+
+    def normalize(self):
+        normval = self.max()
+        list(map(lambda im: Image.normalize(im, normval), self.images))
+        return self
+
+    def match_histogram(self, other):
+        list(map(lambda im: Image.match_histogram(im, other), self.images))
+        return self
+
+    def max(self):
+        image_maxvals = list(map(Image.max, self.images))
+        return max(image_maxvals)
+
+    def min(self):
+        image_minvals = list(map(Image.min, self.images))
+        return min(image_minvals)
 
 
 def save_hdf5_image(path, image, extent, scale=SCALE_LINEAR, metadata=None):

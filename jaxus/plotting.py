@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import FuncFormatter
+from jaxus import Image
 
 
 def plot_rf(
@@ -129,6 +130,10 @@ def plot_beamformed(
     include_axes : bool, optional
         Whether to include axes, labels, and titles. Defaults to True.
     """
+
+    if isinstance(image, Image):
+        extent_m = image.extent
+        image = image.data
 
     if axis_in_mm:
         xlabel = "x [mm]"

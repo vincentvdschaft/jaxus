@@ -67,13 +67,16 @@ def _replace_none(value, replacement):
 
 class FWHMMarker:
 
-    def __init__(self, ax, position, direction, max_offset, n_samples, active=True):
+    def __init__(
+        self, ax, position, direction, max_offset, n_samples, active=True, name=""
+    ):
         self.ax = ax
         self.position = position
         self.direction = direction
         self.max_offset = max_offset
         self.n_samples = n_samples
         self.active = active
+        self.name = name
 
         self.positions_axial = None
         self.positions_lateral = None
@@ -95,6 +98,7 @@ class FWHMMarker:
             "direction": [float(self.direction[0]), float(self.direction[1])],
             "max_offset": float(self.max_offset),
             "n_samples": int(self.n_samples),
+            "name": self.name,
         }
 
     @classmethod
@@ -146,10 +150,20 @@ class FWHMMarker:
         self.active = False
         self.draw()
 
+    def set_name(self, name):
+        self.name = name
+
 
 class GCNRDiskAnnulusMarker:
     def __init__(
-        self, ax, disk_pos, disk_radius, annulus_offset, annulus_width, active=True
+        self,
+        ax,
+        disk_pos,
+        disk_radius,
+        annulus_offset,
+        annulus_width,
+        active=True,
+        name="",
     ):
         self.ax = ax
         self.disk_pos = disk_pos
@@ -157,6 +171,7 @@ class GCNRDiskAnnulusMarker:
         self.annulus_offset = annulus_offset
         self.annulus_width = annulus_width
         self.active = active
+        self.name = name
 
         self.disk, self.annul0, self.annul1 = gcnr_plot_disk_annulus(
             ax,
@@ -174,7 +189,11 @@ class GCNRDiskAnnulusMarker:
             "disk_radius": float(self.disk_radius),
             "annulus_offset": float(self.annulus_offset),
             "annulus_width": float(self.annulus_width),
+            "name": self.name,
         }
+
+    def set_name(self, name):
+        self.name = name
 
     @classmethod
     def from_dict(cls, data, ax):
@@ -365,6 +384,7 @@ class EvalTool:
         self.max_offset = 4e-3
         self.n_samples = 512
         self.max_correction_distance = 1e-3
+        self.name = ""
 
         # Axes
         self.fwhm_axes_grid = None
@@ -562,6 +582,21 @@ class EvalTool:
         )
         widget_pos += self.button_height / 2 + self.button_spacing
         self.vsource_textbox.on_submit(lambda text: self.update_vsource(text))
+
+        # ----------------------------------------------------------------------
+        # Name widget
+        # ----------------------------------------------------------------------
+        self.name_textbox = self.fig.add_textbox(
+            x=self.margin_left + self.im_width + self.spacing + self.button_width / 2,
+            y=widget_pos,
+            width=self.button_width / 2,
+            height=self.button_height / 2,
+            label="Name",
+            color="black",
+            hovercolor="#444444",
+        )
+        widget_pos += self.button_height / 2 + self.button_spacing
+        self.name_textbox.on_submit(lambda text: self.update_name(text))
         # ----------------------------------------------------------------------
         # Freeze FWHM button
         # ----------------------------------------------------------------------
@@ -662,6 +697,9 @@ class EvalTool:
             self.update_fwhm(position=self.active_fwhm_marker.position)
 
         print(f"Vsource: {self.vsource}")
+
+    def update_name(self, text):
+        self.name = text
 
     def on_click(self, event):
 
@@ -821,6 +859,7 @@ class EvalTool:
         print(f"FWHM axial: {fwhm_axial*1e-3:.2f}mm")
         print(f"FWHM lateral: {fwhm_lateral*1e-3:.2f}mm")
 
+        self.active_fwhm_marker.set_name(self.name)
         self.active_fwhm_marker.deactivate()
         self.frozen_fwhm_markers.append(self.active_fwhm_marker)
         self.active_fwhm_marker = None
@@ -845,6 +884,7 @@ class EvalTool:
             f"disk_center={self.active_gcnr_marker.disk_pos}, disk_radius={self.active_gcnr_marker.disk_radius}, annulus_offset={self.active_gcnr_marker.annulus_offset}, annulus_width={self.active_gcnr_marker.annulus_width}"
         )
 
+        self.active_gcnr_marker.set_name(self.name)
         self.active_gcnr_marker.deactivate()
         self.frozen_gcnr_markers.append(self.active_gcnr_marker)
         self.active_gcnr_marker = None
@@ -888,6 +928,7 @@ class EvalTool:
                 print("Loading FWHM")
                 position = fwhm_data["position"]
                 direction = fwhm_data["axial_direction"]
+                name = fwhm_data["name"]
                 self.active_fwhm_marker = FWHMMarker(
                     self.ax_im,
                     position,
@@ -895,6 +936,7 @@ class EvalTool:
                     max_offset=self.max_offset,
                     n_samples=self.n_samples,
                     active=True,
+                    name=name,
                 )
                 self.update_fwhm(position)
                 self.freeze_fwhm()
@@ -906,6 +948,7 @@ class EvalTool:
                 disk_radius = gcnr_data["disk_radius"]
                 annulus_offset = gcnr_data["annulus_offset"]
                 annulus_width = gcnr_data["annulus_width"]
+                name = gcnr_data["name"]
 
                 print(
                     f"disk_pos={disk_pos}, disk_radius={disk_radius}, annulus_offset={annulus_offset}, annulus_width={annulus_width}"
@@ -918,10 +961,10 @@ class EvalTool:
                         annulus_offset,
                         annulus_width,
                         active=False,
+                        name=name,
                     )
                 )
 
-        print(self.frozen_gcnr_markers)
         plt.draw()
 
     def update_max_offset(self, value):

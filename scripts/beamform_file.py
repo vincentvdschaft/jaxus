@@ -33,7 +33,7 @@ parser.add_argument("--frames", type=str, nargs="+", default="unspecified")
 # Add variable number of transmits
 parser.add_argument("--transmits", type=str, nargs="+", default="unspecified")
 parser.add_argument("--show", action=argparse.BooleanOptionalAction)
-parser.add_argument("--fnumber", type=float, default=1.0)
+parser.add_argument("--fnumber", type=float, default=0.125)
 parser.add_argument("--dynamic-range", type=float, default=60)
 parser.add_argument("--extent", type=float, nargs=4, default=None)
 parser.add_argument("--save-path", type=Path, default=None)

@@ -51,15 +51,11 @@ def deduce_vsource(probe_geometry, t0_delays, sound_speed):
     """
 
     derivative = jnp.diff(t0_delays)
+
     derivative = (derivative - jnp.min(derivative)) / (
         jnp.max(derivative) - jnp.min(derivative)
     )
     second_derivative = jnp.mean(jnp.diff(derivative))
-
-    import matplotlib.pyplot as plt
-
-    plt.plot(t0_delays * 1e6)
-    plt.savefig("out.png", bbox_inches="tight")
 
     sign = -1.0 if second_derivative < 0.0 else 1.0
 
@@ -93,7 +89,7 @@ def deduce_vsource(probe_geometry, t0_delays, sound_speed):
     for n in range(n_steps):
         vsource = update(vsource)
 
-    vsource *= jnp.array([1.0, sign])
+    vsource = jnp.array([vsource[0], sign * jnp.abs(vsource[1])])
 
     return vsource * 1e-3
 
@@ -124,7 +120,7 @@ if __name__ == "__main__":
     data = load_hdf5(
         "/home/vincent/3-data/verasonics/usbmd/2024-04-09/S5-1_cirs_scatterers_0000.hdf5",
         frames=0,
-        transmits=100,
+        transmits=90,
         reduce_probe_to_2d=True,
     )
     probe_geometry = data["probe_geometry"]

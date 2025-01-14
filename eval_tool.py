@@ -104,6 +104,7 @@ class FWHMMarker:
     def draw(self):
         if self.positions_axial is None:
             return
+
         self.scat_line_axial_indicator.set_data(
             self.positions_axial[:, 0],
             self.positions_axial[:, 1],
@@ -362,7 +363,8 @@ class EvalTool:
         self.fig = MPLFigure(figsize=(self.fig_w, self.fig_h))
 
         self.max_offset = 4e-3
-        self.n_samples = 100
+        self.n_samples = 512
+        self.max_correction_distance = 1e-3
 
         # Axes
         self.fwhm_axes_grid = None
@@ -392,6 +394,7 @@ class EvalTool:
         self.ax_line_lateral.set_xlabel("Lateral distance [mm]")
         for ax in [self.ax_line_axial, self.ax_line_lateral]:
             ax.set_ylabel("[dB]")
+            mm_formatter_ax(ax, x=True, y=False, decimals=1)
         self.ax_line_axial.set_title("Profile")
 
         self.ax_im = self.fig.add_ax(
@@ -406,15 +409,16 @@ class EvalTool:
             line=self.ax_line_axial.plot(
                 np.linspace(-self.max_offset, self.max_offset, self.n_samples),
                 np.zeros(self.n_samples),
+                color="C0",
             )[0],
             vline_left=self.ax_line_axial.plot(
-                [0, 0], [-60, 0], color="gray", linestyle="--"
+                [0, 0], [-60, 0], color="gray", linestyle="--", linewidth=0.5
             )[0],
             vline_peak=self.ax_line_axial.plot(
-                [0, 0], [-60, 0], color="gray", linestyle="--"
+                [0, 0], [-60, 0], color="gray", linestyle="--", linewidth=0.5
             )[0],
             vline_right=self.ax_line_axial.plot(
-                [0, 0], [-60, 0], color="gray", linestyle="--"
+                [0, 0], [-60, 0], color="gray", linestyle="--", linewidth=0.5
             )[0],
         )
 
@@ -423,65 +427,44 @@ class EvalTool:
             line=self.ax_line_lateral.plot(
                 np.linspace(-self.max_offset, self.max_offset, self.n_samples),
                 np.zeros(self.n_samples),
-                "C1",
+                color="C1",
             )[0],
             vline_left=self.ax_line_lateral.plot(
-                [0, 0], [-60, 0], color="gray", linestyle="--"
+                [0, 0], [-60, 0], color="gray", linestyle="--", linewidth=0.5
             )[0],
             vline_peak=self.ax_line_lateral.plot(
-                [0, 0], [-60, 0], color="gray", linestyle="--"
+                [0, 0], [-60, 0], color="gray", linestyle="--", linewidth=0.5
             )[0],
             vline_right=self.ax_line_lateral.plot(
-                [0, 0], [-60, 0], color="gray", linestyle="--"
+                [0, 0], [-60, 0], color="gray", linestyle="--", linewidth=0.5
             )[0],
         )
-
-        self.freeze_fwhm_button = self.fig.add_button(
-            "Freeze FWHM",
-            x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top,
-            width=self.button_width,
-            height=0.5,
-            color="black",
-            hovercolor="#444444",
-        )
-        # Attach events
-        self.freeze_fwhm_button.on_clicked(lambda x: self.freeze_fwhm())
-
-        self.freeze_gcnr_button = self.fig.add_button(
-            "Freeze gCNR",
-            x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + self.button_height + self.button_spacing,
-            width=self.button_width,
-            height=self.button_height,
-            color="black",
-            hovercolor="#444444",
-        )
-        self.freeze_gcnr_button.on_clicked(lambda x: self.freeze_gcnr())
-
-        self.save_image_button = self.fig.add_button(
-            "Save Image",
-            x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + 2 * self.button_height + 2 * self.button_spacing,
-            width=self.button_width,
-            height=self.button_height,
-            color="black",
-            hovercolor="#444444",
-        )
-        self.save_image_button.on_clicked(lambda x: self.save_image())
-
+        for ax in [self.ax_line_axial, self.ax_line_lateral]:
+            ax.axhline(-6, color="gray", linestyle="--", linewidth=0.5)
         plot_beamformed(self.ax_im, image_loaded.data, np.array(image_loaded.extent))
+        self.ax_im.autoscale(False)
 
-        # Attach events
-        self.cid_click = self.fig.fig.canvas.mpl_connect(
-            "button_release_event", self.on_click
+        widget_pos = self.margin_top
+
+        # ----------------------------------------------------------------------
+        # Save metrics widget
+        # ----------------------------------------------------------------------
+        self.fwhm_text_widget = self.fig.add_text(
+            x=self.margin_left + self.im_width + self.spacing,
+            y=widget_pos,
+            text=f"FWHM (ax, lat): {0.0}, {0.0}",
+            va="top",
+            ha="left",
         )
-        self.cid_key = self.fig.fig.canvas.mpl_connect("key_press_event", self.on_key)
+        widget_pos += self.button_height + self.button_spacing
 
+        # ----------------------------------------------------------------------
+        # Radius widget
+        # ----------------------------------------------------------------------
         self.radius_widget = IncrementWidget(
             fig=self.fig,
             x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + 3 * self.button_height + 3 * self.button_spacing,
+            y=widget_pos,
             width=self.button_width,
             height=self.button_height,
             value=5e-3,
@@ -491,11 +474,15 @@ class EvalTool:
             label="Disk radius",
             callback=lambda x: self.update_gcnr(disk_radius=x),
         )
+        widget_pos += self.button_height + self.button_spacing
 
+        # ----------------------------------------------------------------------
+        # Annulus offset widget
+        # ----------------------------------------------------------------------
         self.offset_widget = IncrementWidget(
             fig=self.fig,
             x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + 4 * self.button_height + 4 * self.button_spacing,
+            y=widget_pos,
             width=self.button_width,
             height=self.button_height,
             value=1e-3,
@@ -505,11 +492,15 @@ class EvalTool:
             label="Annulus offset",
             callback=lambda x: self.update_gcnr(annulus_offset=x),
         )
+        widget_pos += self.button_height + self.button_spacing
 
+        # ----------------------------------------------------------------------
+        # Annulus width widget
+        # ----------------------------------------------------------------------
         self.width_widget = IncrementWidget(
             fig=self.fig,
             x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + 5 * self.button_height + 5 * self.button_spacing,
+            y=widget_pos,
             width=self.button_width,
             height=self.button_height,
             value=1e-3,
@@ -519,30 +510,126 @@ class EvalTool:
             label="Annulus width",
             callback=lambda x: self.update_gcnr(annulus_width=x),
         )
+        widget_pos += self.button_height + self.button_spacing
 
-        self.vsource_textbox = self.fig.add_textbox(
+        # ----------------------------------------------------------------------
+        # Max offset widget
+        # ----------------------------------------------------------------------
+        self.width_widget = IncrementWidget(
+            fig=self.fig,
             x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + 6 * self.button_height + 6 * self.button_spacing,
+            y=widget_pos,
             width=self.button_width,
             height=self.button_height,
+            value=4e-3,
+            step=0.5e-3,
+            minval=0.2e-3,
+            maxval=20e-3,
+            label="Max offset (FWHM)",
+            callback=self.update_max_offset,
+        )
+        widget_pos += self.button_height + self.button_spacing
+
+        # ----------------------------------------------------------------------
+        # Max offset widget
+        # ----------------------------------------------------------------------
+        self.width_widget = IncrementWidget(
+            fig=self.fig,
+            x=self.margin_left + self.im_width + self.spacing,
+            y=widget_pos,
+            width=self.button_width,
+            height=self.button_height,
+            value=1e-3,
+            step=0.25e-4,
+            minval=0e-3,
+            maxval=20e-3,
+            label="Correction dist",
+            callback=self.update_max_correction_distance,
+        )
+        widget_pos += self.button_height + self.button_spacing
+
+        # ----------------------------------------------------------------------
+        # Vsource widget
+        # ----------------------------------------------------------------------
+        self.vsource_textbox = self.fig.add_textbox(
+            x=self.margin_left + self.im_width + self.spacing + self.button_width / 2,
+            y=widget_pos,
+            width=self.button_width / 2,
+            height=self.button_height / 2,
             label="Vsource",
             color="black",
             hovercolor="#444444",
         )
+        widget_pos += self.button_height / 2 + self.button_spacing
         self.vsource_textbox.on_submit(lambda text: self.update_vsource(text))
-
-        self.save_to_yaml_button = self.fig.add_button(
-            "Save Metrics",
+        # ----------------------------------------------------------------------
+        # Freeze FWHM button
+        # ----------------------------------------------------------------------
+        self.freeze_fwhm_button = self.fig.add_button(
+            "Freeze FWHM",
             x=self.margin_left + self.im_width + self.spacing,
-            y=self.margin_top + 7 * self.button_height + 7 * self.button_spacing,
+            y=widget_pos,
             width=self.button_width,
             height=self.button_height,
             color="black",
             hovercolor="#444444",
         )
+        widget_pos += self.button_height + self.button_spacing
+
+        # Attach events
+        self.freeze_fwhm_button.on_clicked(lambda x: self.freeze_fwhm())
+
+        # ----------------------------------------------------------------------
+        # Free gCNR button
+        # ----------------------------------------------------------------------
+        self.freeze_gcnr_button = self.fig.add_button(
+            "Freeze gCNR",
+            x=self.margin_left + self.im_width + self.spacing,
+            y=widget_pos,
+            width=self.button_width,
+            height=self.button_height,
+            color="black",
+            hovercolor="#444444",
+        )
+        widget_pos += self.button_height + self.button_spacing
+        self.freeze_gcnr_button.on_clicked(lambda x: self.freeze_gcnr())
+
+        # ----------------------------------------------------------------------
+        # Save image button
+        # ----------------------------------------------------------------------
+        self.save_image_button = self.fig.add_button(
+            "Save Image",
+            x=self.margin_left + self.im_width + self.spacing,
+            y=widget_pos,
+            width=self.button_width,
+            height=self.button_height,
+            color="black",
+            hovercolor="#444444",
+        )
+        widget_pos += self.button_height + self.button_spacing
+        self.save_image_button.on_clicked(lambda x: self.save_image())
+
+        # ----------------------------------------------------------------------
+        # Save metrics widget
+        # ----------------------------------------------------------------------
+        self.save_to_yaml_button = self.fig.add_button(
+            "Save Metrics",
+            x=self.margin_left + self.im_width + self.spacing,
+            y=widget_pos,
+            width=self.button_width,
+            height=self.button_height,
+            color="black",
+            hovercolor="#444444",
+        )
+        widget_pos += self.button_height + self.button_spacing
 
         self.save_to_yaml_button.on_clicked(lambda event: self.save_metrics_to_yaml())
 
+        # Attach events
+        self.cid_click = self.fig.fig.canvas.mpl_connect(
+            "button_release_event", self.on_click
+        )
+        self.cid_key = self.fig.fig.canvas.mpl_connect("key_press_event", self.on_key)
         if metrics_image is not None:
             self.load_measurements_from_image(metrics_image)
         else:
@@ -561,6 +648,7 @@ class EvalTool:
     def update_vsource(self, text):
 
         if "none" in text.lower():
+            print("vsource disabled")
             self.vsource = None
             return
 
@@ -586,7 +674,9 @@ class EvalTool:
         if event.button == 1:
             print("click")
             position = np.array([event.xdata, event.ydata])
-            position = correct_fwhm_point(image_loaded, position, max_diff=1.0e-3)
+            position = correct_fwhm_point(
+                image_loaded, position, max_diff=self.max_correction_distance
+            )
             self.update_fwhm(position)
 
             self.arrow_target = EvalTool.TARGET_FWHM
@@ -620,12 +710,13 @@ class EvalTool:
     def update_fwhm(self, position):
 
         direction = np.copy(position)
+
         if self.vsource is not None:
             direction -= self.vsource
+        else:
+            direction = np.array([0.0, 1.0])
 
-        print(self.vsource)
-
-        print(f"Position: {position}")
+        offsets = np.linspace(-self.max_offset, self.max_offset, self.n_samples)
 
         result, positions_axial = _sample_line(
             image=self.image.data,
@@ -635,8 +726,7 @@ class EvalTool:
             max_offset=self.max_offset,
             n_samples=self.n_samples,
         )
-        offsets = np.linspace(-self.max_offset, self.max_offset, self.n_samples)
-        self.curve_axial = FWHMCurve(positions_axial, result)
+        self.curve_axial = FWHMCurve(positions_axial, result - np.max(result))
 
         vec_orth = np.array((-direction[1], direction[0]))
         result, positions_lateral = _sample_line(
@@ -647,7 +737,7 @@ class EvalTool:
             max_offset=self.max_offset,
             n_samples=self.n_samples,
         )
-        self.curve_lateral = FWHMCurve(positions_lateral, result)
+        self.curve_lateral = FWHMCurve(positions_lateral, result - np.max(result))
 
         if self.active_fwhm_marker is None:
             self.active_fwhm_marker = FWHMMarker(
@@ -661,12 +751,16 @@ class EvalTool:
             position, direction, positions_axial, positions_lateral
         )
 
+        self.fwhm_lineplot_axial.line.set_xdata(offsets)
         self.fwhm_lineplot_axial.line.set_ydata(self.curve_axial.values)
+
+        self.fwhm_lineplot_lateral.line.set_xdata(offsets)
         self.fwhm_lineplot_lateral.line.set_ydata(self.curve_lateral.values)
 
         idx_peak, idx_left, idx_right = find_fwhm_indices(
             self.curve_axial.values, required_repeats=3, log_scale=self.image.in_db
         )
+        fwhm_axial = offsets[idx_right] - offsets[idx_left]
 
         self.fwhm_lineplot_axial.vline_left.set_xdata([offsets[idx_left]])
         self.fwhm_lineplot_axial.vline_right.set_xdata([offsets[idx_right]])
@@ -675,10 +769,18 @@ class EvalTool:
         idx_peak, idx_left, idx_right = find_fwhm_indices(
             self.curve_lateral.values, required_repeats=3, log_scale=self.image.in_db
         )
+        fwhm_lateral = offsets[idx_right] - offsets[idx_left]
 
         self.fwhm_lineplot_lateral.vline_left.set_xdata([offsets[idx_left]])
         self.fwhm_lineplot_lateral.vline_right.set_xdata([offsets[idx_right]])
         self.fwhm_lineplot_lateral.vline_peak.set_xdata([offsets[idx_peak]])
+
+        self.ax_line_axial.set_xlim([-self.max_offset, self.max_offset])
+        self.ax_line_lateral.set_xlim([-self.max_offset, self.max_offset])
+
+        self.fwhm_text_widget.set_text(
+            f"FWHM (ax, lat): {fwhm_axial*1e3:.1f}, {fwhm_lateral*1e3:.1f}"
+        )
 
         plt.draw()
 
@@ -821,6 +923,13 @@ class EvalTool:
 
         print(self.frozen_gcnr_markers)
         plt.draw()
+
+    def update_max_offset(self, value):
+        self.max_offset = value
+        self.update_fwhm(self.active_fwhm_marker.position)
+
+    def update_max_correction_distance(self, value):
+        self.max_correction_distance = value
 
 
 if args.clear_metadata:

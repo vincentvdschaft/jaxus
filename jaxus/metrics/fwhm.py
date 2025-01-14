@@ -92,7 +92,9 @@ def _find_crossing(curve, value, required_repeats):
         return curve.size - 1
 
 
-def fwhm_image(image: Image, position, direction, max_offset, required_repeats=3):
+def fwhm_image(
+    image: Image, position, direction, max_offset, required_repeats=3, n_samples=256
+):
     """Computes the FWHM of a line profile in the image.
 
     Parameters
@@ -122,7 +124,7 @@ def fwhm_image(image: Image, position, direction, max_offset, required_repeats=3
         position=position,
         vec=direction,
         max_offset=max_offset,
-        n_samples=128,
+        n_samples=n_samples,
     )
 
     fwhm_value = fwhm(curve, max_offset * 2, required_repeats, log_scale=image.in_db)
@@ -150,11 +152,18 @@ def correct_fwhm_point(image: Image, position, max_diff=0.6e-3):
     """
 
     position = np.array(position)
+
+    if max_diff == 0.0:
+        return position
+
     distances = np.linalg.norm(image.flatgrid - position, axis=1)
 
     mask = distances <= max_diff
     candidate_intensities = image.data.flatten()[mask]
     candidate_points = image.flatgrid[mask]
+
+    if candidate_intensities.size == 0:
+        return position
 
     idx = np.argmax(candidate_intensities)
 
@@ -189,9 +198,6 @@ def _sample_line(image, extent, position, vec, max_offset, n_samples):
     vec = np.array(vec)
     vec = vec / np.linalg.norm(vec)
 
-    im_width = extent[1] - extent[0]
-    im_height = extent[3] - extent[2]
-
     x = np.linspace(
         position[0] - max_offset * vec[0],
         position[0] + max_offset * vec[0],
@@ -203,10 +209,16 @@ def _sample_line(image, extent, position, vec, max_offset, n_samples):
         n_samples,
     )
 
-    x_idx = np.round((x - extent[0]) / im_width * image.shape[0]).astype(int)
-    y_idx = np.round((y - extent[2]) / im_height * image.shape[1]).astype(int)
+    image_x_vals = np.linspace(extent[0], extent[1], image.shape[0])
+    image_y_vals = np.linspace(extent[2], extent[3], image.shape[1])
 
-    x_idx = np.clip(x_idx, 0, image.shape[0] - 1)
-    y_idx = np.clip(y_idx, 0, image.shape[1] - 1)
+    interpolator = RegularGridInterpolator(
+        (image_x_vals, image_y_vals), image, method="linear", bounds_error=False
+    )
 
-    return image[x_idx, y_idx], np.stack((x, y), axis=1)
+    positions = np.stack([x, y], axis=0)
+    curve = interpolator(positions.T)
+
+    minval = np.min(curve[np.logical_not(np.isnan(curve))])
+    curve = np.nan_to_num(curve, nan=minval)
+    return curve, positions.T

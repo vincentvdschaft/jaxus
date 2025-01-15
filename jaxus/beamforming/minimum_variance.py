@@ -425,7 +425,7 @@ def beamform_mv(
 
             # Reshape and add to the beamformed images
             beamformed_images = beamformed_images.at[frame].add(beamformed_transmit)
-        beamformed_images *= normalization * mask
+        # beamformed_images *= normalization * mask
 
     return beamformed_images
 

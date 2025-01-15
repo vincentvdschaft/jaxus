@@ -91,6 +91,7 @@ class Image:
             scale=self.scale,
             metadata=self.metadata,
         )
+        return self
 
     @classmethod
     def load(cls, path):

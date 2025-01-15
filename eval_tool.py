@@ -467,12 +467,24 @@ class EvalTool:
         widget_pos = self.margin_top
 
         # ----------------------------------------------------------------------
-        # Save metrics widget
+        # FWHM text widget
         # ----------------------------------------------------------------------
         self.fwhm_text_widget = self.fig.add_text(
             x=self.margin_left + self.im_width + self.spacing,
             y=widget_pos,
             text=f"FWHM (ax, lat): {0.0}, {0.0}",
+            va="top",
+            ha="left",
+        )
+        widget_pos += self.button_height + self.button_spacing
+
+        # ----------------------------------------------------------------------
+        # FWHM text widget
+        # ----------------------------------------------------------------------
+        self.gcnr_text_widget = self.fig.add_text(
+            x=self.margin_left + self.im_width + self.spacing,
+            y=widget_pos,
+            text=f"gCNR: {0.0}",
             va="top",
             ha="left",
         )
@@ -840,6 +852,20 @@ class EvalTool:
             annulus_offset=annulus_offset,
             annulus_width=annulus_width,
         )
+
+        gcnr_image = image_measure_gcnr_disk_annulus(
+            self.image,
+            self.active_gcnr_marker.disk_pos,
+            self.active_gcnr_marker.disk_radius,
+            self.active_gcnr_marker.annulus_offset,
+            self.active_gcnr_marker.annulus_width,
+            return_copy=True,
+        )
+
+        gcnr_value = gcnr_image.metadata["gcnr"][-1]["gcnr_value"]
+        print(f"gCNR: {gcnr_value}")
+        self.gcnr_text_widget.set_text(f"gCNR: {gcnr_value:.1f}")
+        plt.draw()
 
     def freeze_fwhm(self):
         if self.active_fwhm_marker is None:

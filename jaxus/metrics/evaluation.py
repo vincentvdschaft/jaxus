@@ -118,7 +118,7 @@ def image_measure_fwhm(
         image=image.data,
         extent=image.extent,
         position=position,
-        vec=axial_direction,
+        direction=axial_direction,
         max_offset=max_offset,
         n_samples=n_samples,
     )
@@ -130,7 +130,7 @@ def image_measure_fwhm(
         image=image.data,
         extent=image.extent,
         position=position,
-        vec=lateral_direction,
+        direction=lateral_direction,
         max_offset=max_offset,
         n_samples=n_samples,
     )

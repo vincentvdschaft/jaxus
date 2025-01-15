@@ -13,7 +13,7 @@ from jaxus.utils import log
 import numpy as np
 import matplotlib.pyplot as plt
 from myplotlib import *
-from jaxus.metrics.fwhm import _sample_line, find_fwhm_indices
+from jaxus.metrics.fwhm import _sample_line, find_fwhm_indices, plot_fwhm
 from matplotlib.widgets import Button
 import argparse
 from dataclasses import dataclass
@@ -81,11 +81,8 @@ class FWHMMarker:
         self.positions_axial = None
         self.positions_lateral = None
 
-        (self.scat_line_axial_indicator,) = self.ax.plot(
-            np.zeros(n_samples), np.zeros(n_samples), "C0--", linewidth=0.5
-        )
-        (self.scat_line_lateral_indicator,) = self.ax.plot(
-            np.zeros(n_samples), np.zeros(n_samples), "C1--", linewidth=0.5
+        self.scat_line_axial_indicator, self.scat_line_lateral_indicator = plot_fwhm(
+            ax, position, direction, max_offset
         )
 
         self.update(
@@ -772,7 +769,7 @@ class EvalTool:
             image=self.image.data,
             extent=self.image.extent,
             position=position,
-            vec=direction,
+            direction=direction,
             max_offset=self.max_offset,
             n_samples=self.n_samples,
         )
@@ -783,7 +780,7 @@ class EvalTool:
             image=self.image.data,
             extent=self.image.extent,
             position=position,
-            vec=vec_orth,
+            direction=vec_orth,
             max_offset=self.max_offset,
             n_samples=self.n_samples,
         )

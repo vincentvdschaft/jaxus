@@ -125,7 +125,7 @@ class Image:
     def __repr__(self):
         """Return string representation of Image object."""
         shape = self.shape
-        log_compressed_str = ", in dB" if self.in_db() else ""
+        log_compressed_str = ", in dB" if self.in_db else ""
         return (
             f"Image(({shape[0], shape[1]}), extent={self.extent}{log_compressed_str})"
         )

@@ -122,7 +122,7 @@ def fwhm_image(
         image=image.data,
         extent=image.extent,
         position=position,
-        vec=direction,
+        direction=direction,
         max_offset=max_offset,
         n_samples=n_samples,
     )
@@ -170,7 +170,7 @@ def correct_fwhm_point(image: Image, position, max_diff=0.6e-3):
     return candidate_points[idx]
 
 
-def _sample_line(image, extent, position, vec, max_offset, n_samples):
+def _sample_line(image, extent, position, direction, max_offset, n_samples):
     """
     Sample a line in the image.
 
@@ -180,7 +180,7 @@ def _sample_line(image, extent, position, vec, max_offset, n_samples):
         The image to sample.
     position : tuple of floats
         The position of the line.
-    vec : tuple of floats
+    direction : tuple of floats
         The direction of the line.
     max_offset : float
         The maximum offset from the position.
@@ -194,20 +194,6 @@ def _sample_line(image, extent, position, vec, max_offset, n_samples):
     positions : np.array
         The positions of the samples. Can be used to plot the line in the image.
     """
-    # Normalize the vector
-    vec = np.array(vec)
-    vec = vec / np.linalg.norm(vec)
-
-    x = np.linspace(
-        position[0] - max_offset * vec[0],
-        position[0] + max_offset * vec[0],
-        n_samples,
-    )
-    y = np.linspace(
-        position[1] - max_offset * vec[1],
-        position[1] + max_offset * vec[1],
-        n_samples,
-    )
 
     image_x_vals = np.linspace(extent[0], extent[1], image.shape[0])
     image_y_vals = np.linspace(extent[2], extent[3], image.shape[1])
@@ -216,9 +202,122 @@ def _sample_line(image, extent, position, vec, max_offset, n_samples):
         (image_x_vals, image_y_vals), image, method="linear", bounds_error=False
     )
 
-    positions = np.stack([x, y], axis=0)
-    curve = interpolator(positions.T)
+    positions = _get_positions(
+        center=position, direction=direction, max_offset=max_offset, n_samples=n_samples
+    )
+    print(positions.shape)
+
+    curve = interpolator(positions)
 
     minval = np.min(curve[np.logical_not(np.isnan(curve))])
     curve = np.nan_to_num(curve, nan=minval)
-    return curve, positions.T
+    return curve, positions
+
+
+def _get_positions(center, direction, max_offset, n_samples):
+    """Defines evenly spaced positions along a line of length 2 * max_offset centered
+    at center in the direction of direction.
+
+    Parameters
+    ----------
+    center : np.array
+        The center of the line of shape (2,).
+    direction : np.array
+        The direction of the line of shape (2,).
+    max_offset : float
+        The maximum offset from the center.
+    n_samples : int
+        The number of points along the line.
+
+    Returns
+    -------
+    positions : np.array
+        The positions along the line of shape (n_samples, 2).
+    """
+
+    direction = np.array(direction)
+    direction = direction / np.linalg.norm(direction)
+
+    x = np.linspace(
+        center[0] - max_offset * direction[0],
+        center[0] + max_offset * direction[0],
+        n_samples,
+    )
+    y = np.linspace(
+        center[1] - max_offset * direction[1],
+        center[1] + max_offset * direction[1],
+        n_samples,
+    )
+
+    positions = np.stack([x, y], axis=0)
+
+    return positions.T
+
+
+def plot_fwhm(
+    ax,
+    position,
+    direction,
+    max_offset,
+    color1="C0",
+    color2="C1",
+    linewidth=0.5,
+    **kwargs
+):
+    """Plot a cross indicating the axial and lateral FWHM of a line profile.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axes to plot on.
+    position : tuple
+        The position of the line profile.
+    direction : tuple
+        The axial direction of the line profile.
+    max_offset : float
+        The maximum offset from the position to sample the line profile.
+    color1 : str, default="C0"
+        The color of the axial FWHM line.
+    color2 : str, default="C1"
+        The color of the lateral FWHM line.
+    linewidth : float, default=0.5
+        The width of the lines.
+    **kwargs : dict
+        Additional arguments to pass to the plot function.
+
+    Returns
+    -------
+    line1 : matplotlib.lines.Line2D
+        The axial FWHM line.
+    line2 : matplotlib.lines.Line2D
+        The lateral FWHM line.
+    """
+
+    positions = _get_positions(
+        center=position, direction=direction, max_offset=max_offset, n_samples=2
+    )
+    direction_orth = np.array([-direction[1], direction[0]])
+
+    (line1,) = ax.plot(
+        positions[:, 0],
+        positions[:, 1],
+        color=color1,
+        linewidth=linewidth,
+        linestyle="--",
+        **kwargs
+    )
+
+    positions_orth = _get_positions(
+        center=position, direction=direction_orth, max_offset=max_offset, n_samples=2
+    )
+
+    (line2,) = ax.plot(
+        positions_orth[:, 0],
+        positions_orth[:, 1],
+        color=color2,
+        linewidth=linewidth,
+        linestyle="--",
+        **kwargs
+    )
+
+    return line1, line2

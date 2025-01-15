@@ -119,8 +119,10 @@ def gcnr_plot_disk_annulus(
     disk_radius: float,
     annulus_offset: float,
     annulus_width: float,
-    opacity: float = 0.5,
+    opacity: float = 1.0,
     linewidth: float = 0.5,
+    color1: str = "C0",
+    color2: str = "C1",
 ):
     """Plots the disk and annulus on top of the image.
 
@@ -142,14 +144,11 @@ def gcnr_plot_disk_annulus(
 
     """
 
-    # Get color cycle
-    color_cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-
     # Plot the inner circle
     disk = plt.Circle(
         disk_center,
         disk_radius,
-        color=color_cycle[0],
+        color=color1,
         fill=False,
         linestyle="--",
         linewidth=linewidth,
@@ -161,7 +160,7 @@ def gcnr_plot_disk_annulus(
     annul0 = plt.Circle(
         disk_center,
         disk_radius + annulus_offset,
-        color=color_cycle[1],
+        color=color2,
         fill=False,
         linestyle="--",
         linewidth=linewidth,
@@ -171,7 +170,7 @@ def gcnr_plot_disk_annulus(
     annul1 = plt.Circle(
         disk_center,
         disk_radius + annulus_offset + annulus_width,
-        color=color_cycle[1],
+        color=color2,
         fill=False,
         linestyle="--",
         linewidth=linewidth,

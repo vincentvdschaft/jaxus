@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import numpy as np
 import jax
 import optax
+from scipy.interpolate import RegularGridInterpolator
 
 
 def log_compress(beamformed: jnp.ndarray, normalize: bool = False):
@@ -92,6 +93,29 @@ def deduce_vsource(probe_geometry, t0_delays, sound_speed):
     vsource = jnp.array([vsource[0], sign * jnp.abs(vsource[1])])
 
     return vsource * 1e-3
+
+
+def scan_convert(polar_image, polar_extent, target_pixelgrid, fill_value=0.0):
+    """Performs scan conversion on a polar image.
+    Transforms the cartesian pixel grid to polar coordinates and interpolates in the polar domain.
+    """
+
+    n_th, n_r = polar_image.shape
+    th_source = np.linspace(polar_extent[0], polar_extent[1], n_th)
+    r_source = np.linspace(polar_extent[2], polar_extent[3], n_r)
+
+    r_target = np.linalg.norm(target_pixelgrid.pixel_positions_flat, axis=1)
+    th_target = np.arctan2(
+        target_pixelgrid.pixel_positions_flat[:, 0],
+        target_pixelgrid.pixel_positions_flat[:, 1],
+    )
+
+    interpolator = RegularGridInterpolator(
+        (th_source, r_source), polar_image, bounds_error=False, fill_value=fill_value
+    )
+
+    image = interpolator((th_target, r_target)).reshape(target_pixelgrid.shape)
+    return image
 
 
 if __name__ == "__main__":

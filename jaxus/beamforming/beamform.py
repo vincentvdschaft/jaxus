@@ -384,7 +384,7 @@ def detect_envelope_beamformed(bf_data, dz_wl):
     ----------
     rf_data : np.ndarray
         The RF data to perform envelope detection on of shape
-        `(n_frames, n_rows, n_cols)`.
+        `(n_frames, n_x, n_z)`.
     dz_wl : float
         The pixel size/spacing in the z-direction in wavelengths of the beamforming
         grid. (Wavelengths are defined as sound_speed/carrier_frequency.)
@@ -398,7 +398,7 @@ def detect_envelope_beamformed(bf_data, dz_wl):
         raise TypeError(f"bf_data must be a ndarray. Got {type(bf_data)}.")
     if not bf_data.ndim == 3:
         raise ValueError(
-            "bf_data must be a 3D array of shape (n_frames, n_rows, n_cols). "
+            "bf_data must be a 3D array of shape (n_frames, n_x, n_z). "
             f"Got shape {bf_data.shape}."
         )
     if not isinstance(dz_wl, (float, int)):
@@ -416,6 +416,8 @@ def detect_envelope_beamformed(bf_data, dz_wl):
         b, a = butter(2, 0.8, "low")
         bf_data = filtfilt(b, a, bf_data, axis=2)
 
+    bf_data = np.transpose(bf_data, (0, 2, 1))
+
     iq_data = rf2iq(
         bf_data[:, None, ..., None],
         carrier_frequency=1,
@@ -423,6 +425,8 @@ def detect_envelope_beamformed(bf_data, dz_wl):
         bandwidth=1.0,
         padding=512,
     )
+
+    iq_data = np.transpose(iq_data, (0, 1, 3, 2))
     return np.abs(iq_data)[:, 0, :, :]
 
 

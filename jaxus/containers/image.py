@@ -14,7 +14,7 @@ SCALE_DB = 1
 class Image:
     """Container for image data. Contains a 2D numpy array and metadata."""
 
-    def __init__(self, data, extent, scale=SCALE_LINEAR, metadata=None):
+    def __init__(self, data, extent, scale=SCALE_LINEAR, polar=False, metadata=None):
         """Initialilze Image object.
 
         Parameters
@@ -29,6 +29,7 @@ class Image:
         self.data = data
         self.extent = extent
         self.scale = scale
+        self.polar = polar
 
         self._metadata = {}
         if metadata is not None:
@@ -222,6 +223,16 @@ class Image:
         """Find the minimum value in the image data."""
         return np.min(self.data)
 
+    def clip(self, minval=None, maxval=None):
+        """Clip the image data to a range."""
+        self.data = np.clip(self.data, minval, maxval)
+        return self
+
+    def apply_fn(self, fn):
+        """Apply a function to the image data."""
+        self.data = fn(self.data)
+        return self
+
 
 class ImageSequence:
     """Container class to hold a sequence of images."""
@@ -259,6 +270,8 @@ class ImageSequence:
         self.images.append(im)
 
     def save(self, path, name):
+        # Remove file extension if it exists
+        name = str(Path(name).with_suffix(""))
         for n, im in enumerate(self.images):
             im.save(Path(path) / f"{name}_{str(n).zfill(3)}.hdf5")
 
@@ -309,6 +322,10 @@ class ImageSequence:
         list(map(lambda im: Image.match_histogram(im, other), self.images))
         return self
 
+    def clip(self, minval=None, maxval=None):
+        list(map(lambda im: Image.clip(im, minval, maxval), self.images))
+        return self
+
     def max(self):
         image_maxvals = list(map(Image.max, self.images))
         return max(image_maxvals)
@@ -316,6 +333,20 @@ class ImageSequence:
     def min(self):
         image_minvals = list(map(Image.min, self.images))
         return min(image_minvals)
+
+    def __iter__(self):
+        return iter(self.images)
+
+    def __len__(self):
+        return len(self.images)
+
+    def __repr__(self):
+        return f"ImageSequence({len(self.images)} images)"
+
+    def map(self, func):
+        """Apply a function to each image in the sequence."""
+        list(map(lambda im: Image.apply_fn(im, func), self.images))
+        return self
 
 
 def save_hdf5_image(path, image, extent, scale=SCALE_LINEAR, metadata=None):

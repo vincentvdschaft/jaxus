@@ -198,6 +198,7 @@ class Image:
         """Match the histogram of the image to another image."""
 
         self.data = match_histograms(self.data, other.data)
+        return self
 
     @staticmethod
     def _parse_scale(val):

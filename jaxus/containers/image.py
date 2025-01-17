@@ -270,11 +270,11 @@ class ImageSequence:
         assert isinstance(im, Image)
         self.images.append(im)
 
-    def save(self, path, name):
+    def save(self, directory, name):
         # Remove file extension if it exists
         name = str(Path(name).with_suffix(""))
         for n, im in enumerate(self.images):
-            im.save(Path(path) / f"{name}_{str(n).zfill(3)}.hdf5")
+            im.save(Path(directory) / f"{name}_{str(n).zfill(3)}.hdf5")
 
     @staticmethod
     def load(paths):

@@ -5,6 +5,7 @@ from pathlib import Path
 import h5py
 from jaxus.utils import log, log_compress, fix_extent
 from skimage.exposure import match_histograms
+from scipy.interpolate import RegularGridInterpolator
 
 
 SCALE_LINEAR = 0
@@ -232,6 +233,65 @@ class Image:
     def apply_fn(self, fn):
         """Apply a function to the image data."""
         self.data = fn(self.data)
+        return self
+
+    def map_range(self, minval, maxval, old_min=None, old_max=None):
+        """Map the image data to a new range."""
+        if old_min is None:
+            old_min = self.min()
+        if old_max is None:
+            old_max = self.max()
+
+        self.data = (self.data - old_min) / (old_max - old_min) * (
+            maxval - minval
+        ) + minval
+        return self
+
+    def __add__(self, other):
+        """Add two images together."""
+        if isinstance(other, (int, float, np.number)):
+            data = self.data + other
+            return Image(data, extent=self.extent, scale=self.scale)
+
+        if isinstance(other, Image):
+            assert all([e1 == e2 for e1, e2 in zip(self.extent, other.extent)])
+            assert self.scale == other.scale
+            data = self.data + other.data
+            return Image(data, extent=self.extent, scale=self.scale)
+
+        other = np.array(other)
+        data = self.data + other
+        return Image(data, extent=self.extent, scale=self.scale)
+
+        return TypeError(f"Unsupported type {type(other)} for addition.")
+
+    def __sub__(self, other):
+        """Subtract two images."""
+        # assert all([e1 == e2 for e1, e2 in zip(self.extent, other.extent)])
+        assert self.scale == other.scale
+        data = self.data - other.data
+        return Image(data, extent=self.extent)
+
+    def __mul__(self, other):
+        if isinstance(other, (int, float, np.number)):
+            data = self.data * other
+            return Image(data, extent=self.extent)
+
+    def resample(self, shape):
+        """Resample image to a new shape."""
+        interpolator = RegularGridInterpolator(
+            (self.x_vals, self.y_vals),
+            self.data,
+            bounds_error=False,
+            fill_value=0 if self.scale == SCALE_LINEAR else -240,
+        )
+        new_xvals = np.linspace(self.extent[0], self.extent[1], shape[0])
+        new_yvals = np.linspace(self.extent[2], self.extent[3], shape[1])
+
+        x_grid, y_grid = np.meshgrid(new_xvals, new_yvals, indexing="ij")
+        new_data = interpolator((x_grid, y_grid))
+
+        self.data = new_data
         return self
 
 

@@ -19,6 +19,16 @@ def test_vsource_angle(pos, angle):
     assert np.isclose(computed_angle, angle, rtol=1e-2, atol=1e-3)
 
 
+def test_vsource_pos():
+    angle, depth = jnp.ones(5) * 10 * np.pi / 180, jnp.ones(5) * 20e-3
+    vsource_pos_true = vsource_pos(angle, depth)
+
+    vsource = np.array([np.sin(angle), np.cos(angle)]) * depth
+    assert np.allclose(vsource, vsource_pos_true, rtol=1e-2, atol=1e-3)
+
+    print(vsource)
+
+
 @pytest.mark.parametrize(
     "angle, depth",
     [

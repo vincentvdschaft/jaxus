@@ -147,7 +147,9 @@ def scan_convert(
     return image
 
 
-def t0_delays_from_vsource(probe_geometry, vsource_angle, vsource_depth, sound_speed):
+def t0_delays_from_vsource(
+    probe_geometry, vsource_angle, vsource_depth, sound_speed, shift_to_zero=True
+):
     """Computes the t0 delays for a probe given a virtual source defined by an angle and depth.
 
     Parameters
@@ -167,18 +169,19 @@ def t0_delays_from_vsource(probe_geometry, vsource_angle, vsource_depth, sound_s
     t0_delays : jnp.array
         The t0 delays in seconds, where the smallest delay is 0.
     """
-    virtual_source = vsource_pos(vsource_angle, vsource_depth)
+    virtual_source = vsource_pos(vsource_angle, vsource_depth).reshape((-1, 2))
 
     t0_delays_vsource = (
         -jnp.sign(vsource_depth)
-        * jnp.linalg.norm(probe_geometry - virtual_source[None, :], axis=-1)
+        * jnp.linalg.norm(probe_geometry - virtual_source, axis=-1)
         / sound_speed
     )
-    t0_delays_pw = jnp.sin(vsource_angle) * probe_geometry[:, 0] / sound_speed
+    v = jnp.stack([jnp.sin(vsource_angle), jnp.cos(vsource_angle)], axis=-1)
+    t0_delays_pw = v @ probe_geometry.T / sound_speed
 
     t0_delays = jnp.where(jnp.isinf(vsource_depth), t0_delays_pw, t0_delays_vsource)
 
-    t0_delays -= jnp.min(t0_delays)
+    t0_delays -= jnp.where(shift_to_zero, jnp.min(t0_delays), 0.0)
 
     return t0_delays
 
@@ -198,7 +201,7 @@ def vsource_pos(angle, distance):
     position : jnp.array
         The position of the virtual source in meters.
     """
-    return jnp.array([jnp.sin(angle), jnp.cos(angle)]) * distance
+    return jnp.stack([jnp.sin(angle), jnp.cos(angle)], axis=-1) * distance
 
 
 def vsource_angle(vsource_pos):
@@ -207,15 +210,16 @@ def vsource_angle(vsource_pos):
     Parameters
     ----------
     vsource_pos : jnp.array
-        The position of the virtual source in meters.
+        The position of the virtual source in meters of shape (..., 2).
 
     Returns
     -------
-    angle : float
+    angle : jnp.array
         The angle of the virtual source in radians in the range [-pi/2, pi/2].
+        of shape (...,).
     """
-    return jnp.arctan2(vsource_pos[0], vsource_pos[1]) - jnp.where(
-        vsource_pos[1] < 0, jnp.pi, 0
+    return jnp.arctan2(vsource_pos[..., 0], vsource_pos[..., 1]) - jnp.where(
+        vsource_pos[..., 1] < 0, jnp.pi, 0
     )
 
 
@@ -232,7 +236,7 @@ def vsource_depth(vsource_pos):
     depth : float
         The depth of the virtual source in meters.
     """
-    return jnp.linalg.norm(vsource_pos) * jnp.sign(vsource_pos[1])
+    return jnp.linalg.norm(vsource_pos, axis=-1) * jnp.sign(vsource_pos[..., 1])
 
 
 if __name__ == "__main__":

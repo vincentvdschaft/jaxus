@@ -2,7 +2,7 @@ import numpy as np
 
 from jaxus.beamforming.delays import compute_t0_delays_from_vsource
 from jaxus.containers.waveform import Waveform
-from jaxus.utils import log
+from jaxus import log
 
 
 class Transmit:

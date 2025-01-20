@@ -11,7 +11,7 @@ from jaxus.beamforming import PixelGrid, beamform_das, get_pixel_grid, log_compr
 from jaxus.containers import Medium, Probe, Pulse, Receive, Transmit
 from jaxus.data import generate_hdf5_dataset
 from jaxus.rf_simulator import simulate_rf_transmit
-from jaxus.utils import log
+from jaxus import log
 
 
 def simulate_rf(

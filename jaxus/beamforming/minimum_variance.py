@@ -14,7 +14,7 @@ from jax import jit, vmap
 from tqdm import tqdm
 
 from jaxus.pfield import compute_pfield
-from jaxus.utils import log
+from jaxus import log
 from tqdm import tqdm
 from jaxus.utils.checks import (
     check_frequency,

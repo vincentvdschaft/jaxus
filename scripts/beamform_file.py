@@ -17,12 +17,13 @@ from jaxus import (
     hdf5_get_n_frames,
     hdf5_get_n_tx,
     load_hdf5,
+    log,
     log_compress,
     plot_beamformed,
     save_hdf5_image,
     use_dark_style,
 )
-from jaxus.utils import interpret_range, log
+from jaxus.utils import interpret_range
 
 # ======================================================================================
 # Parse input

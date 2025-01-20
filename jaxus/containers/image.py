@@ -3,7 +3,8 @@
 import numpy as np
 from pathlib import Path
 import h5py
-from jaxus.utils import log, log_compress, fix_extent
+from jaxus import log
+from jaxus.utils import log_compress, fix_extent
 from skimage.exposure import match_histograms
 from scipy.interpolate import RegularGridInterpolator
 

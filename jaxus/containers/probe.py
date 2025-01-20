@@ -2,7 +2,7 @@ from typing import Union
 
 import numpy as np
 
-from jaxus.utils import log
+from jaxus import log
 from jaxus.utils.checks import check_pos_array
 
 

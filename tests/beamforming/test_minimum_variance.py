@@ -12,7 +12,7 @@ from jaxus.beamforming import (
 )
 from jaxus.plotting import plot_beamformed, plot_rf, plot_to_darkmode
 from jaxus.rf_simulator import simulate_rf_transmit
-from jaxus.utils.testing import get_test_containers
+from jaxus.testing.testing import get_test_containers
 
 
 @pytest.mark.parametrize("iq_beamform", [True, False])

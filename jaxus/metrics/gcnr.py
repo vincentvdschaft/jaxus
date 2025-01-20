@@ -4,7 +4,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from jaxus.utils import log
+from jaxus import log
 from jaxus.containers import Image
 
 

@@ -23,7 +23,7 @@ from .beamform import (
     tof_correct_pixel,
     get_progbar_functions,
 )
-from jaxus.utils import log
+from jaxus import log
 from tqdm import tqdm
 
 

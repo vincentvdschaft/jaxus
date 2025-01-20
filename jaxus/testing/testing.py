@@ -4,6 +4,13 @@ from scipy.signal.windows import hamming
 from jaxus.containers import Medium, Probe, Pulse, Receive, Transmit
 
 
+def get_test_probe_geometry(n_el=80, aperture=40e-3):
+    """Get the positions for a uniform linear array."""
+    return np.stack(
+        [np.linspace(-aperture / 2, aperture / 2, n_el), np.zeros(n_el)], axis=1
+    )
+
+
 def get_test_containers():
     """Produces a `Probe`, `Medium`, `Receive`, and `Transmit` containers for testing
     purposes.

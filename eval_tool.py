@@ -9,7 +9,7 @@ from jaxus import (
     correct_fwhm_point,
     fwhm_image,
 )
-from jaxus.utils import log
+from jaxus import log
 import numpy as np
 import matplotlib.pyplot as plt
 from myplotlib import *

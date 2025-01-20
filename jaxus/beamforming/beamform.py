@@ -32,7 +32,7 @@ from jaxus.utils.checks import (
 )
 
 from ..pfield import compute_pfield
-from ..utils import log
+from .. import log
 from .lens_correction import compute_lensed_travel_time
 from .pixelgrid import PixelGrid
 
@@ -837,7 +837,7 @@ def hann(theta):
     return jnp.cos(theta) ** 2
 
 
-def tukey(theta, alpha=0.1):
+def tukey(theta, alpha=0.5):
     """Computes the Tukey window for a given angle, where the windows is 1 at theta=0
     and 0 at theta=pi/2. The parameter alpha controls the fraction of the window that
     is tapered. alpha=0 corresponds to a rectangular window and alpha=1 corresponds to

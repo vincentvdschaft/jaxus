@@ -72,7 +72,7 @@ def test_beamform():
         pixel_chunk_size=2**14,
     )
 
-    bf_data = log_compress(bf_data.reshape(pixel_grid.shape_2d).T, normalize=True)
+    bf_data = log_compress(bf_data.reshape(pixel_grid.shape_2d), normalize=True)
 
     # ==================================================================================
     # Plot the beamformed data

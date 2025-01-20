@@ -92,7 +92,7 @@ def test_beamform(iq_beamform):
         )[0]
         # bf_data = bf_data.reshape((n_z, n_x))
 
-    bf_data = log_compress(bf_data.reshape(pixel_grid.shape_2d).T, normalize=True)
+    bf_data = log_compress(bf_data.reshape(pixel_grid.shape_2d), normalize=True)
 
     # ==================================================================================
     # Plot the beamformed data

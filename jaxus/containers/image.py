@@ -7,7 +7,7 @@ from jaxus import log
 from jaxus.utils import log_compress, fix_extent
 from skimage.exposure import match_histograms
 from scipy.interpolate import RegularGridInterpolator
-
+from copy import deepcopy
 
 SCALE_LINEAR = 0
 SCALE_DB = 1
@@ -45,7 +45,7 @@ class Image:
     @property
     def data(self):
         """Return image data."""
-        return self._data
+        return np.copy(self._data)
 
     @data.setter
     def data(self, value):
@@ -136,7 +136,7 @@ class Image:
     @property
     def metadata(self):
         """Return metadata of image."""
-        return self._metadata
+        return deepcopy(self._metadata)
 
     @metadata.setter
     def metadata(self, value):
@@ -199,8 +199,8 @@ class Image:
     def match_histogram(self, other):
         """Match the histogram of the image to another image."""
 
-        self.data = match_histograms(self.data, other.data)
-        return self
+        data = match_histograms(self.data, other.data)
+        return Image(data, extent=self.extent, scale=self.scale, metadata=self.metadata)
 
     @staticmethod
     def _parse_scale(val):
@@ -228,8 +228,8 @@ class Image:
 
     def clip(self, minval=None, maxval=None):
         """Clip the image data to a range."""
-        self.data = np.clip(self.data, minval, maxval)
-        return self
+        data = np.clip(self.data, minval, maxval)
+        return Image(data, extent=self.extent, scale=self.scale, metadata=self.metadata)
 
     def apply_fn(self, fn):
         """Apply a function to the image data."""
@@ -243,10 +243,8 @@ class Image:
         if old_max is None:
             old_max = self.max()
 
-        self.data = (self.data - old_min) / (old_max - old_min) * (
-            maxval - minval
-        ) + minval
-        return self
+        data = (self.data - old_min) / (old_max - old_min) * (maxval - minval) + minval
+        return Image(data, extent=self.extent, scale=self.scale, metadata=self.metadata)
 
     def __add__(self, other):
         """Add two images together."""
@@ -271,12 +269,14 @@ class Image:
         # assert all([e1 == e2 for e1, e2 in zip(self.extent, other.extent)])
         assert self.scale == other.scale
         data = self.data - other.data
-        return Image(data, extent=self.extent)
+        return Image(data, extent=self.extent, scale=self.scale, metadata=self.metadata)
 
     def __mul__(self, other):
         if isinstance(other, (int, float, np.number)):
             data = self.data * other
-            return Image(data, extent=self.extent)
+            return Image(
+                data, extent=self.extent, scale=self.scale, metadata=self.metadata
+            )
 
     def resample(self, shape):
         """Resample image to a new shape."""
@@ -292,8 +292,9 @@ class Image:
         x_grid, y_grid = np.meshgrid(new_xvals, new_yvals, indexing="ij")
         new_data = interpolator((x_grid, y_grid))
 
-        self.data = new_data
-        return self
+        return Image(
+            new_data, extent=(new_xvals[0], new_xvals[-1], new_yvals[0], new_yvals[-1])
+        )
 
 
 class ImageSequence:

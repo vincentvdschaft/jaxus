@@ -789,7 +789,12 @@ def load_hdf5(
             transmits = np.array([transmits])
         data = {}
         raw_data = dataset["data"]["raw_data"][frames]
-        raw_data = raw_data[:, transmits]
+        try:
+            raw_data = raw_data[:, transmits]
+        except IndexError:
+            log.warning("The selected transmits are out of bounds. Loading transmit 0.")
+            transmits = np.array([0])
+            raw_data = raw_data[:, transmits]
         data["raw_data"] = raw_data.astype(np.float32)
 
         t0_delays = dataset["scan"]["t0_delays"][transmits]

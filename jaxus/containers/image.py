@@ -125,6 +125,11 @@ class Image:
 
         return self
 
+    def normalize_percentile(self, percentile=99):
+        """Normalize image data to the given percentile value."""
+        normval = np.percentile(self.data, percentile)
+        return self.normalize(normval)
+
     def __repr__(self):
         """Return string representation of Image object."""
         shape = self.shape
@@ -308,6 +313,11 @@ class ImageSequence:
         """Get the list of images."""
         return self._images
 
+    @property
+    def data(self):
+        """Get the data cube of all images."""
+        return np.stack([im.data for im in self.images], axis=0)
+
     @images.setter
     def images(self, value):
         assert all(isinstance(obj, Image) for obj in value)
@@ -336,7 +346,7 @@ class ImageSequence:
         # Remove file extension if it exists
         name = str(Path(name).with_suffix(""))
         for n, im in enumerate(self.images):
-            im.save(Path(directory) / f"{name}_{str(n).zfill(3)}.hdf5")
+            im.save(Path(directory) / f"{name}_{str(n).zfill(5)}.hdf5")
 
     @staticmethod
     def load(paths):
@@ -376,9 +386,14 @@ class ImageSequence:
         list(map(Image.log_compress, self.images))
         return self
 
-    def normalize(self):
-        normval = self.max()
+    def normalize(self, normval=None):
+        if normval is None:
+            normval = self.max()
         list(map(lambda im: Image.normalize(im, normval), self.images))
+        return self
+
+    def normalize_percentile(self, percentile=99):
+        list(map(lambda im: Image.normalize_percentile(im, percentile), self.images))
         return self
 
     def match_histogram(self, other):

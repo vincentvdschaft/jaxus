@@ -156,7 +156,7 @@ class Image:
 
     def update_metadata(self, metadata):
         """Update metadata of image."""
-        self.metadata.update(metadata)
+        self._metadata.update(metadata)
         return self
 
     def append_metadata(self, key, value):
@@ -335,6 +335,9 @@ class ImageSequence:
 
     def __getitem__(self, idx):
         """Get image from list."""
+        if isinstance(idx, slice):
+            return ImageSequence(self.images[idx])
+
         return self.images[idx]
 
     def append(self, im):
@@ -347,6 +350,8 @@ class ImageSequence:
         name = str(Path(name).with_suffix(""))
         for n, im in enumerate(self.images):
             im.save(Path(directory) / f"{name}_{str(n).zfill(5)}.hdf5")
+
+        return self
 
     @staticmethod
     def load(paths):

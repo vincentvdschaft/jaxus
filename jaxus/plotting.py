@@ -156,6 +156,16 @@ def plot_beamformed(
         np.min(extent_m[-2:]),
     ]
 
+    # Correct extent for pixel size
+    pixel_size_x = (extent_m[1] - extent_m[0]) / image.shape[0]
+    pixel_size_z = (extent_m[3] - extent_m[2]) / image.shape[1]
+    extent_m = (
+        extent_m[0] + pixel_size_x / 2,
+        extent_m[1] - pixel_size_x / 2,
+        extent_m[2] - pixel_size_z / 2,
+        extent_m[3] + pixel_size_z / 2,
+    )
+
     # Plot the image
     ax.imshow(
         image.T,

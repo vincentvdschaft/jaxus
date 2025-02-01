@@ -39,7 +39,8 @@ parser.add_argument("--dynamic-range", type=float, default=60)
 parser.add_argument("--extent", type=float, nargs=4, default=None)
 parser.add_argument("--save-path", type=Path, default=None)
 parser.add_argument("--lens-thickness", type=float, default=1.0)
-parser.add_argument("--lens-sound-speed", type=float, default=1000.0)
+parser.add_argument("--lens-sound-speed", type=float, default=1540.0)
+parser.add_argument("--sound_speed", type=float, default=None)
 args = parser.parse_args()
 # Create a Tkinter root window
 
@@ -125,6 +126,7 @@ log.info(
     f"{'--show'if show else '--no-show'} "
     f"{'--fnumber '+str(args.fnumber) if args.fnumber != 1.0 else ''}"
     f"{'--save-path'+str(args.save_path) if args.save_path else ''}"
+    f"--extent {args.extent} "
 )
 
 normalization_factor = None
@@ -166,7 +168,9 @@ for frame in frames:
         initial_times=data["initial_times"],
         sampling_frequency=data["sampling_frequency"],
         carrier_frequency=data["center_frequency"],
-        sound_speed=data["sound_speed"],
+        sound_speed=(
+            data["sound_speed"] if args.sound_speed is None else args.sound_speed
+        ),
         sound_speed_lens=args.lens_sound_speed,
         lens_thickness=args.lens_thickness * 1e-3,
         tx_apodizations=data["tx_apodizations"],

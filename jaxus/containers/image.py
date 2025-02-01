@@ -301,6 +301,24 @@ class Image:
             new_data, extent=(new_xvals[0], new_xvals[-1], new_yvals[0], new_yvals[-1])
         )
 
+    def transpose(self):
+        """Transpose image data."""
+        data = self.data.T
+        extent = [self.extent[2], self.extent[3], self.extent[0], self.extent[1]]
+        return Image(data, extent=extent, scale=self.scale, metadata=self.metadata)
+
+    def xflip(self):
+        """Flip image data along x-axis."""
+        data = np.flip(self.data, axis=0)
+        extent = [self.extent[0], self.extent[1], self.extent[3], self.extent[2]]
+        return Image(data, extent=extent, scale=self.scale, metadata=self.metadata)
+
+    def yflip(self):
+        """Flip image data along y-axis."""
+        data = np.flip(self.data, axis=1)
+        extent = [self.extent[0], self.extent[1], self.extent[3], self.extent[2]]
+        return Image(data, extent=extent, scale=self.scale, metadata=self.metadata)
+
 
 class ImageSequence:
     """Container class to hold a sequence of images."""
@@ -416,6 +434,18 @@ class ImageSequence:
     def min(self):
         image_minvals = list(map(Image.min, self.images))
         return min(image_minvals)
+
+    def transpose(self):
+        images = list(map(Image.transpose, self.images))
+        return ImageSequence(images)
+
+    def xflip(self):
+        images = list(map(Image.xflip, self.images))
+        return ImageSequence(images)
+
+    def yflip(self):
+        images = list(map(Image.yflip, self.images))
+        return ImageSequence(images)
 
     def __iter__(self):
         return iter(self.images)

@@ -1,13 +1,15 @@
 """Container for image data."""
 
-import numpy as np
-from pathlib import Path
-import h5py
-from jaxus import log
-from jaxus.utils import log_compress, fix_extent
-from skimage.exposure import match_histograms
-from scipy.interpolate import RegularGridInterpolator
 from copy import deepcopy
+from pathlib import Path
+
+import h5py
+import numpy as np
+from scipy.interpolate import RegularGridInterpolator
+from skimage.exposure import match_histograms
+
+from jaxus import log
+from jaxus.utils import fix_extent, log_compress
 
 SCALE_LINEAR = 0
 SCALE_DB = 1
@@ -29,13 +31,18 @@ class Image:
             Whether the image data is log-compressed.
         """
         self.data = data
-        self.extent = extent
+        self.extent = Extent(extent)
         self.scale = scale
         self.polar = polar
 
         self._metadata = {}
         if metadata is not None:
             self.update_metadata(metadata)
+
+    def imshow(self, ax, *args, **kwargs):
+        """Display image using matplotlib imshow."""
+        extent = self.extent_imshow
+        return ax.imshow(self.data.T, extent=extent, origin="lower", *args, **kwargs)
 
     @property
     def shape(self):
@@ -67,8 +74,7 @@ class Image:
     @extent.setter
     def extent(self, value):
         """Set extent of image."""
-        extent = np.array([value[0], value[1], value[2], value[3]])
-        self._extent = fix_extent(extent)
+        self._extent = Extent(value).sort()
 
     @property
     def scale(self):
@@ -310,14 +316,49 @@ class Image:
     def xflip(self):
         """Flip image data along x-axis."""
         data = np.flip(self.data, axis=0)
-        extent = [self.extent[0], self.extent[1], self.extent[3], self.extent[2]]
+        extent = self.extent.xflip()
         return Image(data, extent=extent, scale=self.scale, metadata=self.metadata)
 
     def yflip(self):
         """Flip image data along y-axis."""
         data = np.flip(self.data, axis=1)
-        extent = [self.extent[0], self.extent[1], self.extent[3], self.extent[2]]
+        extent = self.extent.yflip()
         return Image(data, extent=extent, scale=self.scale, metadata=self.metadata)
+
+    @property
+    def extent_imshow(self):
+        """Returns an extent corrected for how imshow works. It ensures that the
+        gridpoints represent the center of the pixels."""
+        return _correct_imshow_extent(self.extent, self.shape)
+
+
+def _correct_imshow_extent(extent, shape):
+    """Corrects the extent of an image to match the aspect ratio of the image.
+
+    Parameters
+    ----------
+    extent :  Extent
+        The extent of the image (x0, x1, y0, y1).
+    shape : tuple of int
+        The shape of the image (width, height).
+
+    Returns
+    -------
+    extent : tuple of float
+        The corrected extent of the image.
+    """
+    extent = Extent(extent)
+    width, height = extent.size()
+    pixel_w = width / (shape[0] - 1)
+    pixel_h = height / (shape[1] - 1)
+
+    offset = (
+        -pixel_w / 2 if extent[0] < extent[1] else pixel_w / 2,
+        pixel_w / 2 if extent[0] < extent[1] else -pixel_w / 2,
+        -pixel_h / 2 if extent[2] < extent[3] else pixel_h / 2,
+        pixel_h / 2 if extent[2] < extent[3] else -pixel_h / 2,
+    )
+    return Extent([ext + off for ext, off in zip(extent, offset)])
 
 
 class ImageSequence:
@@ -460,6 +501,70 @@ class ImageSequence:
         """Apply a function to each image in the sequence."""
         list(map(lambda im: Image.apply_fn(im, func), self.images))
         return self
+
+
+class Extent(tuple):
+    """Wrapper class for extent data."""
+
+    def __new__(cls, *args, **kwargs):
+        if kwargs:
+            initializer = [kwargs["x0"], kwargs["x1"], kwargs["y0"], kwargs["y1"]]
+        elif len(args) == 4:
+            initializer = [
+                float(args[0]),
+                float(args[1]),
+                float(args[2]),
+                float(args[3]),
+            ]
+        # Reduce numpy arrays and such to list of floats
+        elif len(args) == 1:
+            initializer = [
+                float(args[0][0]),
+                float(args[0][1]),
+                float(args[0][2]),
+                float(args[0][3]),
+            ]
+        else:
+            raise ValueError("Extent must have 4 elements.")
+
+        return super(Extent, cls).__new__(cls, initializer)
+
+    def yflip(self):
+        return Extent(self[0], self[1], self[3], self[2])
+
+    def xflip(self):
+        return Extent(self[1], self[0], self[2], self[3])
+
+    def sort(self):
+        x0 = min(self[0], self[1])
+        x1 = max(self[0], self[1])
+        y1 = max(self[2], self[3])
+        y0 = min(self[2], self[3])
+        return Extent(x0, x1, y0, y1)
+
+    def width(self):
+        self_sorted = self.sort()
+        return self_sorted[1] - self_sorted[0]
+
+    def height(self):
+        self_sorted = self.sort()
+        return self_sorted[3] - self_sorted[2]
+
+    def size(self):
+        return self.width(), self.height()
+
+    def __mul__(self, value):
+        return Extent(
+            self[0] * value, self[1] * value, self[2] * value, self[3] * value
+        )
+
+    def __add__(self, value):
+        return Extent(
+            self[0] + value, self[1] + value, self[2] + value, self[3] + value
+        )
+
+    def __sub__(self, value):
+        return self + (-value)
 
 
 def save_hdf5_image(path, image, extent, scale=SCALE_LINEAR, metadata=None):

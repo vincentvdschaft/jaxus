@@ -3,6 +3,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import FuncFormatter
+
 from jaxus import Image
 
 
@@ -207,6 +208,95 @@ def plot_beamformed(
 
     # Turn the axes background black
     ax.set_facecolor("black")
+
+
+def plot_beamformedv2(
+    ax,
+    image,
+    vmin=-60,
+    vmax=0,
+    cmap="gray",
+    axis_in_mm=True,
+    probe_geometry=None,
+    title=None,
+    xlabel_override=None,
+    zlabel_override=None,
+    include_axes=True,
+):
+    """Plots a beamformed image to an axis.
+
+    Parameters
+    ----------
+    ax : plt.Axes
+        The axis to plot to.
+    image : Image
+        The image to plot.
+    vmin : float, optional
+        The minimum value of the colormap. Defaults to -60.
+    vmax : float, optional
+        The maximum value of the colormap. Defaults to 0.
+    cmap : str, optional
+        The colormap to use. Defaults to "gray".
+    axis_in_mm : bool, optional
+        Whether to plot the x-axis in mm. Defaults to True.
+    probe_geometry : np.ndarray, optional
+        The probe geometry in meters of shape `(n_el, 2)`. If provided, the probe
+        geometry is plotted on top of the image. Defaults to None.
+    title : str, optional
+        The title of the plot. Defaults to None.
+    xlabel_override : str, optional
+        The x-axis label to use. If None, the default label is used. Defaults to None.
+    zlabel_override : str, optional
+        The z-axis label to use. If None, the default label is used. Defaults to None.
+    include_axes : bool, optional
+        Whether to include axes, labels, and titles. Defaults to True.
+    """
+
+    if axis_in_mm:
+        xlabel = "x [mm]"
+        zlabel = "z [mm]"
+        formatter = FuncFormatter(lambda x, _: f"{round(1000 * x)}")
+    else:
+        xlabel = "x [m]"
+        zlabel = "z [m]"
+        formatter = FuncFormatter(lambda x, _: f"{x:.3f}")
+
+    if xlabel_override is not None:
+        xlabel = xlabel_override
+    if zlabel_override is not None:
+        zlabel = zlabel_override
+
+    image.imshow(
+        ax, vmin=vmin, vmax=vmax, cmap=cmap, aspect="equal", interpolation="None"
+    )
+
+    # Include axes, labels, and titles if include_axes is True
+    if include_axes:
+        ax.xaxis.set_major_formatter(formatter)
+        ax.yaxis.set_major_formatter(formatter)
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(zlabel)
+
+        if probe_geometry is not None:
+            ax.plot(
+                [probe_geometry[0, 0], probe_geometry[-1, 0]],
+                [probe_geometry[0, 1], probe_geometry[-1, 1]],
+                "-|",
+                markersize=6,
+                color="C0",
+                linewidth=1,
+            )
+
+        if title is not None:
+            ax.set_title(title)
+
+    else:
+        # Hide axes, ticks, and labels
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+        ax.set_title("")
 
 
 def plot_beamformed_window(xlim, zlim, ax, *args, **kwargs):

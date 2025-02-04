@@ -348,7 +348,7 @@ def _correct_imshow_extent(extent, shape):
         The corrected extent of the image.
     """
     extent = Extent(extent)
-    width, height = extent.size()
+    width, height = extent.size
     pixel_w = width / (shape[0] - 1)
     pixel_h = height / (shape[1] - 1)
 
@@ -542,16 +542,35 @@ class Extent(tuple):
         y0 = min(self[2], self[3])
         return Extent(x0, x1, y0, y1)
 
+    @property
     def width(self):
         self_sorted = self.sort()
         return self_sorted[1] - self_sorted[0]
 
+    @property
     def height(self):
         self_sorted = self.sort()
         return self_sorted[3] - self_sorted[2]
 
+    @property
     def size(self):
-        return self.width(), self.height()
+        return self.width, self.height
+
+    @property
+    def xlims(self):
+        return self[0], self[1]
+
+    @property
+    def xlims_flipped(self):
+        return self[1], self[0]
+
+    @property
+    def ylims(self):
+        return self[2], self[3]
+
+    @property
+    def ylims_flipped(self):
+        return self[3], self[2]
 
     def __mul__(self, value):
         return Extent(

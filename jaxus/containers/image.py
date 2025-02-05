@@ -273,7 +273,7 @@ class Image:
         if isinstance(val, str):
             val = val.lower()
             if "lin" in val:
-                return SCALE_LINEApixel_wR
+                return SCALE_LINEAR
             else:
                 return SCALE_DB
 

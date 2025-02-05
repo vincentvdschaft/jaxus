@@ -12,7 +12,7 @@ from jaxus import (
 from jaxus import log
 import numpy as np
 import matplotlib.pyplot as plt
-from myplotlib import *
+from plotlib import *
 from jaxus.metrics.fwhm import _sample_line, find_fwhm_indices, plot_fwhm
 from matplotlib.widgets import Button
 import argparse

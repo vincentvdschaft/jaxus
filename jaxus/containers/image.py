@@ -71,10 +71,61 @@ class Image:
         """Return extent of image."""
         return self._extent
 
+    @property
+    def pixel_w(self):
+        return self.extent.width / (self.shape[0] - 1)
+
+    @property
+    def pixel_h(self):
+        return self.extent.height / (self.shape[1] - 1)
+
+    @property
+    def pixel_size(self):
+        return self.pixel_w, self.pixel_h
+
     @extent.setter
     def extent(self, value):
         """Set extent of image."""
         self._extent = Extent(value).sort()
+
+    def __getitem__(self, idx):
+        assert isinstance(idx, tuple) and len(idx) == 2
+        # Index with integers
+        if isinstance(idx[0], int) and isinstance(idx[1], int):
+            return self.data[idx]
+
+        # Index with slices
+        if isinstance(idx[0], slice) and isinstance(idx[1], slice):
+            slice0, slice1 = idx[0], idx[1]
+            slice0 = slice(
+                slice0.start if slice0.start is not None else 0,
+                slice0.stop if slice0.stop is not None else self.shape[0],
+                slice0.step,
+            )
+            slice1 = slice(
+                slice1.start if slice1.start is not None else 0,
+                slice1.stop if slice1.stop is not None else self.shape[1],
+                slice1.step,
+            )
+
+            data = self.data[idx]
+            extent = [
+                self.extent[0] + slice0.start * self.extent.width / self.shape[0],
+                self.extent[0] + slice0.stop * self.extent.width / self.shape[0],
+                self.extent[2] + slice1.start * self.extent.height / self.shape[1],
+                self.extent[2] + slice1.stop * self.extent.height / self.shape[1],
+            ]
+            return Image(data, extent=extent, scale=self.scale, metadata=self.metadata)
+
+        # Index with data coordinates
+        if isinstance(idx[0], float) and isinstance(idx[1], float):
+            x_idx = int((idx[0] - self.extent[0]) / self.extent.width * self.shape[0])
+            y_idx = int((idx[1] - self.extent[2]) / self.extent.height * self.shape[1])
+            return self[x_idx, y_idx]
+
+        raise ValueError(
+            "Invalid index. Must be integers, slices, or data coordinates."
+        )
 
     @property
     def scale(self):
@@ -222,7 +273,7 @@ class Image:
         if isinstance(val, str):
             val = val.lower()
             if "lin" in val:
-                return SCALE_LINEAR
+                return SCALE_LINEApixel_wR
             else:
                 return SCALE_DB
 
@@ -541,6 +592,22 @@ class Extent(tuple):
         y1 = max(self[2], self[3])
         y0 = min(self[2], self[3])
         return Extent(x0, x1, y0, y1)
+
+    @property
+    def x0(self):
+        return self[0]
+
+    @property
+    def x1(self):
+        return self[1]
+
+    @property
+    def y0(self):
+        return self[2]
+
+    @property
+    def y1(self):
+        return self[3]
 
     @property
     def width(self):

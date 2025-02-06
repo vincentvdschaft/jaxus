@@ -9,7 +9,7 @@ from scipy.interpolate import RegularGridInterpolator
 from skimage.exposure import match_histograms
 
 from jaxus import log
-from jaxus.utils import fix_extent, log_compress
+from jaxus.utils import log_compress
 
 SCALE_LINEAR = 0
 SCALE_DB = 1
@@ -232,6 +232,16 @@ class Image:
         self.metadata = {}
 
     @property
+    def x_vals(self):
+        """Return x values of image."""
+        return np.linspace(self.extent[0], self.extent[1], self.shape[0])
+
+    @property
+    def y_vals(self):
+        """Return y values of image."""
+        return np.linspace(self.extent[2], self.extent[3], self.shape[1])
+
+    @property
     def grid(self):
         """Return grid of image."""
 
@@ -244,19 +254,9 @@ class Image:
         return np.stack(self.grid, axis=-1).reshape(-1, 2)
 
     @property
-    def x_vals(self):
-        """Return x values of image."""
-        return np.linspace(self.extent[0], self.extent[1], self.shape[0])
-
-    @property
-    def y_vals(self):
-        """Return y values of image."""
-        return np.linspace(self.extent[2], self.extent[3], self.shape[1])
-
-    @property
     def aspect(self):
         """Return aspect ratio of image."""
-        return (self.extent[1] - self.extent[0]) / (self.extent[3] - self.extent[2])
+        return self.extent.aspect
 
     def match_histogram(self, other):
         """Match the histogram of the image to another image."""
@@ -326,19 +326,16 @@ class Image:
 
         return TypeError(f"Unsupported type {type(other)} for addition.")
 
-    def __sub__(self, other):
-        """Subtract two images."""
-        # assert all([e1 == e2 for e1, e2 in zip(self.extent, other.extent)])
-        assert self.scale == other.scale
-        data = self.data - other.data
-        return Image(data, extent=self.extent, scale=self.scale, metadata=self.metadata)
-
     def __mul__(self, other):
         if isinstance(other, (int, float, np.number)):
             data = self.data * other
             return Image(
                 data, extent=self.extent, scale=self.scale, metadata=self.metadata
             )
+
+    def __sub__(self, other):
+        """Subtract two images."""
+        return self + (other * -1)
 
     def resample(self, shape):
         """Resample image to a new shape."""
@@ -384,7 +381,8 @@ class Image:
 
 
 def _correct_imshow_extent(extent, shape):
-    """Corrects the extent of an image to match the aspect ratio of the image.
+    """Corrects the extent of an image to ensure the min and max
+    extent are in the centers of the outer pixels.
 
     Parameters
     ----------
@@ -398,16 +396,16 @@ def _correct_imshow_extent(extent, shape):
     extent : tuple of float
         The corrected extent of the image.
     """
-    extent = Extent(extent)
+    extent = Extent(extent).sort()
     width, height = extent.size
     pixel_w = width / (shape[0] - 1)
     pixel_h = height / (shape[1] - 1)
 
     offset = (
-        -pixel_w / 2 if extent[0] < extent[1] else pixel_w / 2,
-        pixel_w / 2 if extent[0] < extent[1] else -pixel_w / 2,
-        -pixel_h / 2 if extent[2] < extent[3] else pixel_h / 2,
-        pixel_h / 2 if extent[2] < extent[3] else -pixel_h / 2,
+        -pixel_w / 2,
+        pixel_w / 2,
+        -pixel_h / 2,
+        pixel_h / 2,
     )
     return Extent([ext + off for ext, off in zip(extent, offset)])
 
@@ -624,6 +622,11 @@ class Extent(tuple):
         return self.width, self.height
 
     @property
+    def aspect(self):
+        """Returns the aspect ratio (width/height)."""
+        return self.width / self.height
+
+    @property
     def xlims(self):
         return self[0], self[1]
 
@@ -671,7 +674,7 @@ def save_hdf5_image(path, image, extent, scale=SCALE_LINEAR, metadata=None):
         Additional metadata to save.
     """
 
-    extent = fix_extent(extent)
+    extent = Extent(extent).sort()
 
     path = Path(path)
 

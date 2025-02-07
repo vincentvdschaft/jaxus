@@ -252,6 +252,8 @@ def plot_beamformedv2(
         Whether to include axes, labels, and titles. Defaults to True.
     """
 
+    limits = image.extent
+
     if axis_in_mm:
         xlabel = "x [mm]"
         zlabel = "z [mm]"
@@ -286,6 +288,7 @@ def plot_beamformedv2(
                 color="C0",
                 linewidth=1,
             )
+            limits = limits.sety0(-1e-3)
 
         if title is not None:
             ax.set_title(title)
@@ -297,6 +300,9 @@ def plot_beamformedv2(
         ax.set_xlabel("")
         ax.set_ylabel("")
         ax.set_title("")
+
+    ax.set_xlim(limits.x0, limits.x1)
+    ax.set_ylim(limits.y1, limits.y0)
 
 
 def plot_beamformed_window(xlim, zlim, ax, *args, **kwargs):

@@ -567,12 +567,8 @@ class Extent(tuple):
             ]
         # Reduce numpy arrays and such to list of floats
         elif len(args) == 1:
-            initializer = [
-                float(args[0][0]),
-                float(args[0][1]),
-                float(args[0][2]),
-                float(args[0][3]),
-            ]
+            initializer = [float(x) for x in args[0]]
+            assert len(initializer) == 4
         else:
             raise ValueError("Extent must have 4 elements.")
 
@@ -654,6 +650,21 @@ class Extent(tuple):
 
     def __sub__(self, value):
         return self + (-value)
+
+    def __hash__(self):
+        return hash(tuple(self))
+
+    def setx0(self, value):
+        return Extent(value, self[1], self[2], self[3])
+
+    def setx1(self, value):
+        return Extent(self[0], value, self[2], self[3])
+
+    def sety0(self, value):
+        return Extent(self[0], self[1], value, self[3])
+
+    def sety1(self, value):
+        return Extent(self[0], self[1], self[2], value)
 
 
 def save_hdf5_image(path, image, extent, scale=SCALE_LINEAR, metadata=None):

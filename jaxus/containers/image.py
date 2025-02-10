@@ -220,11 +220,11 @@ class Image:
         """Add metadata assuming the key is a list."""
 
         if key not in self.metadata:
-            self.metadata[key] = []
+            self._metadata[key] = []
         elif not isinstance(self.metadata[key], list):
             raise ValueError(f"Metadata key {key} is not a list.")
 
-        self.metadata[key].append(value)
+        self._metadata[key].append(value)
         return self
 
     def clear_metadata(self):
@@ -352,7 +352,10 @@ class Image:
         new_data = interpolator((x_grid, y_grid))
 
         return Image(
-            new_data, extent=(new_xvals[0], new_xvals[-1], new_yvals[0], new_yvals[-1])
+            new_data,
+            extent=(new_xvals[0], new_xvals[-1], new_yvals[0], new_yvals[-1]),
+            scale=self.scale,
+            metadata=self.metadata,
         )
 
     def transpose(self):

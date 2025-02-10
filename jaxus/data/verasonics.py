@@ -768,7 +768,7 @@ def hdf5_from_matlab_raw(input_path, output_path):
             t0_delays=t0_delays,
             bandwidth_percent=bandwidth_percent,
             time_to_next_transmit=time_to_next_transmit,
-            waveform_indices=waveform_tx_indices,
+            tx_waveform_indices=waveform_tx_indices,
             waveform_samples_one_way=waveforms_one_way_list,
             waveform_samples_two_way=waveforms_two_way_list,
             lens_correction=lens_correction,

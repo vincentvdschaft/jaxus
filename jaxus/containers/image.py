@@ -208,7 +208,7 @@ class Image:
 
     def add_metadata(self, key, value):
         """Add metadata to image."""
-        self.metadata[key] = value
+        self._metadata[key] = value
         return self
 
     def update_metadata(self, metadata):
@@ -312,17 +312,21 @@ class Image:
         """Add two images together."""
         if isinstance(other, (int, float, np.number)):
             data = self.data + other
-            return Image(data, extent=self.extent, scale=self.scale)
+            return Image(
+                data, extent=self.extent, scale=self.scale, metadata=self.metadata
+            )
 
         if isinstance(other, Image):
             assert all([e1 == e2 for e1, e2 in zip(self.extent, other.extent)])
             assert self.scale == other.scale
             data = self.data + other.data
-            return Image(data, extent=self.extent, scale=self.scale)
+            return Image(
+                data, extent=self.extent, scale=self.scale, metadata=self.metadata
+            )
 
         other = np.array(other)
         data = self.data + other
-        return Image(data, extent=self.extent, scale=self.scale)
+        return Image(data, extent=self.extent, scale=self.scale, metadata=self.metadata)
 
         return TypeError(f"Unsupported type {type(other)} for addition.")
 

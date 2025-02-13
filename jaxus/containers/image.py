@@ -73,20 +73,49 @@ class Image:
 
     @property
     def pixel_w(self):
+        """The width of a pixel in the image."""
         return self.extent.width / (self.shape[0] - 1)
 
     @property
     def pixel_h(self):
+        """The height of a pixel in the image."""
         return self.extent.height / (self.shape[1] - 1)
 
     @property
     def pixel_size(self):
+        """The width and height of a pixel in the image."""
         return self.pixel_w, self.pixel_h
 
     @extent.setter
     def extent(self, value):
         """Set extent of image."""
         self._extent = Extent(value).sort()
+
+    @property
+    def scale(self):
+        """Return whether image data is in dB or linear."""
+        return self._scale
+
+    @scale.setter
+    def scale(self, value):
+        """Set whether image data is in dB or linear."""
+        self._scale = Image._parse_scale(value)
+
+    def set_scale(self, value):
+        """Returns a copy of the image with a new scale."""
+        return Image(self.data, self.extent, scale=value, metadata=self.metadata)
+
+    def set_data(self, data):
+        """Returns a copy of the image with new data."""
+        return Image(data, self.extent, scale=self.scale, metadata=self.metadata)
+
+    def set_extent(self, extent):
+        """Returns a copy of the image with new extent."""
+        return Image(self.data, extent, scale=self.scale, metadata=self.metadata)
+
+    def set_metadata(self, metadata):
+        """Returns a copy of the image with new metadata."""
+        return Image(self.data, self.extent, scale=self.scale, metadata=metadata)
 
     def __getitem__(self, idx):
         assert isinstance(idx, tuple) and len(idx) == 2
@@ -128,16 +157,6 @@ class Image:
         )
 
     @property
-    def scale(self):
-        """Return whether image data is in dB or linear."""
-        return self._scale
-
-    @scale.setter
-    def scale(self, value):
-        """Set whether image data is in dB or linear."""
-        self._scale = Image._parse_scale(value)
-
-    @property
     def in_db(self):
         """Return whether image data is log-compressed."""
         return self.scale == SCALE_DB
@@ -164,10 +183,10 @@ class Image:
             log.warning("Image data is already log-compressed. Skipping.")
             return self
 
-        self.data = log_compress(self.data)
-        self.scale = SCALE_DB
+        data = log_compress(self.data)
+        scale = SCALE_DB
 
-        return self
+        return Image(data, extent=self.extent, scale=scale, metadata=self.metadata)
 
     def normalize(self, normval=None):
         """Normalize image data to max 1 when not log-compressed or 0 when log-compressed."""
@@ -175,12 +194,13 @@ class Image:
         if normval is None:
             normval = self.data.max()
 
+        data = self.data
         if self.scale == SCALE_DB:
-            self.data -= normval
+            data -= normval
         else:
-            self.data /= normval
+            data /= normval
 
-        return self
+        return Image(data, extent=self.extent, scale=self.scale, metadata=self.metadata)
 
     def normalize_percentile(self, percentile=99):
         """Normalize image data to the given percentile value."""
@@ -308,6 +328,10 @@ class Image:
         data = (self.data - old_min) / (old_max - old_min) * (maxval - minval) + minval
         return Image(data, extent=self.extent, scale=self.scale, metadata=self.metadata)
 
+    def to_pixels(self):
+        """Converts the image to linear pixel values [0, 1]."""
+        return self.map_range(0.0, 1.0).set_scale(SCALE_LINEAR)
+
     def __add__(self, other):
         """Add two images together."""
         if isinstance(other, (int, float, np.number)):
@@ -341,16 +365,22 @@ class Image:
         """Subtract two images."""
         return self + (other * -1)
 
-    def resample(self, shape):
+    def resample(self, shape, extent=None):
         """Resample image to a new shape."""
+
+        if extent is None:
+            extent = self.extent
+        else:
+            extent = Extent(extent)
+
         interpolator = RegularGridInterpolator(
             (self.x_vals, self.y_vals),
             self.data,
             bounds_error=False,
             fill_value=0 if self.scale == SCALE_LINEAR else -240,
         )
-        new_xvals = np.linspace(self.extent[0], self.extent[1], shape[0])
-        new_yvals = np.linspace(self.extent[2], self.extent[3], shape[1])
+        new_xvals = np.linspace(extent[0], extent[1], shape[0])
+        new_yvals = np.linspace(extent[2], extent[3], shape[1])
 
         x_grid, y_grid = np.meshgrid(new_xvals, new_yvals, indexing="ij")
         new_data = interpolator((x_grid, y_grid))
@@ -503,46 +533,38 @@ class ImageSequence:
         return ImageSequence(images)
 
     def log_compress(self):
-        list(map(Image.log_compress, self.images))
-        return self
+        return ImageSequence([im.log_compress() for im in self.images])
 
     def normalize(self, normval=None):
         if normval is None:
             normval = self.max()
-        list(map(lambda im: Image.normalize(im, normval), self.images))
-        return self
+        return ImageSequence([im.normalize(normval) for im in self.images])
 
     def normalize_percentile(self, percentile=99):
-        list(map(lambda im: Image.normalize_percentile(im, percentile), self.images))
-        return self
+        return ImageSequence(
+            [im.normalize_percentile(percentile) for im in self.images]
+        )
 
     def match_histogram(self, other):
-        list(map(lambda im: Image.match_histogram(im, other), self.images))
-        return self
+        return ImageSequence([im.match_histogram(other) for im in self.images])
 
     def clip(self, minval=None, maxval=None):
-        list(map(lambda im: Image.clip(im, minval, maxval), self.images))
-        return self
+        return ImageSequence([im.clip(minval, maxval) for im in self.images])
 
     def max(self):
-        image_maxvals = list(map(Image.max, self.images))
-        return max(image_maxvals)
+        return max([im.max() for im in self.images])
 
     def min(self):
-        image_minvals = list(map(Image.min, self.images))
-        return min(image_minvals)
+        return min([im.min() for im in self.images])
 
     def transpose(self):
-        images = list(map(Image.transpose, self.images))
-        return ImageSequence(images)
+        return ImageSequence([im.transpose() for im in self.images])
 
     def xflip(self):
-        images = list(map(Image.xflip, self.images))
-        return ImageSequence(images)
+        return ImageSequence([im.xflip() for im in self.images])
 
     def yflip(self):
-        images = list(map(Image.yflip, self.images))
-        return ImageSequence(images)
+        return ImageSequence([im.yflip() for im in self.images])
 
     def __iter__(self):
         return iter(self.images)

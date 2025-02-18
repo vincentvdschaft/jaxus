@@ -2,7 +2,7 @@ from jaxus.metrics import *
 from jaxus.containers import Image
 from jaxus import plot_beamformed
 import matplotlib.pyplot as plt
-from myplotlib import *
+from plotlib import *
 
 image = Image.load("image_frame_0000.hdf5")
 scat_pos = np.array([-0.0255, 0.0425])

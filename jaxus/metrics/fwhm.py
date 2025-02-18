@@ -92,7 +92,9 @@ def _find_crossing(curve, value, required_repeats):
         return curve.size - 1
 
 
-def fwhm_image(image: Image, position, direction, max_offset, required_repeats=3):
+def fwhm_image(
+    image: Image, position, direction, max_offset, required_repeats=3, n_samples=256
+):
     """Computes the FWHM of a line profile in the image.
 
     Parameters
@@ -120,14 +122,12 @@ def fwhm_image(image: Image, position, direction, max_offset, required_repeats=3
         image=image.data,
         extent=image.extent,
         position=position,
-        vec=direction,
+        direction=direction,
         max_offset=max_offset,
-        n_samples=128,
+        n_samples=n_samples,
     )
 
-    fwhm_value = fwhm(
-        curve, max_offset * 2, required_repeats, log_scale=image.log_compressed
-    )
+    fwhm_value = fwhm(curve, max_offset * 2, required_repeats, log_scale=image.in_db)
 
     return fwhm_value
 
@@ -152,18 +152,25 @@ def correct_fwhm_point(image: Image, position, max_diff=0.6e-3):
     """
 
     position = np.array(position)
+
+    if max_diff == 0.0:
+        return position
+
     distances = np.linalg.norm(image.flatgrid - position, axis=1)
 
     mask = distances <= max_diff
     candidate_intensities = image.data.flatten()[mask]
     candidate_points = image.flatgrid[mask]
 
+    if candidate_intensities.size == 0:
+        return position
+
     idx = np.argmax(candidate_intensities)
 
     return candidate_points[idx]
 
 
-def _sample_line(image, extent, position, vec, max_offset, n_samples):
+def _sample_line(image, extent, position, direction, max_offset, n_samples):
     """
     Sample a line in the image.
 
@@ -173,7 +180,7 @@ def _sample_line(image, extent, position, vec, max_offset, n_samples):
         The image to sample.
     position : tuple of floats
         The position of the line.
-    vec : tuple of floats
+    direction : tuple of floats
         The direction of the line.
     max_offset : float
         The maximum offset from the position.
@@ -187,30 +194,130 @@ def _sample_line(image, extent, position, vec, max_offset, n_samples):
     positions : np.array
         The positions of the samples. Can be used to plot the line in the image.
     """
-    # Normalize the vector
-    vec = np.array(vec)
-    vec = vec / np.linalg.norm(vec)
 
-    im_width = extent[1] - extent[0]
-    im_height = extent[3] - extent[2]
+    image_x_vals = np.linspace(extent[0], extent[1], image.shape[0])
+    image_y_vals = np.linspace(extent[2], extent[3], image.shape[1])
+
+    interpolator = RegularGridInterpolator(
+        (image_x_vals, image_y_vals), image, method="linear", bounds_error=False
+    )
+
+    positions = _get_positions(
+        center=position, direction=direction, max_offset=max_offset, n_samples=n_samples
+    )
+    print(positions.shape)
+
+    curve = interpolator(positions)
+
+    minval = np.min(curve[np.logical_not(np.isnan(curve))])
+    curve = np.nan_to_num(curve, nan=minval)
+    return curve, positions
+
+
+def _get_positions(center, direction, max_offset, n_samples):
+    """Defines evenly spaced positions along a line of length 2 * max_offset centered
+    at center in the direction of direction.
+
+    Parameters
+    ----------
+    center : np.array
+        The center of the line of shape (2,).
+    direction : np.array
+        The direction of the line of shape (2,).
+    max_offset : float
+        The maximum offset from the center.
+    n_samples : int
+        The number of points along the line.
+
+    Returns
+    -------
+    positions : np.array
+        The positions along the line of shape (n_samples, 2).
+    """
+
+    direction = np.array(direction)
+    direction = direction / np.linalg.norm(direction)
 
     x = np.linspace(
-        position[0] - max_offset * vec[0],
-        position[0] + max_offset * vec[0],
+        center[0] - max_offset * direction[0],
+        center[0] + max_offset * direction[0],
         n_samples,
     )
     y = np.linspace(
-        position[1] - max_offset * vec[1],
-        position[1] + max_offset * vec[1],
+        center[1] - max_offset * direction[1],
+        center[1] + max_offset * direction[1],
         n_samples,
     )
 
-    x_idx = np.round((x - extent[0]) / im_width * image.shape[0]).astype(int)
-    y_idx = np.round((y - extent[2]) / im_height * image.shape[1]).astype(int)
+    positions = np.stack([x, y], axis=0)
 
-    x_idx = np.clip(x_idx, 0, image.shape[0] - 1)
-    y_idx = np.clip(y_idx, 0, image.shape[1] - 1)
+    return positions.T
 
-    fwhm(image[x_idx, y_idx], 1.0, 3, log_scale=True)
 
-    return image[x_idx, y_idx], np.stack((x, y), axis=1)
+def plot_fwhm(
+    ax,
+    position,
+    direction,
+    max_offset,
+    color1="C0",
+    color2="C1",
+    linewidth=0.5,
+    **kwargs
+):
+    """Plot a cross indicating the axial and lateral FWHM of a line profile.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axes to plot on.
+    position : tuple
+        The position of the line profile.
+    direction : tuple
+        The axial direction of the line profile.
+    max_offset : float
+        The maximum offset from the position to sample the line profile.
+    color1 : str, default="C0"
+        The color of the axial FWHM line.
+    color2 : str, default="C1"
+        The color of the lateral FWHM line.
+    linewidth : float, default=0.5
+        The width of the lines.
+    **kwargs : dict
+        Additional arguments to pass to the plot function.
+
+    Returns
+    -------
+    line1 : matplotlib.lines.Line2D
+        The axial FWHM line.
+    line2 : matplotlib.lines.Line2D
+        The lateral FWHM line.
+    """
+
+    positions = _get_positions(
+        center=position, direction=direction, max_offset=max_offset, n_samples=2
+    )
+    direction_orth = np.array([-direction[1], direction[0]])
+
+    (line1,) = ax.plot(
+        positions[:, 0],
+        positions[:, 1],
+        color=color1,
+        linewidth=linewidth,
+        linestyle="--",
+        **kwargs
+    )
+
+    positions_orth = _get_positions(
+        center=position, direction=direction_orth, max_offset=max_offset, n_samples=2
+    )
+
+    (line2,) = ax.plot(
+        positions_orth[:, 0],
+        positions_orth[:, 1],
+        color=color2,
+        linewidth=linewidth,
+        linestyle="--",
+        **kwargs
+    )
+
+    return line1, line2

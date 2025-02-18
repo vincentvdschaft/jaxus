@@ -6,7 +6,7 @@ from jax import device_put, jit, vmap
 from tqdm import tqdm
 
 from jaxus.containers.waveform import get_pulse
-from jaxus.utils import log
+from jaxus import log
 from jaxus.utils.checks import *
 
 

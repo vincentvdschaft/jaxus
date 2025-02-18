@@ -11,14 +11,26 @@ from pathlib import Path
 from tkinter import filedialog, messagebox
 
 from jaxus.data import hdf5_from_matlab_raw
-from jaxus.utils import log
+from jaxus import log
 
-# Create a Tkinter root window
-root = tk.Tk()
-root.withdraw()
 
-# Prompt the user to select a directory
-selected_directory = filedialog.askdirectory()
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument(
+    "directory",
+    type=Path,
+    help="The directory containing the .mat files to convert to USBMD format.",
+    default=None,
+    nargs="?",
+)
+args = parser.parse_args()
+
+if args.directory is None:
+    # Create a Tkinter root window
+    root = tk.Tk()
+    root.withdraw()
+    selected_directory = filedialog.askdirectory()
+else:
+    selected_directory = Path(args.directory)
 
 
 def find_raw_data_dir(selected_directory):

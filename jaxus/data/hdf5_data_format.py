@@ -3,8 +3,9 @@ from typing import List, Tuple, Union
 
 import h5py
 import numpy as np
+
+from jaxus import log
 from jaxus.utils.utils import fix_extent, interpret_range
-from jaxus.utils import log
 
 
 def _first_not_none_item(arr):
@@ -136,12 +137,12 @@ def generate_hdf5_dataset(
         probe_name = "Unknown"
     if description is None:
         description = "No description was supplied"
-    assert isinstance(
-        probe_name, str
-    ), f"The probe name must be a string. Got {probe_name}."
-    assert isinstance(
-        description, str
-    ), f"The description must be a string. Got {description}."
+    assert isinstance(probe_name, str), (
+        f"The probe name must be a string. Got {probe_name}."
+    )
+    assert isinstance(description, str), (
+        f"The description must be a string. Got {description}."
+    )
 
     # ==================================================================================
     # Perform checks
@@ -156,27 +157,27 @@ def generate_hdf5_dataset(
         n_tx,
         n_el,
     ), "The t0_delays must be of shape (n_tx, n_el)."
-    assert isinstance(sampling_frequency, (int, float)) and (
-        sampling_frequency > 0
-    ), "The sampling_frequency must be a positive number."
-    assert isinstance(center_frequency, (int, float)) and (
-        center_frequency > 0
-    ), "The center_frequency must be a positive number."
-    assert isinstance(sound_speed, (int, float)) and (
-        sound_speed > 0
-    ), "The sound_speed must be a positive number."
-    assert isinstance(initial_times, np.ndarray) and initial_times.shape == (
-        n_tx,
-    ), "The initial_times must be of shape (n_tx,)."
+    assert isinstance(sampling_frequency, (int, float)) and (sampling_frequency > 0), (
+        "The sampling_frequency must be a positive number."
+    )
+    assert isinstance(center_frequency, (int, float)) and (center_frequency > 0), (
+        "The center_frequency must be a positive number."
+    )
+    assert isinstance(sound_speed, (int, float)) and (sound_speed > 0), (
+        "The sound_speed must be a positive number."
+    )
+    assert isinstance(initial_times, np.ndarray) and initial_times.shape == (n_tx,), (
+        "The initial_times must be of shape (n_tx,)."
+    )
     assert isinstance(focus_distances, np.ndarray) and focus_distances.shape == (
         n_tx,
     ), "The focus_distances must be of shape (n_tx,)."
-    assert isinstance(polar_angles, np.ndarray) and polar_angles.shape == (
-        n_tx,
-    ), "The polar_angles must be of shape (n_tx,)."
-    assert isinstance(azimuth_angles, np.ndarray) and azimuth_angles.shape == (
-        n_tx,
-    ), "The azimuth_angles must be of shape (n_tx,)."
+    assert isinstance(polar_angles, np.ndarray) and polar_angles.shape == (n_tx,), (
+        "The polar_angles must be of shape (n_tx,)."
+    )
+    assert isinstance(azimuth_angles, np.ndarray) and azimuth_angles.shape == (n_tx,), (
+        "The azimuth_angles must be of shape (n_tx,)."
+    )
     assert isinstance(tx_apodizations, np.ndarray) and tx_apodizations.shape == (
         n_tx,
         n_el,
@@ -194,43 +195,43 @@ def generate_hdf5_dataset(
     if not tx_waveform_indices is None:
         assert isinstance(
             tx_waveform_indices, np.ndarray
-        ) and tx_waveform_indices.shape == (
-            n_tx,
-        ), "The tx_waveform_indices must be of shape (n_tx,)."
+        ) and tx_waveform_indices.shape == (n_tx,), (
+            "The tx_waveform_indices must be of shape (n_tx,)."
+        )
     if not waveform_samples_one_way is None:
-        assert isinstance(
-            waveform_samples_one_way, list
-        ), "The waveform_samples_one_way must be a list."
+        assert isinstance(waveform_samples_one_way, list), (
+            "The waveform_samples_one_way must be a list."
+        )
         waveform_samples_one_way = [
             np.array(waveform) for waveform in waveform_samples_one_way
         ]
         for waveform in waveform_samples_one_way:
-            assert (
-                isinstance(waveform, np.ndarray) and waveform.ndim == 1
-            ), "The waveform_samples_one_way must be a list of 1D numpy arrays."
+            assert isinstance(waveform, np.ndarray) and waveform.ndim == 1, (
+                "The waveform_samples_one_way must be a list of 1D numpy arrays."
+            )
     if not waveform_samples_two_way is None:
-        assert isinstance(
-            waveform_samples_two_way, list
-        ), "The waveform_samples_two_way must be a list."
+        assert isinstance(waveform_samples_two_way, list), (
+            "The waveform_samples_two_way must be a list."
+        )
         waveform_samples_two_way = [
             np.array(waveform) for waveform in waveform_samples_two_way
         ]
         for waveform in waveform_samples_two_way:
-            assert (
-                isinstance(waveform, np.ndarray) and waveform.ndim == 1
-            ), "The waveform_samples_two_way must be a list of 1D numpy arrays."
+            assert isinstance(waveform, np.ndarray) and waveform.ndim == 1, (
+                "The waveform_samples_two_way must be a list of 1D numpy arrays."
+            )
     if not lens_correction is None:
-        assert isinstance(
-            lens_correction, (int, float)
-        ), "The lens_correction must be a number."
+        assert isinstance(lens_correction, (int, float)), (
+            "The lens_correction must be a number."
+        )
     if not element_width is None:
-        assert isinstance(
-            element_width, (int, float)
-        ), "The element_width must be a number."
+        assert isinstance(element_width, (int, float)), (
+            "The element_width must be a number."
+        )
     if not bandwidth is None:
-        assert isinstance(
-            bandwidth, tuple
-        ), "The bandwidth must be a tuple of two numbers."
+        assert isinstance(bandwidth, tuple), (
+            "The bandwidth must be a tuple of two numbers."
+        )
         assert len(bandwidth) == 2, "The bandwidth must be a tuple of two numbers."
 
     # Convert path to Path object
@@ -246,9 +247,9 @@ def generate_hdf5_dataset(
         dataset.attrs["probe"] = probe_name
         dataset.attrs["description"] = description
 
-        assert (
-            isinstance(raw_data, np.ndarray) and raw_data.ndim == 5
-        ), "The raw_data must be a numpy array of shape (n_frames, n_tx, n_ax, n_el, n_ch)."
+        assert isinstance(raw_data, np.ndarray) and raw_data.ndim == 5, (
+            "The raw_data must be a numpy array of shape (n_frames, n_tx, n_ax, n_el, n_ch)."
+        )
 
         def convert_datatype(x, astype=np.float32):
             return x.astype(astype) if x is not None else None
@@ -362,8 +363,7 @@ def generate_hdf5_dataset(
             name="n_ch",
             data=n_ch,
             description=(
-                "The number of channels. For RF data this is 1. For IQ data "
-                "this is 2."
+                "The number of channels. For RF data this is 1. For IQ data this is 2."
             ),
             unit="unitless",
         )
@@ -597,22 +597,21 @@ def validate_dataset(path):
 
         # validate the data group
         for key in dataset["data"].keys():
-
             # Validate data shape
             data_shape = dataset["data"][key].shape
             if key == "raw_data":
-                assert (
-                    len(data_shape) == 5
-                ), "The raw_data group does not have a shape of length 5."
-                assert (
-                    data_shape[1] == dataset["scan"]["n_tx"][()]
-                ), "n_tx does not match the second dimension of raw_data."
-                assert (
-                    data_shape[2] == dataset["scan"]["n_ax"][()]
-                ), "n_ax does not match the third dimension of raw_data."
-                assert (
-                    data_shape[3] == dataset["scan"]["n_el"][()]
-                ), "n_el does not match the fourth dimension of raw_data."
+                assert len(data_shape) == 5, (
+                    "The raw_data group does not have a shape of length 5."
+                )
+                assert data_shape[1] == dataset["scan"]["n_tx"][()], (
+                    "n_tx does not match the second dimension of raw_data."
+                )
+                assert data_shape[2] == dataset["scan"]["n_ax"][()], (
+                    "n_ax does not match the third dimension of raw_data."
+                )
+                assert data_shape[3] == dataset["scan"]["n_el"][()], (
+                    "n_el does not match the fourth dimension of raw_data."
+                )
                 assert data_shape[4] in (
                     1,
                     2,
@@ -628,13 +627,13 @@ def validate_dataset(path):
             elif key == "envelope_data":
                 print("No validation has been defined for envelope data.")
             elif key == "image":
-                assert (
-                    len(data_shape) == 3
-                ), "The image group does not have a shape of length 3."
+                assert len(data_shape) == 3, (
+                    "The image group does not have a shape of length 3."
+                )
             elif key == "image_sc":
-                assert (
-                    len(data_shape) == 3
-                ), "The image_sc group does not have a shape of length 3."
+                assert len(data_shape) == 3, (
+                    "The image_sc group does not have a shape of length 3."
+                )
 
         assert_unit_and_description_present(dataset)
 
@@ -656,51 +655,51 @@ def assert_scan_keys_present(dataset):
     for key in dataset["scan"].keys():
         if key == "probe_geometry":
             correct_shape = (dataset["scan"]["n_el"][()], 3)
-            assert (
-                dataset["scan"][key].shape == correct_shape
-            ), "The probe_geometry does not have the correct shape."
+            assert dataset["scan"][key].shape == correct_shape, (
+                "The probe_geometry does not have the correct shape."
+            )
 
         elif key == "t0_delays":
             correct_shape = (
                 dataset["scan"]["n_tx"][()],
                 dataset["scan"]["n_el"][()],
             )
-            assert (
-                dataset["scan"][key].shape == correct_shape
-            ), "The t0_delays does not have the correct shape."
+            assert dataset["scan"][key].shape == correct_shape, (
+                "The t0_delays does not have the correct shape."
+            )
 
         elif key == "tx_apodizations":
             correct_shape = (
                 dataset["scan"]["n_tx"][()],
                 dataset["scan"]["n_el"][()],
             )
-            assert (
-                dataset["scan"][key].shape == correct_shape
-            ), "The tx_apodizations does not have the correct shape."
+            assert dataset["scan"][key].shape == correct_shape, (
+                "The tx_apodizations does not have the correct shape."
+            )
 
         elif key == "focus_distances":
             correct_shape = (dataset["scan"]["n_tx"][()],)
-            assert (
-                dataset["scan"][key].shape == correct_shape
-            ), "The focus_distances does not have the correct shape."
+            assert dataset["scan"][key].shape == correct_shape, (
+                "The focus_distances does not have the correct shape."
+            )
 
         elif key == "polar_angles":
             correct_shape = (dataset["scan"]["n_tx"][()],)
-            assert (
-                dataset["scan"][key].shape == correct_shape
-            ), "The polar_angles does not have the correct shape."
+            assert dataset["scan"][key].shape == correct_shape, (
+                "The polar_angles does not have the correct shape."
+            )
 
         elif key == "azimuth_angles":
             correct_shape = (dataset["scan"]["n_tx"][()],)
-            assert (
-                dataset["scan"][key].shape == correct_shape
-            ), "The azimuthal_angles does not have the correct shape."
+            assert dataset["scan"][key].shape == correct_shape, (
+                "The azimuthal_angles does not have the correct shape."
+            )
 
         elif key == "initial_times":
             correct_shape = (dataset["scan"]["n_tx"][()],)
-            assert (
-                dataset["scan"][key].shape == correct_shape
-            ), "The initial_times does not have the correct shape."
+            assert dataset["scan"][key].shape == correct_shape, (
+                "The initial_times does not have the correct shape."
+            )
 
         elif key in (
             "sampling_frequency",
@@ -714,9 +713,9 @@ def assert_scan_keys_present(dataset):
             "bandwidth_percent",
             "time_to_next_transmit",
         ):
-            assert (
-                dataset["scan"][key].size == 1
-            ), f"{key} does not have the correct shape."
+            assert dataset["scan"][key].size == 1, (
+                f"{key} does not have the correct shape."
+            )
 
         else:
             print("No validation has been defined for %s.", key)
@@ -740,12 +739,74 @@ def assert_unit_and_description_present(hdf5_file, _prefix=""):
                 hdf5_file[key], _prefix=_prefix + key + "/"
             )
         else:
-            assert (
-                "unit" in hdf5_file[key].attrs.keys()
-            ), f"The dataset {_prefix}/{key} does not have a unit attribute."
-            assert (
-                "description" in hdf5_file[key].attrs.keys()
-            ), f"The dataset {_prefix}/{key} does not have a description attribute."
+            assert "unit" in hdf5_file[key].attrs.keys(), (
+                f"The dataset {_prefix}/{key} does not have a unit attribute."
+            )
+            assert "description" in hdf5_file[key].attrs.keys(), (
+                f"The dataset {_prefix}/{key} does not have a description attribute."
+            )
+
+
+def _hdf5_ensure_idx_within_range(path, indices, key, dim):
+    """Ensures that the frames are within the range of the dataset.
+
+    Parameters
+    ----------
+    path : str
+        The path to the hdf5 dataset.
+    frames : iteratble or str
+        The frames to load. If "all", all frames are loaded.
+
+    Returns
+    -------
+    frames : np.ndarray
+        The frames to load, which are within the range of the dataset.
+    """
+    with h5py.File(path, "r") as dataset:
+        dim_size = dataset[key].shape[dim]
+        if isinstance(indices, str):
+            assert indices == "all", "The only valid string is 'all'."
+            return interpret_range(indices, dim_size)
+
+        indices = np.array(indices, dtype=int).reshape(-1)
+        indices = indices[(indices >= 0) & (indices < dim_size)]
+        return indices
+
+
+def hdf5_frames_in_range(path, frames):
+    """Ensures that the frames are within the range of the dataset.
+
+    Parameters
+    ----------
+    path : str
+        The path to the hdf5 dataset.
+    frames : iteratble or str
+        The selected frame indices. If "all", all frames are selected.
+
+    Returns
+    -------
+    frames : np.ndarray
+        The frames indices which are within the range of the dataset.
+    """
+    return _hdf5_ensure_idx_within_range(path, frames, "data/raw_data", 0)
+
+
+def hdf5_transmits_in_range(path, transmits):
+    """Ensures that the transmits are within the range of the dataset.
+
+    Parameters
+    ----------
+    path : str
+        The path to the hdf5 dataset.
+    transmits : iteratble or str
+        The selected transmit indices
+
+    Returns
+    -------
+    transmits : np.ndarray
+        The transmit indices which are within the range of the dataset.
+    """
+    return _hdf5_ensure_idx_within_range(path, transmits, "data/raw_data", 1)
 
 
 def load_hdf5(
@@ -773,23 +834,15 @@ def load_hdf5(
     dict : The loaded data.
     """
 
+    frames = hdf5_frames_in_range(path, frames)
+    transmits = hdf5_transmits_in_range(path, transmits)
     with h5py.File(path, "r") as dataset:
-
-        if isinstance(frames, str) and frames == "all":
-            frames = np.arange(dataset["data"]["raw_data"].shape[0])
-        if isinstance(transmits, str) and transmits == "all":
-            transmits = np.arange(dataset["data"]["raw_data"].shape[1])
-
-        frames = np.array(frames)
-        transmits = np.array(transmits)
-
-        if frames.ndim == 0:
-            frames = np.array([frames])
-        if transmits.ndim == 0:
-            transmits = np.array([transmits])
         data = {}
-        raw_data = dataset["data"]["raw_data"][frames]
-        raw_data = raw_data[:, transmits]
+        raw_data_chunks = []
+        for frame in frames:
+            raw_data_chunks.append(dataset["data"]["raw_data"][frame, transmits])
+        raw_data = np.stack(raw_data_chunks, axis=0)
+
         data["raw_data"] = raw_data.astype(np.float32)
 
         t0_delays = dataset["scan"]["t0_delays"][transmits]
@@ -858,79 +911,6 @@ def load_hdf5(
     return data
 
 
-def save_hdf5_image(path, image, extent, log_compressed=True, metadata=None):
-    """
-    Saves an image to an hdf5 file.
-
-    Parameters
-    ----------
-    path : str
-        The path to the hdf5 file.
-    image : np.ndarray
-        The image to save.
-    extent : list
-        The extent of the image (x0, x1, z0, z1).
-    log_compressed : bool
-        Whether the image is log compressed.
-    metadata : dict
-        Additional metadata to save.
-    """
-
-    extent = fix_extent(extent)
-
-    path = Path(path)
-
-    if path.exists():
-        log.warning(f"Overwriting existing file {path}.")
-        path.unlink()
-    if not path.parent.exists():
-        path.parent.mkdir(parents=True)
-
-    if image.ndim > 2:
-        image = np.squeeze(image)
-        if image.ndim > 2:
-            raise ValueError(
-                f"Image must be 2D, but has shape {image.shape}. "
-                f"Try using np.squeeze to remove extra dimensions."
-            )
-
-    with h5py.File(path, "w") as dataset:
-        dataset.create_dataset("image", data=image)
-        dataset["image"].attrs["extent"] = extent
-        dataset["image"].attrs["log_compressed"] = log_compressed
-        if metadata is not None:
-            save_dict_to_hdf5(dataset, metadata)
-
-
-def load_hdf5_image(path):
-    """
-    Loads an image from an hdf5 file.
-
-    Parameters
-    ----------
-    path : str
-        The path to the hdf5 file.
-
-    Returns
-    -------
-    image : np.ndarray
-        The image.
-    extent : np.ndarray
-        The extent of the image (x0, x1, z0, z1).
-    log_compressed : bool
-        Whether the image is log compressed.
-    """
-
-    with h5py.File(path, "r") as dataset:
-        image = dataset["image"][()]
-        extent = dataset["image"].attrs["extent"]
-        log_compressed = dataset["image"].attrs["log_compressed"]
-        metadata = load_hdf5_to_dict(dataset)
-        metadata.pop("image", None)
-
-    return image, extent, log_compressed, metadata
-
-
 def hdf5_get_n_frames(path):
     """Reads the number of frames in an hdf5 file."""
     with h5py.File(path) as f:
@@ -941,6 +921,32 @@ def hdf5_get_n_tx(path):
     """Reads the number of transmits in an hdf5 file."""
     with h5py.File(path) as f:
         return int(f["data"]["raw_data"].shape[1])
+
+
+def hdf5_get_n_ax(path):
+    """Reads the number of axial samples in an hdf5 file."""
+    with h5py.File(path) as f:
+        return int(f["data"]["raw_data"].shape[2])
+
+
+def hdf5_get_n_el(path):
+    """Reads the number of elements in an hdf5 file."""
+    with h5py.File(path) as f:
+        return int(f["data"]["raw_data"].shape[3])
+
+
+def hdf5_get_sound_speed(path):
+    """Reads the speed of sound in an hdf5 file."""
+    with h5py.File(path) as f:
+        return float(f["scan"]["sound_speed"][()])
+
+
+def hdf5_get_wavelength(path):
+    """Reads the wavelength of the ultrasound signal in an hdf5 file."""
+    with h5py.File(path) as f:
+        return float(f["scan"]["sound_speed"][()]) / float(
+            f["scan"]["center_frequency"][()]
+        )
 
 
 def reduce_hdf5_file(path, path_out, frames="all", transmits="all"):
@@ -975,59 +981,3 @@ def extend_probe_geometry_to_3d(probe_geometry):
         [probe_geometry[:, 0], np.zeros(probe_geometry.shape[0]), probe_geometry[:, 1]],
         axis=1,
     )
-
-
-def save_dict_to_hdf5(hdf5_file, data_dict, parent_group="/"):
-    """
-    Recursively saves a nested dictionary to an HDF5 file.
-
-    Parameters
-    ----------
-    hdf5_file : h5py.File
-        Opened h5py.File object.
-    data_dict : dict
-        (Nested) dictionary to save.
-    parent_group : h5py.Group
-        Current group path in HDF5 file (default is root "/").
-    """
-    data_dict = lists_to_numbered_dict(data_dict)
-    for key, value in data_dict.items():
-        group_path = f"{parent_group}/{key}"
-        if isinstance(value, dict):
-            # Create a new group for nested dictionary
-            hdf5_file.require_group(group_path)
-            save_dict_to_hdf5(hdf5_file, value, parent_group=group_path)
-        else:
-            # Convert leaf items into datasets
-            hdf5_file[group_path] = value
-
-
-def lists_to_numbered_dict(data_dict):
-    """Transforms all lists in a dictionary to dictionaries with numbered keys."""
-    for key, value in data_dict.items():
-        if isinstance(value, list):
-            data_dict[key] = {str(i): v for i, v in enumerate(value)}
-        elif isinstance(value, dict):
-            data_dict[key] = lists_to_numbered_dict(value)
-    return data_dict
-
-
-def load_hdf5_to_dict(hdf5_file, parent_group="/"):
-    """
-    Recursively reads an HDF5 file into a nested dictionary.
-
-    Args:
-        hdf5_file: Opened h5py.File object.
-        parent_group: Current group path in HDF5 file (default is root "/").
-
-    Returns:
-        Nested dictionary representing the HDF5 file structure.
-    """
-    data_dict = {}
-    for key in hdf5_file[parent_group]:
-        item_path = f"{parent_group}/{key}"
-        if isinstance(hdf5_file[item_path], h5py.Group):
-            data_dict[key] = load_hdf5_to_dict(hdf5_file, parent_group=item_path)
-        else:
-            data_dict[key] = hdf5_file[item_path][()]
-    return data_dict

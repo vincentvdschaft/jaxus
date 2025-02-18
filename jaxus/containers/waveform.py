@@ -7,7 +7,7 @@ import numpy as np
 from jax import jit, vmap
 from scipy.signal import butter, filtfilt
 
-from jaxus.utils import log
+from jaxus import log
 
 
 class Waveform:

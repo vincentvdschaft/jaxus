@@ -32,7 +32,7 @@ from jaxus.utils.checks import (
 )
 
 from ..pfield import compute_pfield
-from ..utils import log
+from .. import log
 from .lens_correction import compute_lensed_travel_time
 from .pixelgrid import PixelGrid
 
@@ -58,6 +58,7 @@ def beamform_das(
     transmits: jnp.ndarray = None,
     pixel_chunk_size: int = 1048576,
     progress_bar: bool = False,
+    **kwargs,
 ):
     """Beamforms RF data using the given parameters. The input data can be
     either RF or IQ data. The beamforming can be performed on all transmits or a
@@ -199,9 +200,11 @@ def beamform_das(
         pfields.append(pfield)
     pfields = jnp.stack(pfields, axis=0)
     mean_pfield = jnp.mean(pfields, axis=0)
+    mean_pfield /= jnp.max(mean_pfield)
 
-    normalization = 1 / mean_pfield
-    mask = mean_pfield > 1e-4
+    normalization = jnp.zeros_like(mean_pfield)
+    indices = mean_pfield > 1e-1
+    normalization = normalization.at[indices].set(1 / mean_pfield[indices])
 
     for tx in transmits:
         assert 0 <= tx < n_tx, "Transmit index out of bounds"
@@ -234,7 +237,7 @@ def beamform_das(
                     iq_beamform=iq_beamform,
                 )
                 # Apply pfield weighting
-                beamformed_transmit = beamformed_transmit * pfields[n]
+                # beamformed_transmit = beamformed_transmit * pfields[n]
                 beamformed_chunks.append(beamformed_transmit)
 
             # Concatenate the beamformed chunks
@@ -242,7 +245,7 @@ def beamform_das(
 
             # Reshape and add to the beamformed images
             beamformed_images = beamformed_images.at[frame].add(beamformed_transmit)
-        beamformed_images *= normalization * mask
+        # beamformed_images *= normalization
 
     return beamformed_images
 
@@ -381,7 +384,7 @@ def detect_envelope_beamformed(bf_data, dz_wl):
     ----------
     rf_data : np.ndarray
         The RF data to perform envelope detection on of shape
-        `(n_frames, n_rows, n_cols)`.
+        `(n_frames, n_x, n_z)`.
     dz_wl : float
         The pixel size/spacing in the z-direction in wavelengths of the beamforming
         grid. (Wavelengths are defined as sound_speed/carrier_frequency.)
@@ -395,7 +398,7 @@ def detect_envelope_beamformed(bf_data, dz_wl):
         raise TypeError(f"bf_data must be a ndarray. Got {type(bf_data)}.")
     if not bf_data.ndim == 3:
         raise ValueError(
-            "bf_data must be a 3D array of shape (n_frames, n_rows, n_cols). "
+            "bf_data must be a 3D array of shape (n_frames, n_x, n_z). "
             f"Got shape {bf_data.shape}."
         )
     if not isinstance(dz_wl, (float, int)):
@@ -413,6 +416,8 @@ def detect_envelope_beamformed(bf_data, dz_wl):
         b, a = butter(2, 0.8, "low")
         bf_data = filtfilt(b, a, bf_data, axis=2)
 
+    bf_data = np.transpose(bf_data, (0, 2, 1))
+
     iq_data = rf2iq(
         bf_data[:, None, ..., None],
         carrier_frequency=1,
@@ -420,6 +425,8 @@ def detect_envelope_beamformed(bf_data, dz_wl):
         bandwidth=1.0,
         padding=512,
     )
+
+    iq_data = np.transpose(iq_data, (0, 1, 3, 2))
     return np.abs(iq_data)[:, 0, :, :]
 
 
@@ -629,6 +636,7 @@ def _beamform_pixel(
     focus_distance,
     angle,
     iq_beamform=False,
+    **kwargs,
 ):
     """Beamforms a single pixel of a single frame and single transmit. Further
     processing such as log-compression and envelope detection are not performed.
@@ -828,7 +836,7 @@ def hann(theta):
     return jnp.cos(theta) ** 2
 
 
-def tukey(theta, alpha=0.1):
+def tukey(theta, alpha=0.5):
     """Computes the Tukey window for a given angle, where the windows is 1 at theta=0
     and 0 at theta=pi/2. The parameter alpha controls the fraction of the window that
     is tapered. alpha=0 corresponds to a rectangular window and alpha=1 corresponds to

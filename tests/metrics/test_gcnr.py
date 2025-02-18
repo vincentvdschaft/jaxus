@@ -21,7 +21,7 @@ def test_gcnr_compute_disk():
     gcnr_disk_annulus(
         image=image,
         disk_center=(0, 0),
-        disk_r=10e-3,
+        disk_radius=10e-3,
         annulus_offset=1e-3,
         annulus_width=2e-3,
     )
@@ -30,7 +30,7 @@ def test_gcnr_compute_disk():
 def test_gcnr_plot_disk_annulus():
     fig, ax = plt.subplots()
     pos_m = (0, 0)
-    disk_r = 10e-3
+    disk_radius = 10e-3
     annulus_offset = 1e-3
     annulus_width = 2e-3
     opacity = 0.5
@@ -38,7 +38,7 @@ def test_gcnr_plot_disk_annulus():
     gcnr_plot_disk_annulus(
         ax=ax,
         disk_center=pos_m,
-        disk_r=disk_r,
+        disk_radius=disk_radius,
         annulus_offset=annulus_offset,
         annulus_width=annulus_width,
         opacity=opacity,

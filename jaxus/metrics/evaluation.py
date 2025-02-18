@@ -1,11 +1,18 @@
 from jaxus.containers import Image
 from jaxus.metrics.gcnr import gcnr_disk_annulus
-from jaxus.metrics.fwhm import fwhm_image, correct_fwhm_point
+from jaxus.metrics.fwhm import fwhm_image, correct_fwhm_point, _sample_line
 import numpy as np
+from copy import deepcopy
 
 
 def image_measure_gcnr_disk_annulus(
-    image: Image, disk_center, disk_r, annulus_offset, annulus_width
+    image: Image,
+    disk_center,
+    disk_radius,
+    annulus_offset,
+    annulus_width,
+    return_copy=False,
+    name=None,
 ):
     """Computes the gCNR between a disk and a surrounding annulus and adds the result
     to the image metadata.
@@ -16,7 +23,7 @@ def image_measure_gcnr_disk_annulus(
         The image to compute the GCNR on.
     disk_center : tuple
         The position of the disk.
-    disk_r : float
+    disk_radius : float
         The radius of the disk.
     annulus_offset : float
         The space between disk and annulus.
@@ -28,10 +35,13 @@ def image_measure_gcnr_disk_annulus(
     image : Image
         The image with the gCNR value added to the metadata.
     """
+    if return_copy:
+        image = deepcopy(image)
+
     gcnr = gcnr_disk_annulus(
         image=image,
         disk_center=disk_center,
-        disk_r=disk_r,
+        disk_radius=disk_radius,
         annulus_offset=annulus_offset,
         annulus_width=annulus_width,
     )
@@ -40,9 +50,10 @@ def image_measure_gcnr_disk_annulus(
         "gcnr_type": "disk_annulus",
         "gcnr_value": gcnr,
         "disk_center": disk_center,
-        "disk_r": disk_r,
+        "disk_radius": disk_radius,
         "annulus_offset": annulus_offset,
         "annulus_width": annulus_width,
+        "name": "" if name is None else str(name),
     }
     image.append_metadata(key="gcnr", value=gcnr_metadata)
 
@@ -56,6 +67,9 @@ def image_measure_fwhm(
     max_offset,
     correct_position=False,
     max_correction_distance=1e-3,
+    n_samples=100,
+    name=None,
+    return_copy=False,
 ):
     """Computes the FWHM of a line profile in the image and adds the result to the image metadata.
 
@@ -79,6 +93,9 @@ def image_measure_fwhm(
     image : Image
         The image with the FWHM value added to the metadata.
     """
+    if return_copy:
+        image = deepcopy(image)
+
     if correct_position:
         corrected_position = correct_fwhm_point(
             image, position, max_diff=max_correction_distance
@@ -97,11 +114,25 @@ def image_measure_fwhm(
         axial_direction,
         max_offset=max_offset,
     )
-    fwhm_value_lateral = fwhm_image(
-        image,
-        position,
-        lateral_direction,
+    values_axial, positions_axial = _sample_line(
+        image=image.data,
+        extent=image.extent,
+        position=position,
+        direction=axial_direction,
         max_offset=max_offset,
+        n_samples=n_samples,
+    )
+
+    fwhm_value_lateral = fwhm_image(
+        image, position, lateral_direction, max_offset=max_offset, required_repeats=6
+    )
+    values_lateral, positions_lateral = _sample_line(
+        image=image.data,
+        extent=image.extent,
+        position=position,
+        direction=lateral_direction,
+        max_offset=max_offset,
+        n_samples=n_samples,
     )
 
     fwhm_metadata = {
@@ -109,6 +140,13 @@ def image_measure_fwhm(
         "fwhm_value_lateral": fwhm_value_lateral,
         "position": position,
         "axial_direction": axial_direction,
+        "max_offset": max_offset,
+        "n_samples": n_samples,
+        "positions_axial": positions_axial,
+        "values_axial": values_axial,
+        "positions_lateral": positions_lateral,
+        "values_lateral": values_lateral,
+        "name": "" if name is None else str(name),
     }
     image.append_metadata(key="fwhm", value=fwhm_metadata)
 

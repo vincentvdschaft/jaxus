@@ -17,12 +17,13 @@ from jaxus import (
     hdf5_get_n_frames,
     hdf5_get_n_tx,
     load_hdf5,
+    log,
     log_compress,
     plot_beamformed,
     save_hdf5_image,
     use_dark_style,
 )
-from jaxus.utils import interpret_range, log
+from jaxus.utils import interpret_range
 
 # ======================================================================================
 # Parse input
@@ -33,12 +34,13 @@ parser.add_argument("--frames", type=str, nargs="+", default="unspecified")
 # Add variable number of transmits
 parser.add_argument("--transmits", type=str, nargs="+", default="unspecified")
 parser.add_argument("--show", action=argparse.BooleanOptionalAction)
-parser.add_argument("--fnumber", type=float, default=1.0)
+parser.add_argument("--fnumber", type=float, default=0.125)
 parser.add_argument("--dynamic-range", type=float, default=60)
 parser.add_argument("--extent", type=float, nargs=4, default=None)
 parser.add_argument("--save-path", type=Path, default=None)
 parser.add_argument("--lens-thickness", type=float, default=1.0)
-parser.add_argument("--lens-sound-speed", type=float, default=1000.0)
+parser.add_argument("--lens-sound-speed", type=float, default=1540.0)
+parser.add_argument("--sound_speed", type=float, default=None)
 args = parser.parse_args()
 # Create a Tkinter root window
 
@@ -124,6 +126,7 @@ log.info(
     f"{'--show'if show else '--no-show'} "
     f"{'--fnumber '+str(args.fnumber) if args.fnumber != 1.0 else ''}"
     f"{'--save-path'+str(args.save_path) if args.save_path else ''}"
+    f"--extent {args.extent} "
 )
 
 normalization_factor = None
@@ -144,14 +147,14 @@ for frame in frames:
         extent = fix_extent([float(coord) * 1e-3 for coord in args.extent])
     else:
         extent = [
-            data["probe_geometry"][:, 0].min() - 2e-3,
-            data["probe_geometry"][:, 0].max() + 2e-3,
+            min(data["probe_geometry"][:, 0].min() - 2e-3, -20e-3),
+            max(data["probe_geometry"][:, 0].max() + 2e-3, 20e-3),
             1e-3,
             n_ax * wavelength / 8,
         ]
 
     print(f"extent: {extent}")
-    pixel_size = (wavelength / 2, wavelength / 4)
+    pixel_size = (wavelength / 4, wavelength / 4)
 
     pixel_grid = get_pixel_grid_from_extent(extent=extent, pixel_size=pixel_size)
 
@@ -165,7 +168,9 @@ for frame in frames:
         initial_times=data["initial_times"],
         sampling_frequency=data["sampling_frequency"],
         carrier_frequency=data["center_frequency"],
-        sound_speed=data["sound_speed"],
+        sound_speed=(
+            data["sound_speed"] if args.sound_speed is None else args.sound_speed
+        ),
         sound_speed_lens=args.lens_sound_speed,
         lens_thickness=args.lens_thickness * 1e-3,
         tx_apodizations=data["tx_apodizations"],
@@ -223,19 +228,13 @@ for frame in frames:
     if args.save_path is not None:
         path = Path(args.save_path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path_addition = f"frame_{frame:04d}"
-        path = path.with_name(path.stem + f"_{path_addition}" + path.suffix)
+        path = path.with_name(path.stem + path.suffix)
 
         if not path.suffix in [".hdf5", ".png"]:
             path = path.with_suffix(".png")
         # plt.savefig(path, dpi=300, bbox_inches="tight")
         if path.suffix == ".hdf5":
-            save_hdf5_image(
-                path,
-                im_das,
-                extent=pixel_grid.extent_m,
-                log_compressed=True,
-            )
+            save_hdf5_image(path, im_das, extent=pixel_grid.extent_m, scale="db")
             log.info(f"Saved to {log.yellow(path)}")
         elif path.suffix == ".png":
             # import cv2

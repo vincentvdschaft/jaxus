@@ -368,12 +368,46 @@ def get_pixel_grid_from_extent(extent, pixel_size):
 
     sizes = extent_1 - extent_0
 
+    grid_size = np.prod(sizes / pixel_size)
+    if grid_size > 2000 * 2000:
+        raise ValueError(f"Grid of size {grid_size} is too large.")
+
     shape = np.zeros(n_dims)
     for dim, size in enumerate(sizes):
         shape[dim] = ceil(size / pixel_size[dim])
         pixel_size[dim] = size / shape[dim]
 
     return get_pixel_grid(shape, pixel_size, extent[::2], center=(False,) * n_dims)
+
+
+def get_pixel_grid_polar(extent, pixel_size):
+    """Produces a PixelGrid object from the given extent and pixel size.
+
+    Parameters
+    ----------
+    extent : tuple, list, or ndarray
+        The extent of the grid as a tuple, list, or ndarray. [r0, r1, theta0, theta1]
+    pixel_size : tuple or float
+        The size of the pixels in each dimension.
+
+    Returns
+    -------
+    grid : PixelGrid
+        The pixel grid object.
+    """
+    pixel_grid = get_pixel_grid_from_extent(extent, pixel_size)
+
+    theta = pixel_grid.pixel_positions_flat[:, 0]
+    r = pixel_grid.pixel_positions_flat[:, 1]
+
+    x = r * np.sin(theta)
+    z = r * np.cos(theta)
+
+    pixel_positions = np.stack([x, z], axis=-1)
+
+    return PixelGrid(
+        extent_m=extent, pixel_positions_flat=pixel_positions, shape=pixel_grid.shape
+    )
 
 
 def get_pixel_grid_from_lims(lims, pixel_size, prioritize_limits=False):

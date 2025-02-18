@@ -224,7 +224,7 @@ def debug(message, *args, **kwargs):
 
 def info(message, *args, **kwargs):
     """Prints a message with log level info."""
-    message = color_numbers(str(message))
+    message = str(message)
     logger.info(message, *args, **kwargs)
 
 

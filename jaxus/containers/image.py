@@ -2,11 +2,12 @@
 
 from copy import deepcopy
 from pathlib import Path
-
+from PIL import Image as PILImage
 import h5py
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from skimage.exposure import match_histograms
+import matplotlib.pyplot as plt
 
 from jaxus import log
 from jaxus.utils import log_compress
@@ -67,11 +68,6 @@ class Image:
         self._data = data
 
     @property
-    def extent(self):
-        """Return extent of image."""
-        return self._extent
-
-    @property
     def pixel_w(self):
         return self.extent.width / (self.shape[0] - 1)
 
@@ -83,10 +79,18 @@ class Image:
     def pixel_size(self):
         return self.pixel_w, self.pixel_h
 
+    @property
+    def extent(self):
+        """Return extent of image."""
+        return self._extent
+
     @extent.setter
     def extent(self, value):
         """Set extent of image."""
         self._extent = Extent(value).sort()
+
+    def set_extent(self, value):
+        return Image(self.data, extent=value, scale=self.scale, metadata=self.metadata)
 
     def __getitem__(self, idx):
         assert isinstance(idx, tuple) and len(idx) == 2
@@ -153,10 +157,20 @@ class Image:
         )
         return self
 
-    @classmethod
-    def load(cls, path):
+    @staticmethod
+    def load(path):
         """Load image from HDF5 file."""
         return load_hdf5_image(path)
+
+    @staticmethod
+    def from_png(path):
+        """Load image from PNG file."""
+
+        # Load grayscale image
+        pil_image = PILImage.open(path).convert("L")
+        data = np.array(pil_image).T
+        extent = [0, pil_image.width, 0, pil_image.height]
+        return Image(data, extent=extent)
 
     def log_compress(self):
         """Log-compress image data."""
@@ -587,6 +601,16 @@ class Extent(tuple):
     def xflip(self):
         return Extent(self[1], self[0], self[2], self[3])
 
+    def ycenter(self):
+
+        offset = (self[3] - self[2]) / 2
+        return Extent(self[0], self[1], self[2] - offset, self[3] - offset)
+
+    def xcenter(self):
+
+        offset = (self[1] - self[0]) / 2
+        return Extent(self[0] - offset, self[1] - offset, self[2], self[3])
+
     def sort(self):
         x0 = min(self[0], self[1])
         x1 = max(self[0], self[1])
@@ -822,3 +846,63 @@ def load_hdf5_to_dict(hdf5_file, parent_group="/"):
             data_dict[key] = hdf5_file[item_path][()]
 
     return numbered_dicts_to_list(data_dict)
+
+
+def sample_points_from_image(image: Image, num_samples: int) -> np.ndarray:
+    """
+    Samples points from a space defined by an extent, using the grayscale image
+    as the probability density function.
+
+    Parameters
+    ----------
+    image : Image
+        Grayscale image to sample points from.
+    num_samples : int
+        Number of points to sample.
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (num_samples, 2) containing the sampled points.
+
+    Raises
+    ------
+    ValueError
+        If the input image is not a 2D grayscale image.
+    """
+    image = image.map_range(0, 1)
+    extent = image.extent
+    image = image.data
+    pixel_width = (extent[1] - extent[0]) / (image.shape[0] - 1)
+    pixel_height = (extent[3] - extent[2]) / (image.shape[1] - 1)
+
+    if image.ndim != 2:
+        raise ValueError("Input image must be a 2D grayscale image.")
+
+    x0, x1, y0, y1 = extent
+
+    # Normalize the image to use it as a probability density function
+    pdf = image.astype(np.float64)
+    pdf /= pdf.sum()
+
+    # Flatten the PDF for easier sampling
+    flat_pdf = np.ravel(pdf)
+
+    # Generate the indices of the samples based on the PDF
+    sampled_indices = np.random.choice(len(flat_pdf), size=num_samples, p=flat_pdf)
+
+    # Convert flat indices back to 2D indices
+    x_indices, y_indices = np.unravel_index(sampled_indices, shape=image.shape)
+
+    # Map indices to coordinates in the given extent
+    x_coords = x0 + (x_indices / (image.shape[0] - 1)) * (x1 - x0)
+    y_coords = y0 + (y_indices / (image.shape[1] - 1)) * (y1 - y0)
+
+    offset = np.random.uniform(-0.5, 0.5, size=(num_samples, 2)) * np.array(
+        [[pixel_width, pixel_height]]
+    )
+
+    # Combine x and y coordinates
+    sampled_points = np.stack((x_coords, y_coords), axis=-1) + offset
+
+    return sampled_points

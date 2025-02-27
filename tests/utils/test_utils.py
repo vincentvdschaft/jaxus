@@ -19,11 +19,24 @@ def test_vsource_angle(pos, angle):
     assert np.isclose(computed_angle, angle, rtol=1e-2, atol=1e-3)
 
 
-def test_vsource_pos():
-    angle, depth = jnp.ones(5) * 10 * np.pi / 180, jnp.ones(5) * 20e-3
-    vsource_pos_true = vsource_pos(angle, depth)
+@pytest.mark.parametrize(
+    "angle, distance",
+    [
+        (
+            jnp.array([0, 10e-3]),
+            jnp.array([10e-3, 10e-3]),
+        ),
+        (
+            jnp.array(0),
+            jnp.array(10e-3),
+        ),
+    ],
+)
+def test_vsource_pos(angle, distance):
+    """Tests the vsource_pos function."""
+    vsource_pos_true = vsource_pos(angle, distance)
 
-    vsource = np.array([np.sin(angle), np.cos(angle)]) * depth
+    vsource = (np.array([np.sin(angle), np.cos(angle)]) * distance).T
     assert np.allclose(vsource, vsource_pos_true, rtol=1e-2, atol=1e-3)
 
     print(vsource)
@@ -38,15 +51,16 @@ def test_vsource_pos():
         (-np.pi / 4, 10e-3),
     ],
 )
-def test_t0_delays(angle, depth):
-    n_el = 80
-    probe_geometry = get_test_probe_geometry(n_el=n_el)
-
+def test_t0_delays(fixture_probe_geometry_s51, angle, depth):
+    """Tests the t0_delays_from_vsource function."""
     t0_delays = t0_delays_from_vsource(
-        probe_geometry, vsource_angle=angle, vsource_depth=depth, sound_speed=1540
+        fixture_probe_geometry_s51,
+        vsource_angle=angle,
+        vsource_depth=depth,
+        sound_speed=1540,
     )
 
-    assert t0_delays.shape == (n_el,)
+    assert t0_delays.shape == (fixture_probe_geometry_s51.shape[0],)
     assert np.all(t0_delays >= 0)
     assert np.min(t0_delays) == 0.0
 

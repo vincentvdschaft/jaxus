@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from jaxus.utils import fix_extent
+from imagelib import Extent
 
 
 class PixelGrid:
@@ -20,6 +21,11 @@ class PixelGrid:
 
         assert len(extent_m) == 2 * len(shape)
         assert pixel_positions_flat.shape[0] == np.prod(shape)
+
+    @property
+    def extent(self):
+        """Set the extent property."""
+        return self._extent
 
     def plot(
         self,

@@ -13,12 +13,14 @@ def extent_zflipped(extent):
     return np.array([extent[0], extent[1], z1, z0])
 
 
-def interpret_range(range_str, dim_size):
+def interpret_range(range_str, dim_size=None):
     """Interprets a range string"""
     if isinstance(range_str, int):
         return [int(range_str)]
 
-    if range_str is None or "all" in range_str or range_str == "-1":
+    if dim_size is not None and (
+        range_str is None or "all" in range_str or range_str == "-1"
+    ):
         return list(range(dim_size))
 
     if "-" in range_str:

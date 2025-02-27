@@ -1,15 +1,15 @@
 """Container for image data."""
 
+import logging
 from copy import deepcopy
 from pathlib import Path
 
 import h5py
+import matplotlib
+import matplotlib.image
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from skimage.exposure import match_histograms
-
-from jaxus import log
-from jaxus.utils import log_compress
 
 SCALE_LINEAR = 0
 SCALE_DB = 1
@@ -58,7 +58,7 @@ class Image:
     def data(self, value):
         """Set image data."""
         if np.iscomplexobj(value):
-            log.warning("Image data is complex. Taking magnitude.")
+            logging.warning("Image data is complex. Taking magnitude.")
             value = np.abs(value)
         data = np.array(value, dtype=np.float32)
         if data.ndim != 2:
@@ -161,8 +161,14 @@ class Image:
         """Return whether image data is log-compressed."""
         return self.scale == SCALE_DB
 
-    def save(self, path):
+    def save(self, path, cmap="gray"):
         """Save image to HDF5 file."""
+        path = Path(path)
+        if path.suffix in [".png", ".jpg", ".jpeg"]:
+            matplotlib.image.imsave(path, self.data.T, cmap=cmap)
+            return self
+        assert path.suffix == ".hdf5", "File must be HDF5 format."
+
         save_hdf5_image(
             path=path,
             image=self.data,
@@ -180,10 +186,12 @@ class Image:
     def log_compress(self):
         """Log-compress image data."""
         if self.scale == SCALE_DB:
-            log.warning("Image data is already log-compressed. Skipping.")
+            logging.warning("Image data is already log-compressed. Skipping.")
             return self
 
-        data = log_compress(self.data)
+        # Prevent taking the log of 0
+        data = np.where(self.data > 0, self.data, 1e-12)
+        data = 20 * np.log10(data)
         scale = SCALE_DB
 
         return Image(data, extent=self.extent, scale=scale, metadata=self.metadata)
@@ -365,7 +373,7 @@ class Image:
         """Subtract two images."""
         return self + (other * -1)
 
-    def resample(self, shape, extent=None):
+    def resample(self, shape, extent=None, method="linear"):
         """Resample image to a new shape."""
 
         if extent is None:
@@ -378,6 +386,7 @@ class Image:
             self.data,
             bounds_error=False,
             fill_value=0 if self.scale == SCALE_LINEAR else -240,
+            method=method,
         )
         new_xvals = np.linspace(extent[0], extent[1], shape[0])
         new_yvals = np.linspace(extent[2], extent[3], shape[1])
@@ -387,10 +396,31 @@ class Image:
 
         return Image(
             new_data,
-            extent=(new_xvals[0], new_xvals[-1], new_yvals[0], new_yvals[-1]),
+            extent=extent,
             scale=self.scale,
             metadata=self.metadata,
         )
+
+    def square_pixels(self):
+        """Ensures that the pixels are square by changing the extent and resampling
+        the image if necessary."""
+        if self.pixel_w == self.pixel_h:
+            return self
+
+        if self.pixel_w < self.pixel_h:
+            n_x_new = self.shape[0]
+            n_y_new = int(self.extent.height / self.pixel_w)
+            extent_new = self.extent.sety1(
+                self.extent.y0 + (n_y_new - 1) * self.pixel_w
+            )
+        else:
+            n_x_new = int(self.extent.width / self.pixel_h)
+            n_y_new = self.shape[1]
+            extent_new = self.extent.setx1(
+                self.extent.x0 + (n_x_new - 1) * self.pixel_h
+            )
+
+        return self.resample((n_x_new, n_y_new), extent=extent_new)
 
     def transpose(self):
         """Transpose image data."""
@@ -719,7 +749,7 @@ def save_hdf5_image(path, image, extent, scale=SCALE_LINEAR, metadata=None):
     path = Path(path)
 
     if path.exists():
-        log.warning(f"Overwriting existing file {path}.")
+        logging.warning(f"Overwriting existing file {path}.")
         path.unlink()
     if not path.parent.exists():
         path.parent.mkdir(parents=True)

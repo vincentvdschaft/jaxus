@@ -137,7 +137,7 @@ def scan_convert(
     target_x, target_z = target_pixel_positions[:, 0], target_pixel_positions[:, 1]
 
     r_target = np.linalg.norm(target_pixel_positions, axis=1)
-    th_target = np.arctan2(target_z, target_x)
+    th_target = np.arctan2(target_x, target_z)
 
     interpolator = RegularGridInterpolator(
         (th_source, r_source), polar_image, bounds_error=False, fill_value=fill_value

@@ -1,4 +1,4 @@
-from jaxus.containers import Image
+from imagelib import Image
 from jaxus.metrics.gcnr import gcnr_disk_annulus
 from jaxus.metrics.fwhm import fwhm_image, correct_fwhm_point, _sample_line
 import numpy as np

@@ -1,25 +1,25 @@
-[tool.poetry]
+[project]
 name = "jaxus"
 version = "0.2.1"
-description = "Basic ultrasound simulation and reconstruction functionality implemented in JAX."
-authors = ["Vincent van de Schaft"]
+description = "Add your description here"
 readme = "README.md"
-license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+    "h5py>=3.1.0",
+    "imagelib",
+    "jax[cuda12]>=0.5.1",
+    "matplotlib>=3.5.0",
+    "numpy>=1.8.0",
+    "optax>=0.2.4",
+    "tqdm>=4.67.1",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-numpy = "*"
-matplotlib = "*"
-h5py = "*"
-tqdm = "*"
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "isort>=6.0.1",
+    "pytest>=8.3.4",
+]
 
-[tool.poetry.group.dev.dependencies]
-black = "*"
-isort = "*"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.isort]
-skip = ["**/__init__.py"] 
+[tool.uv.sources]
+imagelib = { git = "https://github.com/vincentvdschaft/imagelib" }

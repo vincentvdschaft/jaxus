@@ -3,9 +3,9 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from imagelib import Image
 
 from jaxus import log
-from jaxus.containers import Image
 
 
 def gcnr(region1: np.ndarray, region2: np.ndarray, bins: int = 100):
@@ -87,7 +87,7 @@ def gcnr_disk_annulus(
     """
 
     # Create meshgrid of locations for the pixels
-    x_grid, z_grid = image.grid
+    x_grid, z_grid = image.grid[:, :, 0], image.grid[:, :, 1]
 
     # Compute the distance from the center of the circle
     r = np.sqrt((x_grid - disk_center[0]) ** 2 + (z_grid - disk_center[1]) ** 2)

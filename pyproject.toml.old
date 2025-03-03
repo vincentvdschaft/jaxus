@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "jaxus"
+version = "0.2.1"
+description = "Basic ultrasound simulation and reconstruction functionality implemented in JAX."
+authors = ["Vincent van de Schaft"]
+readme = "README.md"
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "*"
+matplotlib = "*"
+h5py = "*"
+tqdm = "*"
+
+[tool.poetry.group.dev.dependencies]
+black = "*"
+isort = "*"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+skip = ["**/__init__.py"] 

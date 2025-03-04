@@ -15,11 +15,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    "black>=25.1.0",
-    "isort>=6.0.1",
-    "pytest>=8.3.4",
-]
+dev = ["black>=25.1.0", "isort>=6.0.1", "pytest>=8.3.4"]
 
 [tool.uv.sources]
-imagelib = { git = "https://github.com/vincentvdschaft/imagelib" }
+imagelib = { git = "https://github.com/vincentvdschaft/imagelib", rev = "main" }

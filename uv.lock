@@ -260,7 +260,7 @@ wheels = [
 [[package]]
 name = "imagelib"
 version = "0.1.0"
-source = { git = "https://github.com/vincentvdschaft/imagelib#efbb4950f33fc0e9dad4405492abe4bd2437c4dc" }
+source = { git = "https://github.com/vincentvdschaft/imagelib?rev=main#6908cff80fac486af2e1fd1170df2d4882441888" }
 dependencies = [
     { name = "h5py" },
     { name = "matplotlib" },
@@ -404,7 +404,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "h5py", specifier = ">=3.1.0" },
-    { name = "imagelib", git = "https://github.com/vincentvdschaft/imagelib" },
+    { name = "imagelib", git = "https://github.com/vincentvdschaft/imagelib?rev=main" },
     { name = "jax", extras = ["cuda12"], specifier = ">=0.5.1" },
     { name = "matplotlib", specifier = ">=3.5.0" },
     { name = "numpy", specifier = ">=1.8.0" },

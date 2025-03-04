@@ -288,7 +288,7 @@ def plot_beamformedv2(
                 color="C0",
                 linewidth=1,
             )
-            limits = limits.sety0(-1e-3)
+            limits = limits.set_y0(-1e-3)
 
         if title is not None:
             ax.set_title(title)

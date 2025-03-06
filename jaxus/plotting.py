@@ -87,7 +87,7 @@ def plot_rf(
         ax.set_title(title)
 
 
-def plot_beamformed(
+def plot_beamformed_old(
     ax,
     image,
     extent_m,
@@ -210,7 +210,7 @@ def plot_beamformed(
     ax.set_facecolor("black")
 
 
-def plot_beamformedv2(
+def plot_beamformed(
     ax,
     image,
     vmin=-60,

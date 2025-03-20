@@ -13,6 +13,7 @@ import h5py
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
 import numpy as np
+from imagelib import Image, ImageSequence
 
 from jaxus import (
     beamform_das,
@@ -81,7 +82,7 @@ if input_frame == "unspecified":
     root = init_tk(root)
     input_frame = simpledialog.askstring(
         "Frames",
-        f"Which frames do you want to beamform? [0-{n_frames-1}]\n (e.g. 0 1 2-5, or all)",
+        f"Which frames do you want to beamform? [0-{n_frames - 1}]\n (e.g. 0 1 2-5, or all)",
     )
     if input_frame == "":
         input_frame = "all"
@@ -91,7 +92,7 @@ if input_transmit == "unspecified":
     root = init_tk(root)
     input_transmit = simpledialog.askstring(
         "Transmits",
-        f"What transmits do you want to beamform? [0-{n_tx-1}]\n (e.g. 0 1 2-5, or all)",
+        f"What transmits do you want to beamform? [0-{n_tx - 1}]\n (e.g. 0 1 2-5, or all)",
     )
     if input_transmit == "":
         input_transmit = "all"
@@ -127,16 +128,15 @@ log.info(
     f"python {current_python_file} {selected_file} "
     f"--frames {input_frame} "
     f"--transmits {input_transmit} "
-    f"{'--show'if show else '--no-show'} "
-    f"{'--fnumber '+str(args.fnumber) if args.fnumber != 1.0 else ''}"
-    f"{'--save-path'+str(args.save_path) if args.save_path else ''}"
+    f"{'--show' if show else '--no-show'} "
+    f"{'--fnumber ' + str(args.fnumber) if args.fnumber != 1.0 else ''}"
+    f"{'--save-path' + str(args.save_path) if args.save_path else ''}"
     f"--extent {args.extent} "
 )
 
 normalization_factor = None
 
 for frame in frames:
-
     data = load_hdf5(
         selected_file,
         frames=[frame],
@@ -189,14 +189,12 @@ for frame in frames:
     )
 
     dynamic_range = abs(float(args.dynamic_range))
-
-    im_das = log_compress(im_das, normalize=False)
-    im_das = im_das.reshape((pixel_grid.n_x, pixel_grid.n_z))
-
-    if normalization_factor is None:
-        normalization_factor = np.max(im_das)
-
-    im_das = im_das - normalization_factor
+    im_das = im_das.reshape((-1, pixel_grid.n_x, pixel_grid.n_z))[0]
+    im_das = (
+        Image(im_das, pixel_grid.extent_m).log_compress()
+        # .normalize()
+        # .clip(-dynamic_range, 0)
+    )
 
     use_dark_style()
 
@@ -209,7 +207,6 @@ for frame in frames:
     plot_beamformed(
         ax,
         im_das,
-        extent_m=pixel_grid.extent_m,
         title="Beamformed RF data",
         probe_geometry=data["probe_geometry"],
         vmin=-dynamic_range,
@@ -238,7 +235,7 @@ for frame in frames:
             path = path.with_suffix(".png")
         # plt.savefig(path, dpi=300, bbox_inches="tight")
         if path.suffix == ".hdf5":
-            save_hdf5_image(path, im_das, extent=pixel_grid.extent_m, scale="db")
+            im_das.save(path)
             log.info(f"Saved to {log.yellow(path)}")
         elif path.suffix == ".png":
             # import cv2

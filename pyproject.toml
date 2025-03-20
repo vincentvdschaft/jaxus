@@ -11,6 +11,8 @@ dependencies = [
     "matplotlib>=3.5.0",
     "numpy>=1.8.0",
     "optax>=0.2.4",
+    "rich>=13.9.4",
+    "tcl>=0.2",
     "tqdm>=4.67.1",
 ]
 

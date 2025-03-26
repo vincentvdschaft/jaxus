@@ -19,5 +19,9 @@ dependencies = [
 [dependency-groups]
 dev = ["black>=25.1.0", "isort>=6.0.1", "pytest>=8.3.4"]
 
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
 [tool.uv.sources]
 imagelib = { git = "https://github.com/vincentvdschaft/imagelib", rev = "main" }

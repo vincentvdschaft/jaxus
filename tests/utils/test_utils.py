@@ -65,8 +65,8 @@ def test_t0_delays(fixture_probe_geometry_s51, angle, depth):
     assert np.min(t0_delays) == 0.0
 
 
-def test_get_vsource():
-    probe_geometry = get_test_probe_geometry()
+def test_get_vsource(fixture_probe_geometry_s51):
+    probe_geometry = fixture_probe_geometry_s51
 
     t0_delays_focus = t0_delays_from_vsource(
         probe_geometry,
@@ -97,8 +97,8 @@ def test_get_vsource():
     plt.show()
 
 
-def test_deduce():
-    probe_geometry = get_test_probe_geometry()
+def test_deduce(fixture_probe_geometry_s51):
+    probe_geometry = fixture_probe_geometry_s51
 
     angle, depth = 10 * np.pi / 180, 20e-3
     vsource_pos_true = vsource_pos(angle, depth)

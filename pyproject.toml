@@ -7,7 +7,7 @@ requires-python = ">=3.10"
 dependencies = [
     "h5py>=3.1.0",
     "imagelib",
-    "jax[cuda12]>=0.5.1",
+    "jax[cuda12]>=0.4.1",
     "matplotlib>=3.5.0",
     "numpy>=1.8.0",
     "optax>=0.2.4",

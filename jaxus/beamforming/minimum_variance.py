@@ -15,6 +15,7 @@ from tqdm import tqdm
 
 from jaxus.pfield import compute_pfield
 from jaxus import log
+from jaxus.named_vmap import named_vmap
 from tqdm import tqdm
 from jaxus.utils.checks import (
     check_frequency,
@@ -504,29 +505,9 @@ def mv_beamform_transmit(
     float
         The beamformed value for the pixel.
     """
-    return vmap(
+    return named_vmap(
         mv_beamform_pixel,
-        in_axes=(
-            None,
-            0,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        ),
+        in_axes="pixel_pos",
     )(
         rf_data,
         pixel_positions,

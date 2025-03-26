@@ -18,6 +18,7 @@ from scipy.signal import butter, filtfilt, hilbert
 from scipy.signal.windows import hamming
 from tqdm import tqdm
 
+from jaxus.named_vmap import named_vmap
 from jaxus.utils import log_compress
 from jaxus.utils.checks import (
     check_frequency,
@@ -783,27 +784,9 @@ def das_beamform_transmit(
     jnp.ndarray
         The beamformed image of shape `(n_pixels,)`.
     """
-    return vmap(
+    return named_vmap(
         _beamform_pixel,
-        in_axes=(
-            None,
-            0,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-        ),
+        in_axes="pixel_pos",
     )(
         rf_data,
         pixel_positions,

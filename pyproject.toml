@@ -5,15 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "h5py>=3.1.0",
+    "h5py",
     "imagelib",
-    "jax[cuda12]>=0.5.1",
-    "matplotlib>=3.5.0",
-    "numpy>=1.8.0",
-    "optax>=0.2.4",
-    "rich>=13.9.4",
-    "tcl>=0.2",
-    "tqdm>=4.67.1",
+    "jax[cuda12]",
+    "matplotlib",
+    "numpy",
+    "optax",
+    "rich",
+    "tqdm",
 ]
 
 [dependency-groups]

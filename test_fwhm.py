@@ -1,5 +1,5 @@
 from jaxus.metrics import *
-from jaxus.containers import Image
+from imagelib import Image
 from jaxus import plot_beamformed
 import matplotlib.pyplot as plt
 from plotlib import *

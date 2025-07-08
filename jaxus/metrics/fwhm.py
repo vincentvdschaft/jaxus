@@ -1,10 +1,6 @@
-from dataclasses import dataclass
-
-import matplotlib.pyplot as plt
 import numpy as np
+from imagelib import Image
 from scipy.interpolate import RegularGridInterpolator
-from scipy.optimize import curve_fit
-from jaxus.containers import Image
 
 
 def fwhm(curve, width, required_repeats=3, log_scale=False):
@@ -205,7 +201,6 @@ def _sample_line(image, extent, position, direction, max_offset, n_samples):
     positions = _get_positions(
         center=position, direction=direction, max_offset=max_offset, n_samples=n_samples
     )
-    print(positions.shape)
 
     curve = interpolator(positions)
 
@@ -262,7 +257,7 @@ def plot_fwhm(
     color1="C0",
     color2="C1",
     linewidth=0.5,
-    **kwargs
+    **kwargs,
 ):
     """Plot a cross indicating the axial and lateral FWHM of a line profile.
 
@@ -304,7 +299,7 @@ def plot_fwhm(
         color=color1,
         linewidth=linewidth,
         linestyle="--",
-        **kwargs
+        **kwargs,
     )
 
     positions_orth = _get_positions(
@@ -317,7 +312,7 @@ def plot_fwhm(
         color=color2,
         linewidth=linewidth,
         linestyle="--",
-        **kwargs
+        **kwargs,
     )
 
     return line1, line2

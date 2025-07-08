@@ -87,7 +87,7 @@ def plot_rf(
         ax.set_title(title)
 
 
-def plot_beamformed(
+def plot_beamformed_old(
     ax,
     image,
     extent_m,
@@ -210,7 +210,7 @@ def plot_beamformed(
     ax.set_facecolor("black")
 
 
-def plot_beamformedv2(
+def plot_beamformed(
     ax,
     image,
     vmin=-60,
@@ -288,7 +288,7 @@ def plot_beamformedv2(
                 color="C0",
                 linewidth=1,
             )
-            limits = limits.sety0(-1e-3)
+            limits = limits.set_y0(-1e-3)
 
         if title is not None:
             ax.set_title(title)

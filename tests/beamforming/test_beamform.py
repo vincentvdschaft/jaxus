@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from scipy.signal.windows import hamming
+from imagelib import Image
 
 from jaxus.beamforming import (
     beamform_das,
@@ -93,6 +94,7 @@ def test_beamform(iq_beamform):
         # bf_data = bf_data.reshape((n_z, n_x))
 
     bf_data = log_compress(bf_data.reshape(pixel_grid.shape_2d), normalize=True)
+    bf_data = Image(bf_data.reshape(pixel_grid.shape_2d), extent=pixel_grid.extent_m)
 
     # ==================================================================================
     # Plot the beamformed data
@@ -102,7 +104,6 @@ def test_beamform(iq_beamform):
     plot_beamformed(
         axes[0],
         bf_data,
-        pixel_grid.extent_m_2d_zflipped,
         probe_geometry=probe.probe_geometry,
         # vmin=np.min(bf_data),
         # vmax=np.max(bf_data),

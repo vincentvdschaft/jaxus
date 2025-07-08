@@ -1,6 +1,6 @@
 import numpy as np
-from scipy.interpolate import RegularGridInterpolator
 from imagelib import Image
+from scipy.interpolate import RegularGridInterpolator
 
 
 def fwhm(curve, width, required_repeats=3, log_scale=False):
@@ -201,7 +201,6 @@ def _sample_line(image, extent, position, direction, max_offset, n_samples):
     positions = _get_positions(
         center=position, direction=direction, max_offset=max_offset, n_samples=n_samples
     )
-    print(positions.shape)
 
     curve = interpolator(positions)
 

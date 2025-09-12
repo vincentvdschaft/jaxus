@@ -252,7 +252,7 @@ def plot_beamformed(
         Whether to include axes, labels, and titles. Defaults to True.
     """
 
-    limits = image.extent
+    limits = image.extent_imshow
 
     if axis_in_mm:
         xlabel = "x [mm]"

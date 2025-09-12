@@ -24,4 +24,4 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv.sources]
-imagelib = { git = "https://github.com/vincentvdschaft/imagelib", rev = "main" }
+imagelib = { git = "https://github.com/vincentvdschaft/imagelib", rev = "remove-scale" }
